@@ -33,9 +33,46 @@ bitrix24-php-sdk.
 ### Bitrix24Partners
 
 Отвечает за
-хранение [партнёра](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts/Bitrix24Partners
-) Битрикс24, который произвёл установку или обслуживает портал
+хранение [партнёра](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts/Bitrix24Partners) Битрикс24, который произвёл установку или обслуживает портал
+
+## Архитектура
+
+### Слои и уровни абстракции
+```
+bitrix24-app-laravel-skeleton – шаблон приложения на Laravel
+bitrix24-app-symfony-skeleton – шаблон приложения на Symfony    
+bitrix24-php-lib – работа с сущностями приложения и их хранение в СУБД
+bitrix24-php-sdk – транспортный слой + события транспорта (протух токен, переименовали портал)
+```
+
+### Структура папок bounded context
+```
+src/
+    Bitrix24Accounts
+        Controllers
+        Entity
+        Exceptions
+        Events
+        EventListeners
+        Infrastructure
+            ConsoleCommands
+            Doctrine
+                Types
+        Repository
+        ReadModel
+        UseCases
+            SomeUseCase
+        Tests    
+```
 
 
+## Инфраструктура
+- библиотека делается cloud-agnostic
 
-   
+
+## Правила разработки
+1. Используем линтеры
+2. Библиотека покрыта тестами
+3. Вся работа строится через issues
+4. Процессы разработки - remote first
+5. Думаем и обсуждаем — потом пишем
