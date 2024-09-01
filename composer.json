@@ -41,7 +41,6 @@
     "doctrine/doctrine-migrations-bundle": "^3",
     "symfony/event-dispatcher": "^7",
     "symfony/uid": "^7",
-    "symfony/uid": "^7",
     "knplabs/knp-paginator-bundle": "^6"
   },
   "require-dev": {
@@ -57,12 +56,13 @@
   },
   "autoload": {
     "psr-4": {
-      "Mesilov\\Bitrix24\\ApplicationCore\\": "src"
+      "Bitrix24\\SDK\\ApplicationCore\\": "src"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Mesilov\\Bitrix24\\ApplicationCore\\Tests\\": "tests"
+      "Bitrix24\\SDK\\ApplicationCore\\Tests\\": "tests",
+      "Bitrix24\\SDK\\Tests\\":"vendor/mesilov/bitrix24-php-sdk/tests"
     }
   }
 }
