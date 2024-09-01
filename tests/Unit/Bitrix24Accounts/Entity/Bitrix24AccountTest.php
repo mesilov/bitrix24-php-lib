@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the bitrix24-app-core package.
+ * This file is part of the bitrix24-php-lib package.
  *
  * © Maksim Mesilov <mesilov.maxim@gmail.com>
  *
@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\SDK\ApplicationCore\Tests\Unit\Bitrix24Accounts\Entity;
+namespace Bitrix24\SDK\Lib\Tests\Unit\Bitrix24Accounts\Entity;
 
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;

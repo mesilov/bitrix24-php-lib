@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of the bitrix24-app-core package.
+ * This file is part of the bitrix24-php-lib package.
  *
  * © Maksim Mesilov <mesilov.maxim@gmail.com>
  *

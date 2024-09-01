@@ -1,6 +1,6 @@
-# bitrix24-app-core
+# bitrix24-php-lib
 
-Bitrix24 application core
+PHP lib for Bitrix24 application development
 
 ## Область применения
 

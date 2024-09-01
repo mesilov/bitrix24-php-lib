@@ -1,5 +1,5 @@
 {
-  "name": "mesilov/bitrix24-app-core",
+  "name": "mesilov/bitrix24-php-lib",
   "description": "A powerful PHP library for rapid Bitrix24 application development",
   "keywords": [
     "Bitrix24",
@@ -56,12 +56,12 @@
   },
   "autoload": {
     "psr-4": {
-      "Bitrix24\\SDK\\ApplicationCore\\": "src"
+      "Bitrix24\\SDK\\Lib\\": "src"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Bitrix24\\SDK\\ApplicationCore\\Tests\\": "tests",
+      "Bitrix24\\SDK\\Lib\\Tests\\": "tests",
       "Bitrix24\\SDK\\Tests\\":"vendor/mesilov/bitrix24-php-sdk/tests"
     }
   }
