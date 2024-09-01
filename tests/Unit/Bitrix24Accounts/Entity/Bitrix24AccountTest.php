@@ -15,7 +15,7 @@ namespace Bitrix24\SDK\Lib\Tests\Unit\Bitrix24Accounts\Entity;
 
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
-use Bitrix24\SDK\ApplicationCore\Bitrix24Accounts\Entity\Bitrix24Account;
+use Bitrix24\SDK\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Tests\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterfaceTest;
