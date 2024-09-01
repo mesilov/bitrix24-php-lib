@@ -1,0 +1,8 @@
+/.idea*
+/vendor
+/.cache
+composer.phar
+composer.lock
+.phpunit.result.cache
+*.log
+.env.local
