@@ -19,6 +19,7 @@ use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Bitrix24\SDK\Core\Exceptions\UnknownScopeCodeException;
 use Bitrix24\SDK\Core\Response\DTO\RenewedAuthToken;
+use Bitrix24\SDK\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Carbon\CarbonImmutable;
 use Override;
 use Symfony\Bridge\Doctrine\Types\UuidType;
@@ -27,6 +28,7 @@ use Symfony\Component\Serializer\Annotation\SerializedName;
 use Symfony\Component\Uid\Uuid;
 use Doctrine\ORM\Mapping as ORM;
 
+#[ORM\Entity(repositoryClass: Bitrix24AccountRepository::class)]
 class Bitrix24Account implements Bitrix24AccountInterface
 {
     private string $accessToken;
