@@ -60,6 +60,7 @@
     "fakerphp/faker": "^1",
     "phpstan/phpstan": "^1",
     "phpunit/phpunit": "^11",
+    "doctrine/migrations":"^3",
     "psalm/phar": "^5",
     "rector/rector": "^1",
     "roave/security-advisories": "dev-master",

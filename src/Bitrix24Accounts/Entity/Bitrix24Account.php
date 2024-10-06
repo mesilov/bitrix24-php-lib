@@ -22,23 +22,13 @@ use Bitrix24\SDK\Core\Response\DTO\RenewedAuthToken;
 use Carbon\CarbonImmutable;
 use Override;
 use Symfony\Bridge\Doctrine\Types\UuidType;
+use Symfony\Component\Serializer\Annotation\Ignore;
 use Symfony\Component\Serializer\Annotation\SerializedName;
 use Symfony\Component\Uid\Uuid;
 use Doctrine\ORM\Mapping as ORM;
 
 class Bitrix24Account implements Bitrix24AccountInterface
 {
-    #[ORM\Id]
-    #[ORM\Column(type: UuidType::NAME, unique: true)]
-    private readonly Uuid $id;
-    #[ORM\Column(name: 'b24_user_id', type: 'integer', nullable: false)]
-    #[SerializedName('b24_user_id')]
-    private readonly int $bitrix24UserId;
-    /** bitrix24 portal unique id */
-    #[ORM\Column(name: 'member_id', type: 'string', nullable: false)]
-    #[SerializedName('member_id')]
-    private readonly string $memberId;
-
     private string $accessToken;
 
     private string $refreshToken;
@@ -52,23 +42,28 @@ class Bitrix24Account implements Bitrix24AccountInterface
     private ?string $comment = null;
 
     public function __construct(
-        Uuid                             $id,
-        int                              $bitrix24UserId,
+        #[ORM\Id]
+        #[ORM\Column(type: UuidType::NAME, unique: true)]
+        private readonly Uuid $id,
+        #[ORM\Column(name: 'b24_user_id', type: 'integer', nullable: false)]
+        #[SerializedName('b24_user_id')]
+        private readonly int $bitrix24UserId,
         private readonly bool            $isBitrix24UserAdmin,
-        string                           $memberId,
+        /** bitrix24 portal unique id */
+        #[ORM\Column(name: 'member_id', type: 'string', nullable: false)]
+        #[SerializedName('member_id')]
+        private readonly string $memberId,
         private string                   $domainUrl,
         private Bitrix24AccountStatus    $accountStatus,
         AuthToken                        $authToken,
+        #[ORM\Column(name: 'created_at_utc', type: 'carbon_immutable', precision: 3, nullable: false)]
+        #[Ignore]
         private readonly CarbonImmutable $createdAt,
         private CarbonImmutable          $updatedAt,
         private int                      $applicationVersion,
         Scope                            $applicationScope,
     )
     {
-        $this->id = $id;
-        $this->bitrix24UserId = $bitrix24UserId;
-        $this->memberId = $memberId;
-
         $this->accessToken = $authToken->accessToken;
         $this->refreshToken = $authToken->refreshToken;
         $this->expires = $authToken->expires;

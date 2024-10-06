@@ -13,32 +13,8 @@ default:
 	@echo "make needs target:"
 	@egrep -e '^\S+' ./Makefile | grep -v default | sed -r 's/://' | sed -r 's/^/ - /'
 
-# linters
-lint-phpstan:
-	vendor/bin/phpstan --memory-limit=1G analyse
-lint-rector:
-	vendor/bin/rector process --dry-run
-lint-rector-fix:
-	vendor/bin/rector process
-
-# unit tests
-test-unit:
-	vendor/bin/phpunit --testsuite unit_tests --display-warnings
-
-test-integration:
-	vendor/bin/phpunit --testsuite integration_tests --display-warnings
-
-
-# docker file
-
-docker-up:
-	docker compose up --build -d
-
-docker-down:
-	docker compose down --remove-orphans
-
-#======================================
-restart: down up
+%:
+	@: # silence
 
 init:
 	@echo "remove all containers"
@@ -47,17 +23,14 @@ init:
 	docker-compose build
 	@echo "install dependencies"
 	docker-compose run --rm php-cli composer install
-#	@echo "run database migrations…"
-#	docker-compose run --rm php-cli php bin/doctrine doctrine:migrations:migrate --no-interaction
 	@echo "change owner of var folder for access from container"
     docker-compose run --rm php-cli chown -R www-data:www-data /var/www/html/var/
 	@echo "run application…"
 	docker-compose up -d
 
-
 up:
 	@echo "run application…"
-	docker-compose up -d
+	docker-compose up --build -d
 
 down:
 	@echo "stop application and remove containers"
@@ -67,15 +40,21 @@ down-clear:
 	@echo "stop application and remove containers with volumes"
 	docker-compose down -v --remove-orphans
 
+restart: down up
 
+# работа с контейнерами
+php-cli-bash:
+	docker-compose run --rm php-cli sh $(filter-out $@,$(MAKECMDGOALS))
+
+# работа с composer
 composer-install:
 	@echo "install dependencies…"
 	docker-compose run --rm php-cli composer install
-
 composer-update:
 	@echo "update dependencies…"
 	docker-compose run --rm php-cli composer update
-
+composer-dumpautoload:
+	docker-compose run --rm php-cli composer dumpautoload
 # вызов composer с любыми параметрами
 # Примеры:
 # make composer install
@@ -83,26 +62,20 @@ composer-update:
 composer:
 	docker-compose run --rm php-cli composer $(filter-out $@,$(MAKECMDGOALS))
 
-%:
-	@: # silence
-
-dev-dump-cache:
-	composer dumpautoload
-
-#======================================
-cli-bash:
-	docker-compose run --rm php-cli sh $(filter-out $@,$(MAKECMDGOALS))
-
-# static code analysis
-test-run-phpstan:
+# linters
+lint-phpstan:
 	docker-compose run --rm php-cli php vendor/bin/phpstan analyse --memory-limit 2G
+lint-rector:
+	docker-compose run --rm php-cli php vendor/bin/rector process --dry-run
+lint-rector-fix:
+	docker-compose run --rm php-cli php vendor/bin/rector process
 
 # unit-tests
-test-run-unit-tests:
-	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=unit_tests --testdox
+test-run-unit:
+	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=unit_tests --display-warnings --testdox
 
 # functional-tests, work with test database
-test-run-functional-tests:
+test-run-functional:
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:create
 	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional --testdox

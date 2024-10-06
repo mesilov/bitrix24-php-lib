@@ -1,37 +1,14 @@
 services:
-  php-fpm:
-    build:
-      context: ./docker/php-fpm
-    volumes:
-      - ./:/var/www/bitrix24-php-lib
-  nginx:
-    build:
-      context: ./docker/nginx
-    volumes:
-      - ./:/var/www/bitrix24-php-lib
-    ports:
-      - "8081:80"
-    depends_on:
-      - php-fpm
-  postgres-container:
-    image: postgres
-    build:
-      context: ./docker/postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./docker/postgres/data:/var/lib/postgresql/data
-    restart: always
   php-cli:
     build:
       context: ./docker/php-cli
     links:
-      - b24-account-test-database
+      - database
     volumes:
       - .:/var/www/html
     working_dir: /var/www/html
-  b24-account-test-database:
-    image: postgres:${POSTGRES_VERSION:-15}-alpine
+  database:
+    image: postgres:${POSTGRES_VERSION:-16}-alpine
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-b24AccountTest}
@@ -39,7 +16,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-b24AccountTest}
       POSTGRES_USER: ${POSTGRES_USER:-b24AccountTest}
       PGDATA: "/var/lib/postgresql/data/pgdata"
-    container_name: b24-account-test-database
+    container_name: bitrix24-php-lib-test-database
     ports:
       - '5432:5432'
     expose:
