@@ -2,6 +2,7 @@
 /vendor
 /.cache
 /docker/db
+/docker/postgres
 composer.phar
 composer.lock
 .phpunit.result.cache
