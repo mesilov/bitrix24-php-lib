@@ -22,4 +22,28 @@ services:
     volumes:
       - ./docker/postgres/data:/var/lib/postgresql/data
     restart: always
-
+  php-cli:
+    build:
+      context: ./docker/php-cli
+    links:
+      - b24-account-test-database
+    volumes:
+      - .:/var/www/html
+    working_dir: /var/www/html
+  b24-account-test-database:
+    image: postgres:${POSTGRES_VERSION:-15}-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-b24AccountTest}
+      # You should definitely change the password in production
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-b24AccountTest}
+      POSTGRES_USER: ${POSTGRES_USER:-b24AccountTest}
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    container_name: b24-account-test-database
+    ports:
+      - '5432:5432'
+    expose:
+      - 5432
+    volumes:
+      - ./Init Database:/docker-entrypoint-initdb.d
+      - ./docker/db:/var/lib/postgresql/data
