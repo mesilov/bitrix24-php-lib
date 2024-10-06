@@ -21,10 +21,24 @@ use Bitrix24\SDK\Core\Exceptions\UnknownScopeCodeException;
 use Bitrix24\SDK\Core\Response\DTO\RenewedAuthToken;
 use Carbon\CarbonImmutable;
 use Override;
+use Symfony\Bridge\Doctrine\Types\UuidType;
+use Symfony\Component\Serializer\Annotation\SerializedName;
 use Symfony\Component\Uid\Uuid;
+use Doctrine\ORM\Mapping as ORM;
 
 class Bitrix24Account implements Bitrix24AccountInterface
 {
+    #[ORM\Id]
+    #[ORM\Column(type: UuidType::NAME, unique: true)]
+    private readonly Uuid $id;
+    #[ORM\Column(name: 'b24_user_id', type: 'integer', nullable: false)]
+    #[SerializedName('b24_user_id')]
+    private readonly int $bitrix24UserId;
+    /** bitrix24 portal unique id */
+    #[ORM\Column(name: 'member_id', type: 'string', nullable: false)]
+    #[SerializedName('member_id')]
+    private readonly string $memberId;
+
     private string $accessToken;
 
     private string $refreshToken;
@@ -38,10 +52,10 @@ class Bitrix24Account implements Bitrix24AccountInterface
     private ?string $comment = null;
 
     public function __construct(
-        private readonly Uuid            $id,
-        private readonly int             $bitrix24UserId,
+        Uuid                             $id,
+        int                              $bitrix24UserId,
         private readonly bool            $isBitrix24UserAdmin,
-        private readonly string          $memberId,
+        string                           $memberId,
         private string                   $domainUrl,
         private Bitrix24AccountStatus    $accountStatus,
         AuthToken                        $authToken,
@@ -51,9 +65,13 @@ class Bitrix24Account implements Bitrix24AccountInterface
         Scope                            $applicationScope,
     )
     {
-        $this->accessToken = $authToken->getAccessToken();
-        $this->refreshToken = $authToken->getRefreshToken();
-        $this->expires = $authToken->getExpires();
+        $this->id = $id;
+        $this->bitrix24UserId = $bitrix24UserId;
+        $this->memberId = $memberId;
+
+        $this->accessToken = $authToken->accessToken;
+        $this->refreshToken = $authToken->refreshToken;
+        $this->expires = $authToken->expires;
         $this->applicationScope = $applicationScope->getScopeCodes();
     }
 
@@ -117,9 +135,9 @@ class Bitrix24Account implements Bitrix24AccountInterface
             );
         }
 
-        $this->accessToken = $renewedAuthToken->authToken->getAccessToken();
-        $this->refreshToken = $renewedAuthToken->authToken->getRefreshToken();
-        $this->expires = $renewedAuthToken->authToken->getExpires();
+        $this->accessToken = $renewedAuthToken->authToken->accessToken;
+        $this->refreshToken = $renewedAuthToken->authToken->refreshToken;
+        $this->expires = $renewedAuthToken->authToken->expires;
         $this->updatedAt = new CarbonImmutable();
     }
 

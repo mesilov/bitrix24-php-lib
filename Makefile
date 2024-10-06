@@ -99,7 +99,7 @@ test-run-phpstan:
 
 # unit-tests
 test-run-unit-tests:
-	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=unit --testdox
+	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=unit_tests --testdox
 
 # functional-tests, work with test database
 test-run-functional-tests:

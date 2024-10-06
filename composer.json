@@ -41,7 +41,7 @@
     "darsyn/ip": "^5",
     "nesbot/carbon": "^3",
     "moneyphp/money": "^4",
-    "mesilov/bitrix24-php-sdk": "^2",
+    "bitrix24/b24phpsdk": "^1",
     "doctrine/orm": "^3",
     "doctrine/doctrine-bundle": "*",
     "doctrine/doctrine-migrations-bundle": "*",
@@ -52,8 +52,7 @@
     "symfony/yaml": "^7",
     "symfony/cache": "^7",
     "symfony/console": "^7",
-    "symfony/dotenv": "^7",
-    "symfony/framework-bundle": "^7"
+    "symfony/dotenv": "^7"
   },
   "require-dev": {
     "friendsofphp/php-cs-fixer": "^3.59",
@@ -75,7 +74,7 @@
   "autoload-dev": {
     "psr-4": {
       "Bitrix24\\SDK\\Lib\\Tests\\": "tests",
-      "Bitrix24\\SDK\\Tests\\": "vendor/mesilov/bitrix24-php-sdk/tests"
+      "Bitrix24\\SDK\\Tests\\": "vendor/bitrix24/b24phpsdk/tests"
     }
   }
 }
