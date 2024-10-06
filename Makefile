@@ -23,3 +23,12 @@ test-unit:
 
 test-integration:
 	vendor/bin/phpunit --testsuite integration_tests --display-warnings
+
+
+# docker file
+
+docker-up:
+	docker compose up --build -d
+
+docker-down:
+	docker compose down --remove-orphans
