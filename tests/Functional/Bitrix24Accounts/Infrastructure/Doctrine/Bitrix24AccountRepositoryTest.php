@@ -60,6 +60,7 @@ class Bitrix24AccountRepositoryTest extends Bitrix24AccountRepositoryInterfaceTe
         );
     }
 
+    #[Override]
     protected function createBitrix24AccountRepositoryImplementation(): Bitrix24AccountRepositoryInterface
     {
         return new Bitrix24AccountRepository(EntityManagerFactory::get());

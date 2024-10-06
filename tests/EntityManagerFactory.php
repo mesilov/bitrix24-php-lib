@@ -35,12 +35,15 @@ class EntityManagerFactory
         if (!array_key_exists('DATABASE_HOST', $_ENV)) {
             throw new WrongConfigurationException('DATABASE_HOST not defined in $_ENV');
         }
+
         if (!array_key_exists('DATABASE_USER', $_ENV)) {
             throw new WrongConfigurationException('DATABASE_USER not defined in $_ENV');
         }
+
         if (!array_key_exists('DATABASE_PASSWORD', $_ENV)) {
             throw new WrongConfigurationException('DATABASE_PASSWORD not defined in $_ENV');
         }
+
         if (!array_key_exists('DATABASE_NAME', $_ENV)) {
             throw new WrongConfigurationException('DATABASE_NAME not defined in $_ENV');
         }
@@ -55,13 +58,14 @@ class EntityManagerFactory
         if (!Type::hasType(UuidType::NAME)) {
             Type::addType(UuidType::NAME, UuidType::class);
         }
+
         if (!Type::hasType('carbon_immutable')) {
             Type::addType('carbon_immutable', CarbonImmutableType::class);
         }
 
-        $config = ORMSetup::createAttributeMetadataConfiguration($paths, $isDevMode);
-        $connection = DriverManager::getConnection($connectionParams, $config);
-        $entityManager = new EntityManager($connection, $config);
+        $configuration = ORMSetup::createAttributeMetadataConfiguration($paths, $isDevMode);
+        $connection = DriverManager::getConnection($connectionParams, $configuration);
+        $entityManager = new EntityManager($connection, $configuration);
         // todo разобраться, почему так, без этого объекты оставались в кеше и при find мы получали старые значения
         $entityManager->clear();
         $entityManager->flush();

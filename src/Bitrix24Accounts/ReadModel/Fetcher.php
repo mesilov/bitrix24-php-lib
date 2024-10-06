@@ -10,16 +10,10 @@ use Knp\Component\Pager\PaginatorInterface;
 
 class Fetcher
 {
-    private EntityManagerInterface $em;
-    private PaginatorInterface $paginator;
-
     public function __construct(
-        EntityManagerInterface $em,
-        PaginatorInterface     $paginator
-    )
+        private readonly EntityManagerInterface $em,
+        private readonly PaginatorInterface     $paginator)
     {
-        $this->em = $em;
-        $this->paginator = $paginator;
     }
 
     public function list(
@@ -27,7 +21,7 @@ class Fetcher
         int $size
     ): PaginationInterface
     {
-        $qb = $this->em->getConnection()->createQueryBuilder()
+        $queryBuilder = $this->em->getConnection()->createQueryBuilder()
             ->select(
                 'b24account.id as id',
                 'b24account.status as status',
@@ -40,6 +34,6 @@ class Fetcher
             ->from('bitrix24account', 'b24account')
             ->orderBy('b24account.created_at_utc', 'DESC');
 
-        return $this->paginator->paginate($qb, $page, $size);
+        return $this->paginator->paginate($queryBuilder, $page, $size);
     }
 }

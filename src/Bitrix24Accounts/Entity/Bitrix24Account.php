@@ -46,15 +46,15 @@ class Bitrix24Account implements Bitrix24AccountInterface
     public function __construct(
         #[ORM\Id]
         #[ORM\Column(type: UuidType::NAME, unique: true)]
-        private readonly Uuid $id,
+        private readonly Uuid            $id,
         #[ORM\Column(name: 'b24_user_id', type: 'integer', nullable: false)]
         #[SerializedName('b24_user_id')]
-        private readonly int $bitrix24UserId,
+        private readonly int             $bitrix24UserId,
         private readonly bool            $isBitrix24UserAdmin,
         /** bitrix24 portal unique id */
         #[ORM\Column(name: 'member_id', type: 'string', nullable: false)]
         #[SerializedName('member_id')]
-        private readonly string $memberId,
+        private readonly string          $memberId,
         private string                   $domainUrl,
         private Bitrix24AccountStatus    $accountStatus,
         AuthToken                        $authToken,

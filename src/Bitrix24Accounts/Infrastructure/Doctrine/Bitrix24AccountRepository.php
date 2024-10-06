@@ -10,14 +10,14 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24Accou
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Bitrix24\SDK\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
-use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Override;
 use Symfony\Component\Uid\Uuid;
 
 class Bitrix24AccountRepository extends EntityRepository implements Bitrix24AccountRepositoryInterface
 {
-    public function __construct(EntityManager $entityManager)
+    public function __construct(EntityManagerInterface $entityManager)
     {
         parent::__construct($entityManager, $entityManager->getClassMetadata(Bitrix24Account::class));
     }
@@ -75,6 +75,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         if ($bitrix24Account === null) {
             throw new Bitrix24AccountNotFoundException(sprintf('bitrix24 account not found by id %s', $uuid->toRfc4122()));
         }
+
         $this->getEntityManager()->remove($bitrix24Account);
 
         if ($flush) {
@@ -100,6 +101,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         if (trim($memberId) === '') {
             throw new InvalidArgumentException('memberId cannot be an empty string');
         }
+
         return $this->getEntityManager()->getRepository(Bitrix24Account::class)->findOneBy(
             [
                 'memberId' => $memberId,
@@ -122,9 +124,10 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         $criteria = [
             'domainUrl' => $domainUrl,
         ];
-        if ($bitrix24AccountStatus !== null) {
+        if ($bitrix24AccountStatus instanceof \Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus) {
             $criteria['status'] = $bitrix24AccountStatus->name;
         }
+
         if ($isAdmin !== null) {
             $criteria['isBitrix24UserAdmin'] = $isAdmin;
         }
