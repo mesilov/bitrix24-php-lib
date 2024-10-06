@@ -1,0 +1,25 @@
+services:
+  php-fpm:
+    build:
+      context: ./docker/php-fpm
+    volumes:
+      - ./:/var/www/bitrix24-php-lib
+  nginx:
+    build:
+      context: ./docker/nginx
+    volumes:
+      - ./:/var/www/bitrix24-php-lib
+    ports:
+      - "8081:80"
+    depends_on:
+      - php-fpm
+  postgres-container:
+    image: postgres
+    build:
+      context: ./docker/postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/postgres/data:/var/lib/postgresql/data
+    restart: always
+
