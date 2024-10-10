@@ -39,13 +39,11 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
      * @inheritdoc
      */
     #[Override]
-    public function save(Bitrix24AccountInterface $bitrix24Account, bool $flush = false): void
+    public function save(Bitrix24AccountInterface $bitrix24Account): void
     {
         $this->getEntityManager()->persist($bitrix24Account);
-
-        if ($flush) {
-            $this->getEntityManager()->flush();
-        }
+        //todo discuss add flush arg to contract or add flusher in usecases?
+        $this->getEntityManager()->flush();
     }
 
 

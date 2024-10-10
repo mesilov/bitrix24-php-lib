@@ -76,8 +76,7 @@ readonly class Handler
          * @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $targetAccount
          */
         $targetAccount->renewAuthToken($command->renewedAuthToken);
-        $this->bitrix24AccountRepository->save($targetAccount, true);
-        $this->bitrix24AccountRepository->save($targetAccount, true);
+        $this->bitrix24AccountRepository->save($targetAccount);
         foreach ($targetAccount->emitEvents() as $event) {
             $this->eventDispatcher->dispatch($event);
         }

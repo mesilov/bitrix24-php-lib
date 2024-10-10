@@ -29,11 +29,11 @@ readonly class Handler
 
         $accounts = $this->bitrix24AccountRepository->findByDomain($command->oldDomainUrlHost);
         foreach ($accounts as $targetAccount) {
+            $targetAccount->changeDomainUrl($command->newDomainUrlHost);
+            $this->bitrix24AccountRepository->save($targetAccount);
             /**
              * @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $targetAccount
              */
-            $targetAccount->changeDomainUrl($command->newDomainUrlHost);
-            $this->bitrix24AccountRepository->save($targetAccount, true);
             foreach ($targetAccount->emitEvents() as $event) {
                 $this->eventDispatcher->dispatch($event);
             }

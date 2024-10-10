@@ -59,7 +59,7 @@ readonly class Handler
          * @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $targetAccount
          */
         $targetAccount->applicationInstalled($command->applicationToken);
-        $this->bitrix24AccountRepository->save($targetAccount, true);
+        $this->bitrix24AccountRepository->save($targetAccount);
         foreach ($targetAccount->emitEvents() as $event) {
             $this->eventDispatcher->dispatch($event);
         }

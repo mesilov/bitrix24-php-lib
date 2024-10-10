@@ -43,8 +43,7 @@ readonly class Handler
                 new CarbonImmutable(),
                 $command->applicationVersion,
                 $command->applicationScope
-            ),
-            true
+            )
         );
         $this->eventDispatcher->dispatch(
             new Bitrix24AccountCreatedEvent(
