@@ -38,13 +38,10 @@ readonly class Handler
         /** @phpstan-ignore-next-line */
         $accounts = $this->bitrix24AccountRepository->findByApplicationToken($command->applicationToken);
 
-        foreach ($accounts as $targetAccount) {
-            /**
-             * @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $targetAccount
-             */
-            $targetAccount->applicationUninstalled($command->applicationToken);
-            $this->bitrix24AccountRepository->save($targetAccount);
-            foreach ($targetAccount->emitEvents() as $event) {
+        foreach ($accounts as $account) {
+            $account->applicationUninstalled($command->applicationToken);
+            $this->bitrix24AccountRepository->save($account);
+            foreach ($account->emitEvents() as $event) {
                 $this->eventDispatcher->dispatch($event);
             }
         }

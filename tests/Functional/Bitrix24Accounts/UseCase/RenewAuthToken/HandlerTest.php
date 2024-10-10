@@ -25,6 +25,7 @@ use Bitrix24\SDK\Lib\Bitrix24Accounts\UseCase\RenewAuthToken\Command;
 use Bitrix24\SDK\Lib\Bitrix24Accounts\UseCase\RenewAuthToken\Handler;
 use Bitrix24\SDK\Lib\Tests\EntityManagerFactory;
 use Carbon\CarbonImmutable;
+use Override;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -36,12 +37,13 @@ use Symfony\Component\Uid\Uuid;
 class HandlerTest extends TestCase
 {
     private Handler $handler;
+
     private Bitrix24AccountRepositoryInterface $repository;
 
     #[Test]
     public function testRenewAuthTokenWithoutBitrix24UserId(): void
     {
-        $b24Account = new Bitrix24Account(
+        $bitrix24Account = new Bitrix24Account(
             Uuid::v4(),
             1,
             true,
@@ -54,28 +56,29 @@ class HandlerTest extends TestCase
             1,
             new Scope()
         );
-        $this->repository->save($b24Account);
+        $this->repository->save($bitrix24Account);
 
         $newAuthToken = new AuthToken('new_1', 'new_2', 3600);
         $this->handler->handle(
             new Command(
                 new RenewedAuthToken(
                     $newAuthToken,
-                    $b24Account->getMemberId(),
+                    $bitrix24Account->getMemberId(),
                     'https://client-endpoint.com',
                     'https://server-endpoint.com',
                     ApplicationStatus::subscription(),
-                    $b24Account->getDomainUrl()
+                    $bitrix24Account->getDomainUrl()
                 )
             )
         );
 
-        $updated = $this->repository->getById($b24Account->getId());
+        $updated = $this->repository->getById($bitrix24Account->getId());
         $this->assertEquals($newAuthToken->accessToken, $updated->getAuthToken()->accessToken);
         $this->assertEquals($newAuthToken->refreshToken, $updated->getAuthToken()->refreshToken);
     }
 
-    public function setUp(): void
+    #[Override]
+    protected function setUp(): void
     {
         $this->repository = new Bitrix24AccountRepository(EntityManagerFactory::get());
         $this->handler = new Handler(

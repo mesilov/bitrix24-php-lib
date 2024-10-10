@@ -56,11 +56,9 @@ readonly class Handler
 
             // try to find target bitrix24 account
             $bitrix24UserId = $command->bitrix24UserId;
-            $targetAccount = array_filter($accounts, static function ($account) use ($bitrix24UserId) {
-                return $account->getBitrix24UserId() === $bitrix24UserId;
-            });
+            $targetAccount = array_filter($accounts, static fn($account): bool => $account->getBitrix24UserId() === $bitrix24UserId);
             // Reset array keys and get the first matched account (if any)
-            $targetAccount = reset($targetAccount) ?: null;
+            $targetAccount = $targetAccount !== [] ? reset($targetAccount) : null;
 
             if ($targetAccount===null) {
                 throw new Bitrix24AccountNotFoundException(sprintf('account with %s domain %s memberId and %s bitrix24UserId not found',
@@ -70,11 +68,13 @@ readonly class Handler
                 ));
             }
         }
+
         $targetAccount = $accounts[0];
         /**
          * @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $targetAccount
          */
         $targetAccount->renewAuthToken($command->renewedAuthToken);
+
         $this->bitrix24AccountRepository->save($targetAccount);
         foreach ($targetAccount->emitEvents() as $event) {
             $this->eventDispatcher->dispatch($event);

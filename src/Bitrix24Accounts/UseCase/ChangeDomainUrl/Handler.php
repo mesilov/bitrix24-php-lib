@@ -28,12 +28,12 @@ readonly class Handler
         ]);
 
         $accounts = $this->bitrix24AccountRepository->findByDomain($command->oldDomainUrlHost);
-        foreach ($accounts as $targetAccount) {
-            $targetAccount->changeDomainUrl($command->newDomainUrlHost);
-            $this->bitrix24AccountRepository->save($targetAccount);
+        foreach ($accounts as $account) {
+            $account->changeDomainUrl($command->newDomainUrlHost);
+            $this->bitrix24AccountRepository->save($account);
             // todo выяснить почему он не видит объединение типов
             /** @phpstan-ignore-next-line */
-            foreach ($targetAccount->emitEvents() as $event) {
+            foreach ($account->emitEvents() as $event) {
                 $this->eventDispatcher->dispatch($event);
             }
         }

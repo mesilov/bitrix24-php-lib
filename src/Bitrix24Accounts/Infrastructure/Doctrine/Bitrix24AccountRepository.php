@@ -63,6 +63,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         if ($bitrix24AccountStatus instanceof Bitrix24AccountStatus) {
             $criteria['status'] = $bitrix24AccountStatus->name;
         }
+
         if ($isAdmin !== null) {
             $criteria['isBitrix24UserAdmin'] = $isAdmin;
         }

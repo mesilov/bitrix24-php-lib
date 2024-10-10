@@ -40,13 +40,14 @@ readonly class Handler
             $command->memberId,
             Bitrix24AccountStatus::new
         );
-        if (count($accounts) === 0) {
+        if ($accounts === []) {
             throw new Bitrix24AccountNotFoundException(sprintf(
                 'bitrix24 account for domain %s with member id %s in status «new» not found',
                 $command->domainUrl,
                 $command->memberId
             ));
         }
+
         if (count($accounts) > 1) {
             throw new MultipleBitrix24AccountsFoundException(sprintf(
                 'multiple bitrix24 accounts for domain %s with member id %s in status «new» found',
@@ -54,11 +55,13 @@ readonly class Handler
                 $command->memberId
             ));
         }
+
         $targetAccount = $accounts[0];
         /**
          * @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $targetAccount
          */
         $targetAccount->applicationInstalled($command->applicationToken);
+
         $this->bitrix24AccountRepository->save($targetAccount);
         foreach ($targetAccount->emitEvents() as $event) {
             $this->eventDispatcher->dispatch($event);

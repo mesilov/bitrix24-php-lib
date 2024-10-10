@@ -49,6 +49,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     private ?string $applicationToken = null;
 
     private ?string $comment = null;
+
     /**
      * @var Event[]
      */
@@ -346,6 +347,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     /**
      * @return Event[]
      */
+    #[Override]
     public function emitEvents(): array
     {
         $events = $this->events;
