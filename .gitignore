@@ -1,6 +1,7 @@
 /.idea*
 /vendor
 /.cache
+/docker/db
 composer.phar
 composer.lock
 .phpunit.result.cache

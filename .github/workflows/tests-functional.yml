@@ -1,0 +1,82 @@
+name: "Functional tests"
+
+on:
+  push:
+  pull_request:
+
+env:
+  COMPOSER_FLAGS: "--ansi --no-interaction --no-progress --prefer-dist"
+  DATABASE_HOST: localhost
+  DATABASE_USER: b24phpLibTest
+  DATABASE_PASSWORD: b24phpLibTest
+  DATABASE_NAME: b24phpLibTest
+
+jobs:
+  tests:
+    name: "Functional tests"
+
+    runs-on: ${{ matrix.operating-system }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version:
+          - "8.3"
+        dependencies: [ highest ]
+        operating-system: [ ubuntu-latest]
+    services:
+      bitrix24-php-lib-test-database:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+        env:
+          POSTGRES_USER: b24phpLibTest
+          POSTGRES_PASSWORD: b24phpLibTest
+          POSTGRES_DB: b24phpLibTest
+          DATABASE_HOST: localhost
+          DATABASE_USER: b24phpLibTest
+          DATABASE_PASSWORD: b24phpLibTest
+          DATABASE_NAME: b24phpLibTest
+
+    steps:
+      - name: "Checkout code"
+        uses: "actions/checkout@v2"
+
+      - name: "Setup PHP"
+        uses: "shivammathur/setup-php@v2"
+        with:
+          coverage: "none"
+          php-version: "${{ matrix.php-version }}"
+          extensions: json, bcmath, curl, intl, mbstring, pdo_pgsql, pdo
+
+      - name: "Install dependencies with Composer"
+        run: |
+          composer update ${{ env.COMPOSER_FLAGS }}
+
+      - name: "Wait for PostgreSQL to be ready"
+        run: |
+            until pg_isready -h localhost -p 5432 -U user; do
+              echo "Waiting for PostgreSQL to start..."
+              sleep 2
+            done
+
+      - name: "Run functional tests"
+        run: |
+            php bin/doctrine orm:schema-tool:drop --force
+            php bin/doctrine orm:schema-tool:create
+            php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox            
+
+      - name: "is functional tests succeeded"
+        if: ${{ success() }}
+        run: |
+          echo '✅ functional tests pass, congratulations!'
+
+      - name: "is functional tests failed"
+        if: ${{ failure() }}
+        run: |
+          echo '::error:: ❗️ functional tests failed (╯°益°)╯彡┻━┻'

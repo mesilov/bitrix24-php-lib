@@ -14,16 +14,29 @@ namespace Bitrix24\SDK\Lib\Bitrix24Accounts\Entity;
 
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationInstalledEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationUninstalledEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationVersionUpdatedEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountBlockedEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountDomainUrlChangedEvent;
+use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Bitrix24\SDK\Core\Exceptions\UnknownScopeCodeException;
 use Bitrix24\SDK\Core\Response\DTO\RenewedAuthToken;
+use Bitrix24\SDK\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Carbon\CarbonImmutable;
 use Override;
+use Symfony\Bridge\Doctrine\Types\UuidType;
+use Symfony\Component\Serializer\Annotation\Ignore;
+use Symfony\Component\Serializer\Annotation\SerializedName;
 use Symfony\Component\Uid\Uuid;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Contracts\EventDispatcher\Event;
 
-class Bitrix24Account implements Bitrix24AccountInterface
+#[ORM\Entity(repositoryClass: Bitrix24AccountRepository::class)]
+class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEmitterInterface
 {
     private string $accessToken;
 
@@ -37,23 +50,37 @@ class Bitrix24Account implements Bitrix24AccountInterface
 
     private ?string $comment = null;
 
+    /**
+     * @var Event[]
+     */
+    private array $events = [];
+
     public function __construct(
+        #[ORM\Id]
+        #[ORM\Column(type: UuidType::NAME, unique: true)]
         private readonly Uuid            $id,
+        #[ORM\Column(name: 'b24_user_id', type: 'integer', nullable: false)]
+        #[SerializedName('b24_user_id')]
         private readonly int             $bitrix24UserId,
         private readonly bool            $isBitrix24UserAdmin,
+        /** bitrix24 portal unique id */
+        #[ORM\Column(name: 'member_id', type: 'string', nullable: false)]
+        #[SerializedName('member_id')]
         private readonly string          $memberId,
         private string                   $domainUrl,
         private Bitrix24AccountStatus    $accountStatus,
         AuthToken                        $authToken,
+        #[ORM\Column(name: 'created_at_utc', type: 'carbon_immutable', precision: 3, nullable: false)]
+        #[Ignore]
         private readonly CarbonImmutable $createdAt,
         private CarbonImmutable          $updatedAt,
         private int                      $applicationVersion,
         Scope                            $applicationScope,
     )
     {
-        $this->accessToken = $authToken->getAccessToken();
-        $this->refreshToken = $authToken->getRefreshToken();
-        $this->expires = $authToken->getExpires();
+        $this->accessToken = $authToken->accessToken;
+        $this->refreshToken = $authToken->refreshToken;
+        $this->expires = $authToken->expires;
         $this->applicationScope = $applicationScope->getScopeCodes();
     }
 
@@ -117,9 +144,9 @@ class Bitrix24Account implements Bitrix24AccountInterface
             );
         }
 
-        $this->accessToken = $renewedAuthToken->authToken->getAccessToken();
-        $this->refreshToken = $renewedAuthToken->authToken->getRefreshToken();
-        $this->expires = $renewedAuthToken->authToken->getExpires();
+        $this->accessToken = $renewedAuthToken->authToken->accessToken;
+        $this->refreshToken = $renewedAuthToken->authToken->refreshToken;
+        $this->expires = $renewedAuthToken->authToken->expires;
         $this->updatedAt = new CarbonImmutable();
     }
 
@@ -161,6 +188,10 @@ class Bitrix24Account implements Bitrix24AccountInterface
 
         $this->domainUrl = $newDomainUrl;
         $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new Bitrix24AccountDomainUrlChangedEvent(
+            $this->id,
+            new CarbonImmutable()
+        );
     }
 
     /**
@@ -182,6 +213,10 @@ class Bitrix24Account implements Bitrix24AccountInterface
         $this->accountStatus = Bitrix24AccountStatus::active;
         $this->applicationToken = $applicationToken;
         $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new Bitrix24AccountApplicationInstalledEvent(
+            $this->id,
+            new CarbonImmutable()
+        );
     }
 
     /**
@@ -214,6 +249,10 @@ class Bitrix24Account implements Bitrix24AccountInterface
 
         $this->accountStatus = Bitrix24AccountStatus::deleted;
         $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new Bitrix24AccountApplicationUninstalledEvent(
+            $this->id,
+            new CarbonImmutable()
+        );
     }
 
     #[Override]
@@ -257,6 +296,10 @@ class Bitrix24Account implements Bitrix24AccountInterface
         }
 
         $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new Bitrix24AccountApplicationVersionUpdatedEvent(
+            $this->id,
+            new CarbonImmutable()
+        );
     }
 
     /**
@@ -289,11 +332,26 @@ class Bitrix24Account implements Bitrix24AccountInterface
         $this->accountStatus = Bitrix24AccountStatus::blocked;
         $this->comment = $comment;
         $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new Bitrix24AccountBlockedEvent(
+            $this->id,
+            new CarbonImmutable()
+        );
     }
 
     #[Override]
     public function getComment(): ?string
     {
         return $this->comment;
+    }
+
+    /**
+     * @return Event[]
+     */
+    #[Override]
+    public function emitEvents(): array
+    {
+        $events = $this->events;
+        $this->events = [];
+        return $events;
     }
 }
