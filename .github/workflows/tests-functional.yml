@@ -58,7 +58,10 @@ jobs:
             done
 
       - name: "Run functional tests"
-        run: "make test-functional"
+        run: |
+            php bin/doctrine orm:schema-tool:drop --force
+            php bin/doctrine orm:schema-tool:create
+            php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox            
 
       - name: "is functional tests succeeded"
         if: ${{ success() }}
