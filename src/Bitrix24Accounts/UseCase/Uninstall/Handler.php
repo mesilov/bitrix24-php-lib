@@ -34,7 +34,8 @@ readonly class Handler
         $this->logger->debug('Bitrix24Accounts.Uninstall.start', [
             'b24_application_token' => $command->applicationToken,
         ]);
-
+        //todo remove after update contract in b24phpsdk
+        /** @phpstan-ignore-next-line */
         $accounts = $this->bitrix24AccountRepository->findByApplicationToken($command->applicationToken);
 
         foreach ($accounts as $targetAccount) {

@@ -8,6 +8,7 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountIn
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
+use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Bitrix24\SDK\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Doctrine\ORM\EntityManagerInterface;
@@ -18,12 +19,16 @@ use Symfony\Component\Uid\Uuid;
 class Bitrix24AccountRepository extends EntityRepository implements Bitrix24AccountRepositoryInterface
 {
     public function __construct(
-        EntityManagerInterface  $entityManager
+        EntityManagerInterface $entityManager
     )
     {
         parent::__construct($entityManager, $entityManager->getClassMetadata(Bitrix24Account::class));
     }
 
+    /**
+     * @phpstan-return Bitrix24AccountInterface&AggregateRootEventsEmitterInterface
+     * @throws Bitrix24AccountNotFoundException
+     */
     #[Override]
     public function getById(Uuid $uuid): Bitrix24AccountInterface
     {
@@ -46,7 +51,9 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         $this->getEntityManager()->flush();
     }
 
-
+    /**
+     * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
+     */
     #[Override]
     public function findByMemberId(string $memberId, ?Bitrix24AccountStatus $bitrix24AccountStatus = null, ?bool $isAdmin = null): array
     {
@@ -92,7 +99,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
 
     /**
      * @param non-empty-string $applicationToken
-     * @return array
+     * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
      * @todo discuss are we need add this method in contract in b24phpsdk?
      */
     public function findByApplicationToken(string $applicationToken): array
@@ -106,6 +113,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
 
     /**
      * @throws InvalidArgumentException
+     * @phpstan-return Bitrix24AccountInterface&AggregateRootEventsEmitterInterface
      */
     #[Override]
     public function findOneAdminByMemberId(string $memberId): ?Bitrix24AccountInterface
@@ -124,6 +132,8 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     }
 
     /**
+     * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
+     * @return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
      * @throws InvalidArgumentException
      */
     #[Override]

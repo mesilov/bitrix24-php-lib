@@ -53,17 +53,16 @@ readonly class Handler
 
         // filter by member_id and bitrix24_user_id
         if ($command->bitrix24UserId !== null && count($accounts) > 1) {
-            // try to find target bitrix24 account
-            $targetAccount = array_map(static function ($account, int $bitrix24UserId) {
-                {
-                    if ($account->getBitrix24UserId() === $bitrix24UserId) {
-                        return $account;
-                    }
 
-                    return null;
-                }
-            }, $accounts);
-            if ($targetAccount === []) {
+            // try to find target bitrix24 account
+            $bitrix24UserId = $command->bitrix24UserId;
+            $targetAccount = array_filter($accounts, static function ($account) use ($bitrix24UserId) {
+                return $account->getBitrix24UserId() === $bitrix24UserId;
+            });
+            // Reset array keys and get the first matched account (if any)
+            $targetAccount = reset($targetAccount) ?: null;
+
+            if ($targetAccount===null) {
                 throw new Bitrix24AccountNotFoundException(sprintf('account with %s domain %s memberId and %s bitrix24UserId not found',
                     $command->renewedAuthToken->domain,
                     $command->renewedAuthToken->memberId,

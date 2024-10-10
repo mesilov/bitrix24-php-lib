@@ -31,9 +31,8 @@ readonly class Handler
         foreach ($accounts as $targetAccount) {
             $targetAccount->changeDomainUrl($command->newDomainUrlHost);
             $this->bitrix24AccountRepository->save($targetAccount);
-            /**
-             * @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $targetAccount
-             */
+            // todo выяснить почему он не видит объединение типов
+            /** @phpstan-ignore-next-line */
             foreach ($targetAccount->emitEvents() as $event) {
                 $this->eventDispatcher->dispatch($event);
             }
