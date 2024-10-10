@@ -6,6 +6,10 @@ on:
 
 env:
   COMPOSER_FLAGS: "--ansi --no-interaction --no-progress --prefer-dist"
+  DATABASE_HOST: localhost
+  DATABASE_USER: b24phpLibTest
+  DATABASE_PASSWORD: b24phpLibTest
+  DATABASE_NAME: b24phpLibTest
 
 jobs:
   tests:
@@ -31,6 +35,9 @@ jobs:
           --health-timeout=5s
           --health-retries=5
         env:
+          POSTGRES_USER: b24phpLibTest
+          POSTGRES_PASSWORD: b24phpLibTest
+          POSTGRES_DB: b24phpLibTest
           DATABASE_HOST: localhost
           DATABASE_USER: b24phpLibTest
           DATABASE_PASSWORD: b24phpLibTest
