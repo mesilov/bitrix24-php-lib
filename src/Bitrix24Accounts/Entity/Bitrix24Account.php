@@ -14,6 +14,12 @@ namespace Bitrix24\SDK\Lib\Bitrix24Accounts\Entity;
 
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationInstalledEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationUninstalledEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationVersionUpdatedEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountBlockedEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountDomainUrlChangedEvent;
+use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
@@ -27,9 +33,10 @@ use Symfony\Component\Serializer\Annotation\Ignore;
 use Symfony\Component\Serializer\Annotation\SerializedName;
 use Symfony\Component\Uid\Uuid;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Contracts\EventDispatcher\Event;
 
 #[ORM\Entity(repositoryClass: Bitrix24AccountRepository::class)]
-class Bitrix24Account implements Bitrix24AccountInterface
+class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEmitterInterface
 {
     private string $accessToken;
 
@@ -42,6 +49,10 @@ class Bitrix24Account implements Bitrix24AccountInterface
     private ?string $applicationToken = null;
 
     private ?string $comment = null;
+    /**
+     * @var Event[]
+     */
+    private array $events = [];
 
     public function __construct(
         #[ORM\Id]
@@ -176,6 +187,10 @@ class Bitrix24Account implements Bitrix24AccountInterface
 
         $this->domainUrl = $newDomainUrl;
         $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new Bitrix24AccountDomainUrlChangedEvent(
+            $this->id,
+            new CarbonImmutable()
+        );
     }
 
     /**
@@ -197,6 +212,10 @@ class Bitrix24Account implements Bitrix24AccountInterface
         $this->accountStatus = Bitrix24AccountStatus::active;
         $this->applicationToken = $applicationToken;
         $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new Bitrix24AccountApplicationInstalledEvent(
+            $this->id,
+            new CarbonImmutable()
+        );
     }
 
     /**
@@ -229,6 +248,10 @@ class Bitrix24Account implements Bitrix24AccountInterface
 
         $this->accountStatus = Bitrix24AccountStatus::deleted;
         $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new Bitrix24AccountApplicationUninstalledEvent(
+            $this->id,
+            new CarbonImmutable()
+        );
     }
 
     #[Override]
@@ -272,6 +295,10 @@ class Bitrix24Account implements Bitrix24AccountInterface
         }
 
         $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new Bitrix24AccountApplicationVersionUpdatedEvent(
+            $this->id,
+            new CarbonImmutable()
+        );
     }
 
     /**
@@ -304,11 +331,25 @@ class Bitrix24Account implements Bitrix24AccountInterface
         $this->accountStatus = Bitrix24AccountStatus::blocked;
         $this->comment = $comment;
         $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new Bitrix24AccountBlockedEvent(
+            $this->id,
+            new CarbonImmutable()
+        );
     }
 
     #[Override]
     public function getComment(): ?string
     {
         return $this->comment;
+    }
+
+    /**
+     * @return Event[]
+     */
+    public function emitEvents(): array
+    {
+        $events = $this->events;
+        $this->events = [];
+        return $events;
     }
 }

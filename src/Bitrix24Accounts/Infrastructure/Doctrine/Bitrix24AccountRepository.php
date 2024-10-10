@@ -17,14 +17,13 @@ use Symfony\Component\Uid\Uuid;
 
 class Bitrix24AccountRepository extends EntityRepository implements Bitrix24AccountRepositoryInterface
 {
-    public function __construct(EntityManagerInterface $entityManager)
+    public function __construct(
+        EntityManagerInterface  $entityManager
+    )
     {
         parent::__construct($entityManager, $entityManager->getClassMetadata(Bitrix24Account::class));
     }
 
-    /**
-     * @inheritdoc
-     */
     #[Override]
     public function getById(Uuid $uuid): Bitrix24AccountInterface
     {
@@ -53,17 +52,18 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     #[Override]
     public function findByMemberId(string $memberId, ?Bitrix24AccountStatus $bitrix24AccountStatus = null, ?bool $isAdmin = null): array
     {
-        return $this->findBy(
-            [
-                'memberId' => $memberId,
-                'status' => [
-                    Bitrix24AccountStatus::new->name,
-                    Bitrix24AccountStatus::active->name,
-                ]
-            ]
-        );
-    }
+        $criteria = [
+            'memberId' => $memberId
+        ];
+        if ($bitrix24AccountStatus instanceof Bitrix24AccountStatus) {
+            $criteria['status'] = $bitrix24AccountStatus->name;
+        }
+        if ($isAdmin !== null) {
+            $criteria['isBitrix24UserAdmin'] = $isAdmin;
+        }
 
+        return $this->findBy($criteria);
+    }
 
     /**
      * @inheritdoc
@@ -88,6 +88,20 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         return $this->getEntityManager()->getRepository(Bitrix24Account::class)->findBy(
             [
                 'status' => Bitrix24AccountStatus::active,
+            ]
+        );
+    }
+
+    /**
+     * @param non-empty-string $applicationToken
+     * @return array
+     * @todo discuss are we need add this method in contract in b24phpsdk?
+     */
+    public function findByApplicationToken(string $applicationToken): array
+    {
+        return $this->getEntityManager()->getRepository(Bitrix24Account::class)->findBy(
+            [
+                'applicationToken' => $applicationToken,
             ]
         );
     }
@@ -124,7 +138,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         $criteria = [
             'domainUrl' => $domainUrl,
         ];
-        if ($bitrix24AccountStatus instanceof \Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus) {
+        if ($bitrix24AccountStatus instanceof Bitrix24AccountStatus) {
             $criteria['status'] = $bitrix24AccountStatus->name;
         }
 
