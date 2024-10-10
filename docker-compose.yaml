@@ -11,10 +11,10 @@ services:
     image: postgres:${POSTGRES_VERSION:-16}-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-b24AccountTest}
+      POSTGRES_DB: ${POSTGRES_DB:-b24phpLibTest}
       # You should definitely change the password in production
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-b24AccountTest}
-      POSTGRES_USER: ${POSTGRES_USER:-b24AccountTest}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-b24phpLibTest}
+      POSTGRES_USER: ${POSTGRES_USER:-b24phpLibTest}
       PGDATA: "/var/lib/postgresql/data/pgdata"
     container_name: bitrix24-php-lib-test-database
     ports:
