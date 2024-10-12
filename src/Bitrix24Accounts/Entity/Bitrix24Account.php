@@ -62,18 +62,26 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         #[ORM\Column(name: 'b24_user_id', type: 'integer', nullable: false)]
         #[SerializedName('b24_user_id')]
         private readonly int             $bitrix24UserId,
+        #[ORM\Column(name: 'is_b24_user_admin', type: 'boolean', nullable: false)]
+        #[SerializedName('is_b24_user_admin')]
         private readonly bool            $isBitrix24UserAdmin,
         /** bitrix24 portal unique id */
         #[ORM\Column(name: 'member_id', type: 'string', nullable: false)]
         #[SerializedName('member_id')]
         private readonly string          $memberId,
+        #[ORM\Column(name: 'domain_url', type: 'string', nullable: false)]
+        #[SerializedName('domain_url')]
         private string                   $domainUrl,
         private Bitrix24AccountStatus    $accountStatus,
         AuthToken                        $authToken,
         #[ORM\Column(name: 'created_at_utc', type: 'carbon_immutable', precision: 3, nullable: false)]
         #[Ignore]
         private readonly CarbonImmutable $createdAt,
+        #[ORM\Column(name: 'update_at_utc', type: 'carbon_immutable', precision: 3, nullable: false)]
+        #[Ignore]
         private CarbonImmutable          $updatedAt,
+        #[ORM\Column(name: 'application_version', type: 'integer', nullable: false)]
+        #[Ignore]
         private int                      $applicationVersion,
         Scope                            $applicationScope,
     )
