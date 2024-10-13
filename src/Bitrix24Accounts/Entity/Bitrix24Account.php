@@ -72,8 +72,10 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         #[ORM\Column(name: 'domain_url', type: 'string', nullable: false)]
         #[SerializedName('domain_url')]
         private string                   $domainUrl,
+        #[ORM\Column(name: 'account_status', type: 'string', nullable: false, enumType: Bitrix24AccountStatus::class)]
         private Bitrix24AccountStatus    $accountStatus,
-        AuthToken                        $authToken,
+        #[ORM\Embedded(class: AuthToken::class)]
+        AuthToken  $authToken,
         #[ORM\Column(name: 'created_at_utc', type: 'carbon_immutable', precision: 3, nullable: false)]
         #[Ignore]
         private readonly CarbonImmutable $createdAt,
