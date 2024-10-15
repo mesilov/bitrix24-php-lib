@@ -11,6 +11,7 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24Accou
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Bitrix24\SDK\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
+use Bitrix24\SDK\Lib\Bitrix24Accounts\UseCase\Command\Flusher;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Override;
@@ -19,10 +20,12 @@ use Symfony\Component\Uid\Uuid;
 class Bitrix24AccountRepository extends EntityRepository implements Bitrix24AccountRepositoryInterface
 {
     public function __construct(
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        Flusher $flusher
     )
     {
         parent::__construct($entityManager, $entityManager->getClassMetadata(Bitrix24Account::class));
+        $this->flusher = $flusher;
     }
 
     /**
@@ -48,7 +51,9 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     {
         $this->getEntityManager()->persist($bitrix24Account);
         //todo discuss add flush arg to contract or add flusher in usecases?
-        $this->getEntityManager()->flush();
+
+       // $this->getEntityManager()->flush();
+        $this->flusher->flush();
     }
 
     /**
