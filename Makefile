@@ -79,3 +79,9 @@ test-run-functional:
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:create
 	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
+
+schema-drop:
+	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
+
+schema-create:
+	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:create
