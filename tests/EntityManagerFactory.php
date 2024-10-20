@@ -27,8 +27,11 @@ class EntityManagerFactory
      */
     public static function get(): EntityManagerInterface
     {
-        $paths = [
+        /*$paths = [
             dirname(__DIR__) . '/src/Bitrix24Accounts/Entity'
+        ];*/
+        $paths = [
+            dirname(__DIR__) . '/config/doctrine/xml'
         ];
         $isDevMode = true;
 
@@ -63,7 +66,8 @@ class EntityManagerFactory
             Type::addType('carbon_immutable', CarbonImmutableType::class);
         }
 
-        $configuration = ORMSetup::createAttributeMetadataConfiguration($paths, $isDevMode);
+       // $configuration = ORMSetup::createAttributeMetadataConfiguration($paths, $isDevMode);
+        $configuration = ORMSetup::createXMLMetadataConfiguration($paths, $isDevMode);
         $connection = DriverManager::getConnection($connectionParams, $configuration);
         $entityManager = new EntityManager($connection, $configuration);
         // todo разобраться, почему так, без этого объекты оставались в кеше и при find мы получали старые значения

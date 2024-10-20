@@ -20,6 +20,7 @@ use Bitrix24\SDK\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
+use Bitrix24\SDK\Lib\Bitrix24Accounts\UseCase\Command\Flusher;
 use Bitrix24\SDK\Lib\Tests\EntityManagerFactory;
 use Bitrix24\SDK\Tests\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterfaceTest;
 use Carbon\CarbonImmutable;
@@ -63,6 +64,8 @@ class Bitrix24AccountRepositoryTest extends Bitrix24AccountRepositoryInterfaceTe
     #[Override]
     protected function createBitrix24AccountRepositoryImplementation(): Bitrix24AccountRepositoryInterface
     {
-        return new Bitrix24AccountRepository(EntityManagerFactory::get());
+        $entityManager = EntityManagerFactory::get();
+        $flusher = new Flusher($entityManager);
+        return new Bitrix24AccountRepository($entityManager,$flusher);
     }
 }
