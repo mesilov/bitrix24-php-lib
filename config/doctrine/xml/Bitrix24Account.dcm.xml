@@ -1,0 +1,42 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="Bitrix24\SDK\Lib\Bitrix24Accounts\Entity\Bitrix24Account" table="bitrix24account">
+        <id name="id" type="uuid" column="id">
+            <generator strategy="UUID"/>
+        </id>
+
+        <field name="bitrix24UserId" type="integer" column="b24_user_id" nullable="false"/>
+        <field name="isBitrix24UserAdmin" type="boolean" column="is_b24_user_admin" nullable="false"/>
+
+        <field name="memberId" type="string" column="member_id" nullable="false"/>
+
+        <field name="domainUrl" type="string" column="domain_url" nullable="false"/>
+
+        <field name="accountStatus" type="string" column="account_status" nullable="false" enumType="Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus"/>
+
+        <embedded name="authToken" class="Bitrix24\SDK\Core\Credentials\AuthToken"/>
+
+        <field name="createdAt" type="datetime_immutable" column="created_at_utc" precision="3" nullable="false"/>
+
+        <field name="updatedAt" type="datetime_immutable" column="update_at_utc" precision="3" nullable="false"/>
+
+        <field name="applicationVersion" type="integer" column="application_version" nullable="false"/>
+
+        <!-- Вложенный объект Scope -->
+        <embedded name="applicationScope" class="Bitrix24\SDK\Core\Credentials\Scope"/>
+    </entity>
+
+    <embeddable name="Bitrix24\SDK\Core\Credentials\AuthToken">
+        <field name="accessToken" type="string" column="access_token"/>
+        <field name="refreshToken" type="string" column="refresh_token"/>
+        <field name="expires" type="integer" column="expires"/>
+        <field name="expiresIn" type="integer" column="expires_in"/>
+    </embeddable>
+
+    <embeddable name="Bitrix24\SDK\Core\Credentials\Scope">
+        <field name="availableScope" type="array" column="available_scope"/>
+        <field name="currentScope" type="array" column="current_scope"/>
+    </embeddable>
+</doctrine-mapping>

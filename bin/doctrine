@@ -1,0 +1,13 @@
+#!/usr/bin/env php
+<?php
+
+use Bitrix24\SDK\Lib\Tests\EntityManagerFactory;
+use Doctrine\ORM\Tools\Console\ConsoleRunner;
+use Doctrine\ORM\Tools\Console\EntityManagerProvider\SingleManagerProvider;
+
+require_once 'tests/bootstrap.php';
+
+ConsoleRunner::run(
+    new SingleManagerProvider(EntityManagerFactory::get()),
+    []
+);

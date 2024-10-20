@@ -10,7 +10,7 @@
     "SaaS"
   ],
   "type": "library",
-  "homepage": "https://github.com/mesilov/bitrix24-app-core",
+  "homepage": "https://github.com/mesilov/bitrix24-php-lib",
   "license": "MIT",
   "authors": [
     {
@@ -18,6 +18,11 @@
       "homepage": "https://github.com/mesilov/"
     }
   ],
+  "support": {
+    "issues": "https://github.com/mesilov/bitrix24-php-lib/issues?state=open",
+    "source": "https://github.com/mesilov/bitrix24-php-lib"
+  },
+  "minimum-stability": "stable",
   "config": {
     "sort-packages": true,
     "allow-plugins": {
@@ -28,6 +33,7 @@
     "php": "8.3.*",
     "ext-json": "*",
     "ext-curl": "*",
+    "ext-bcmath": "*",
     "ext-intl": "*",
     "psr/log": "^3",
     "fig/http-message-util": "^1",
@@ -35,19 +41,26 @@
     "darsyn/ip": "^5",
     "nesbot/carbon": "^3",
     "moneyphp/money": "^4",
-    "mesilov/bitrix24-php-sdk": "^2",
-    "doctrine/orm": "^2",
-    "doctrine/doctrine-bundle": "^2",
-    "doctrine/doctrine-migrations-bundle": "^3",
+    "bitrix24/b24phpsdk": "^1",
+    "doctrine/orm": "^3",
+    "doctrine/doctrine-bundle": "*",
+    "doctrine/doctrine-migrations-bundle": "*",
+    "knplabs/knp-paginator-bundle": "^6",
     "symfony/event-dispatcher": "^7",
+    "symfony/serializer": "^7",
     "symfony/uid": "^7",
-    "knplabs/knp-paginator-bundle": "^6"
+    "symfony/yaml": "^7",
+    "symfony/cache": "^7",
+    "symfony/console": "^7",
+    "symfony/dotenv": "^7"
   },
   "require-dev": {
+    "friendsofphp/php-cs-fixer": "^3.59",
     "monolog/monolog": "^3",
     "fakerphp/faker": "^1",
     "phpstan/phpstan": "^1",
     "phpunit/phpunit": "^11",
+    "doctrine/migrations":"^3",
     "psalm/phar": "^5",
     "rector/rector": "^1",
     "roave/security-advisories": "dev-master",
@@ -62,7 +75,7 @@
   "autoload-dev": {
     "psr-4": {
       "Bitrix24\\SDK\\Lib\\Tests\\": "tests",
-      "Bitrix24\\SDK\\Tests\\":"vendor/mesilov/bitrix24-php-sdk/tests"
+      "Bitrix24\\SDK\\Tests\\": "vendor/bitrix24/b24phpsdk/tests"
     }
   }
 }
