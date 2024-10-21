@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\SDK\Lib\Bitrix24Accounts\UseCase\InstallStart;
+namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallStart;
 
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
-use Bitrix24\SDK\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
+use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Carbon\CarbonImmutable;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;

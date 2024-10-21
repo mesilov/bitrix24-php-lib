@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\SDK\Lib\Tests;
+namespace Bitrix24\Lib\Tests;
 
 use Bitrix24\SDK\Core\Exceptions\WrongConfigurationException;
 use Carbon\Doctrine\CarbonImmutableType;
@@ -16,6 +16,7 @@ use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\ORMSetup;
 use Doctrine\DBAL\Types\Type;
+
 
 class EntityManagerFactory
 {
@@ -31,7 +32,7 @@ class EntityManagerFactory
             dirname(__DIR__) . '/src/Bitrix24Accounts/Entity'
         ];*/
         $paths = [
-            dirname(__DIR__) . '/config/doctrine/xml'
+            dirname(__DIR__) . '/config/xml'
         ];
         $isDevMode = true;
 
