@@ -1,10 +1,10 @@
 <doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
-                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
-                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
-                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
-    <entity name="\Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account" table="bitrix24account">
+                  xmlns:xs="https://www.w3.org/2001/XMLSchema"
+                  xmlns:orm="https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account" table="bitrix24account">
         <id name="id" type="uuid" column="id">
-            <generator strategy="UUID"/>
+            <generator strategy="CUSTOM"/>
+            <custom-id-generator class="Symfony\Bridge\Doctrine\Types\UuidType"/>
         </id>
 
         <field name="bitrix24UserId" type="integer" column="b24_user_id" nullable="false"/>
@@ -14,7 +14,7 @@
 
         <field name="domainUrl" type="string" column="domain_url" nullable="false"/>
 
-        <field name="accountStatus" type="string" column="account_status" nullable="false" enumType="Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus"/>
+        <field name="accountStatus" type="e" column="account_status" nullable="false"/>
 
         <embedded name="authToken" class="Bitrix24\SDK\Core\Credentials\AuthToken"/>
 

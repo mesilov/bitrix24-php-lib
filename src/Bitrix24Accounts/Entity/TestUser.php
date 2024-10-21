@@ -30,6 +30,7 @@ class TestUser
     {
         $this->password = $password;
     }
+
     public function getId(): int
     {
         return $this->id;

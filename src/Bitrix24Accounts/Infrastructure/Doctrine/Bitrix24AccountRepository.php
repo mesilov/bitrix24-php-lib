@@ -19,14 +19,12 @@ use Symfony\Component\Uid\Uuid;
 
 class Bitrix24AccountRepository extends EntityRepository implements Bitrix24AccountRepositoryInterface
 {
-    private Flusher $flusher;
     public function __construct(
         EntityManagerInterface $entityManager,
-        Flusher $flusher
+        private readonly Flusher $flusher
     )
     {
         parent::__construct($entityManager, $entityManager->getClassMetadata(Bitrix24Account::class));
-        $this->flusher = $flusher;
     }
 
     /**
