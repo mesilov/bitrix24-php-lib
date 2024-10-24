@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\Command;
+namespace Bitrix24\Lib\Services;
 
 use Doctrine\ORM\EntityManagerInterface;
 

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine;
 
+use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
+use Bitrix24\Lib\Bitrix24Accounts\UseCase\SaveAccount\Handler;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
-use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
-use Bitrix24\Lib\Bitrix24Accounts\UseCase\Command\Flusher;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Override;
@@ -20,8 +20,7 @@ use Symfony\Component\Uid\Uuid;
 class Bitrix24AccountRepository extends EntityRepository implements Bitrix24AccountRepositoryInterface
 {
     public function __construct(
-        EntityManagerInterface $entityManager,
-        private readonly Flusher $flusher
+        EntityManagerInterface $entityManager
     )
     {
         parent::__construct($entityManager, $entityManager->getClassMetadata(Bitrix24Account::class));
@@ -49,9 +48,9 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     public function save(Bitrix24AccountInterface $bitrix24Account): void
     {
         $this->getEntityManager()->persist($bitrix24Account);
+
         //todo discuss add flush arg to contract or add flusher in usecases?
        // $this->getEntityManager()->flush();
-        $this->flusher->flush();
     }
 
     /**

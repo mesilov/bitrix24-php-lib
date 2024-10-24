@@ -4,7 +4,7 @@
     <entity name="Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account" table="bitrix24account">
         <id name="id" type="uuid" column="id">
             <generator strategy="CUSTOM"/>
-            <custom-id-generator class="Symfony\Bridge\Doctrine\Types\UuidType"/>
+            <custom-id-generator class="Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator"/>
         </id>
 
         <field name="bitrix24UserId" type="integer" column="b24_user_id" nullable="false"/>
@@ -28,7 +28,7 @@
         <embedded name="applicationScope" class="Bitrix24\SDK\Core\Credentials\Scope"/>
     </entity>
 
-    <embeddable name="Bitrix24\SDK\Core\Credentials\AuthToken">
+    <embeddable name="Bitrix24\SDK\Core\Credentials\AuthToken" table="auth_token">
         <field name="accessToken" type="string" column="access_token"/>
         <field name="refreshToken" type="string" column="refresh_token"/>
         <field name="expires" type="integer" column="expires"/>
