@@ -14,7 +14,7 @@
 
         <field name="domainUrl" type="string" column="domain_url" nullable="false"/>
 
-        <field name="accountStatus" type="e" column="account_status" nullable="false"/>
+        <field name="accountStatus" type="string" column="account_status" nullable="false"/>
 
         <embedded name="authToken" class="Bitrix24\SDK\Core\Credentials\AuthToken"/>
 
@@ -25,18 +25,6 @@
         <field name="applicationVersion" type="integer" column="application_version" nullable="false"/>
 
         <!-- Вложенный объект Scope -->
-        <embedded name="applicationScope" class="Bitrix24\SDK\Core\Credentials\Scope"/>
+
     </entity>
-
-    <embeddable name="Bitrix24\SDK\Core\Credentials\AuthToken" table="auth_token">
-        <field name="accessToken" type="string" column="access_token"/>
-        <field name="refreshToken" type="string" column="refresh_token"/>
-        <field name="expires" type="integer" column="expires"/>
-        <field name="expiresIn" type="integer" column="expires_in"/>
-    </embeddable>
-
-    <embeddable name="Bitrix24\SDK\Core\Credentials\Scope">
-        <field name="availableScope" type="array" column="available_scope"/>
-        <field name="currentScope" type="array" column="current_scope"/>
-    </embeddable>
 </doctrine-mapping>

@@ -28,7 +28,7 @@ class EntityManagerFactory
      */
     public static function get(): EntityManagerInterface
     {
-        /*$paths = [
+       /* $paths = [
             dirname(__DIR__) . '/src/Bitrix24Accounts/Entity'
         ];*/
         $paths = [
