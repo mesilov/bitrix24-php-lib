@@ -1,0 +1,30 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xs="https://www.w3.org/2001/XMLSchema"
+                  xmlns:orm="https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account" table="bitrix24account">
+        <id name="id" type="uuid" column="id">
+            <generator strategy="CUSTOM"/>
+            <custom-id-generator class="Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator"/>
+        </id>
+
+        <field name="bitrix24UserId" type="integer" column="b24_user_id" nullable="false"/>
+        <field name="isBitrix24UserAdmin" type="boolean" column="is_b24_user_admin" nullable="false"/>
+
+        <field name="memberId" type="string" column="member_id" nullable="false"/>
+
+        <field name="domainUrl" type="string" column="domain_url" nullable="false"/>
+
+        <field name="accountStatus" type="string" column="account_status" nullable="false"/>
+
+        <embedded name="authToken" class="Bitrix24\SDK\Core\Credentials\AuthToken"/>
+
+        <field name="createdAt" type="datetime_immutable" column="created_at_utc" precision="3" nullable="false"/>
+
+        <field name="updatedAt" type="datetime_immutable" column="update_at_utc" precision="3" nullable="false"/>
+
+        <field name="applicationVersion" type="integer" column="application_version" nullable="false"/>
+
+        <!-- Вложенный объект Scope -->
+
+    </entity>
+</doctrine-mapping>

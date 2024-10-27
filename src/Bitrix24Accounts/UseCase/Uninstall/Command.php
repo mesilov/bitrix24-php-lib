@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\SDK\Lib\Bitrix24Accounts\UseCase\Uninstall;
+namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\Uninstall;
 
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;

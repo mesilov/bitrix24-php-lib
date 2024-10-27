@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\SDK\Lib\Bitrix24Accounts\UseCase\ChangeDomainUrl;
+namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\ChangeDomainUrl;
 
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;

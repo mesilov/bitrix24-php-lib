@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\SDK\Lib\Bitrix24Accounts\UseCase\Uninstall;
+namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\Uninstall;
 
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
@@ -10,8 +10,8 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24Accou
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
-use Bitrix24\SDK\Lib\Bitrix24Accounts\Exceptions\MultipleBitrix24AccountsFoundException;
-use Bitrix24\SDK\Lib\Bitrix24Accounts\UseCase\Uninstall\Command;
+use Bitrix24\Lib\Bitrix24Accounts\Exceptions\MultipleBitrix24AccountsFoundException;
+use Bitrix24\Lib\Bitrix24Accounts\UseCase\Uninstall\Command;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 

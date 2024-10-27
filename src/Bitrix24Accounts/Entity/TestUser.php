@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Bitrix24\SDK\Lib\Bitrix24Accounts\Entity;
+namespace Bitrix24\Lib\Bitrix24Accounts\Entity;
 
 class TestUser
 {
@@ -30,6 +30,7 @@ class TestUser
     {
         $this->password = $password;
     }
+
     public function getId(): int
     {
         return $this->id;

@@ -11,25 +11,21 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\SDK\Lib\Tests\Functional\Bitrix24Accounts\UseCase\RenewAuthToken;
+namespace Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\UseCase\RenewAuthToken;
 
+use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
+use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
+use Bitrix24\Lib\Bitrix24Accounts\UseCase\RenewAuthToken\Command;
+use Bitrix24\Lib\Bitrix24Accounts\UseCase\RenewAuthToken\Handler;
+use Bitrix24\Lib\Services\Flusher;
+use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
-use Bitrix24\SDK\Core\Exceptions\WrongConfigurationException;
-use Bitrix24\SDK\Core\Response\DTO\RenewedAuthToken;
-use Bitrix24\SDK\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
-use Bitrix24\SDK\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
-use Bitrix24\SDK\Lib\Bitrix24Accounts\UseCase\Command\Flusher;
-use Bitrix24\SDK\Lib\Bitrix24Accounts\UseCase\RenewAuthToken\Command;
-use Bitrix24\SDK\Lib\Bitrix24Accounts\UseCase\RenewAuthToken\Handler;
-use Bitrix24\SDK\Lib\Tests\EntityManagerFactory;
+use Bitrix24\SDK\Core\Response\DTO\RenewedAuthToken;
 use Carbon\CarbonImmutable;
-use Doctrine\DBAL\Exception;
-use Doctrine\ORM\Exception\ORMException;
-use Doctrine\ORM\OptimisticLockException;
 use Override;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -87,8 +83,7 @@ class HandlerTest extends TestCase
     protected function setUp(): void
     {
         $entityManager = EntityManagerFactory::get();
-        $flusher = new Flusher($entityManager);
-        $this->repository = new Bitrix24AccountRepository($entityManager,$flusher);
+        $this->repository = new Bitrix24AccountRepository($entityManager);
         $this->handler = new Handler(
             new EventDispatcher(),
             $this->repository,

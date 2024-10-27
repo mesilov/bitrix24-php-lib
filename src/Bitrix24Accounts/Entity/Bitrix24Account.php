@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\SDK\Lib\Bitrix24Accounts\Entity;
+namespace Bitrix24\Lib\Bitrix24Accounts\Entity;
 
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
@@ -25,8 +25,9 @@ use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Bitrix24\SDK\Core\Exceptions\UnknownScopeCodeException;
 use Bitrix24\SDK\Core\Response\DTO\RenewedAuthToken;
-use Bitrix24\SDK\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
+use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Carbon\CarbonImmutable;
+use Doctrine\ORM\Mapping\Embedded;
 use Override;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Serializer\Annotation\Ignore;
@@ -49,6 +50,8 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     private ?string $applicationToken = null;
 
     private ?string $comment = null;
+
+    private AuthToken $authToken;
 
     /**
      * @var Event[]
@@ -74,7 +77,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         private string                   $domainUrl,
         #[ORM\Column(name: 'account_status', type: 'string', nullable: false, enumType: Bitrix24AccountStatus::class)]
         private Bitrix24AccountStatus    $accountStatus,
-        AuthToken  $authToken,
+        AuthToken $authToken,
         #[ORM\Column(name: 'created_at_utc', type: 'carbon_immutable', precision: 3, nullable: false)]
         #[Ignore]
         private readonly CarbonImmutable $createdAt,
@@ -87,6 +90,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         Scope                            $applicationScope,
     )
     {
+        $this->authToken = $authToken;
         $this->accessToken = $authToken->accessToken;
         $this->refreshToken = $authToken->refreshToken;
         $this->expires = $authToken->expires;

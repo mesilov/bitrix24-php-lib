@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\SDK\Lib\Bitrix24Accounts\Exceptions;
+namespace Bitrix24\Lib\Bitrix24Accounts\Exceptions;
 
 use DomainException;
 

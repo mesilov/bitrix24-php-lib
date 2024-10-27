@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\SDK\Lib\Bitrix24Accounts\UseCase\RenewAuthToken;
+namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\RenewAuthToken;
 
 use Bitrix24\SDK\Core\Response\DTO\RenewedAuthToken;
 
