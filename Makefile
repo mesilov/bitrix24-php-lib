@@ -69,6 +69,10 @@ lint-rector:
 	docker-compose run --rm php-cli php vendor/bin/rector process --dry-run
 lint-rector-fix:
 	docker-compose run --rm php-cli php vendor/bin/rector process
+lint-cs-fixer:
+	docker-compose run --rm php-cli php vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
+lint-cs-fixer-fix:
+	docker-compose run --rm php-cli php vendor/bin/php-cs-fixer fix --diff --verbose
 
 # unit-tests
 test-run-unit:
