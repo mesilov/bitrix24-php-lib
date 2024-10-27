@@ -41,7 +41,7 @@
     "darsyn/ip": "^5",
     "nesbot/carbon": "^3",
     "moneyphp/money": "^4",
-    "bitrix24/b24phpsdk": "^1",
+    "bitrix24/b24phpsdk": "dev-dev",
     "doctrine/orm": "^3",
     "doctrine/doctrine-bundle": "*",
     "doctrine/doctrine-migrations-bundle": "*",
