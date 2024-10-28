@@ -50,14 +50,14 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         $this->getEntityManager()->persist($bitrix24Account);
 
         //todo discuss add flush arg to contract or add flusher in usecases?
-       // $this->getEntityManager()->flush();
+        $this->getEntityManager()->flush();
     }
 
     /**
      * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
      */
     #[Override]
-    public function findByMemberId(string $memberId, ?Bitrix24AccountStatus $bitrix24AccountStatus = null, ?bool $isAdmin = null): array
+    public function findByMemberId(string $memberId, ?Bitrix24AccountStatus $bitrix24AccountStatus = null,  ?int $bitrix24UserId = null, ?bool $isAdmin = null): array
     {
         $criteria = [
             'memberId' => $memberId

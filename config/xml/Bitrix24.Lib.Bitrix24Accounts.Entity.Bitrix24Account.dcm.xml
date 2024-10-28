@@ -24,7 +24,6 @@
 
         <field name="applicationVersion" type="integer" column="application_version" nullable="false"/>
 
-        <!-- Вложенный объект Scope -->
-
+        <embedded name="applicationScope" class="Bitrix24\SDK\Core\Credentials\Scope"/>
     </entity>
 </doctrine-mapping>
