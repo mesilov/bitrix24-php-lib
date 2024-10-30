@@ -50,7 +50,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         $this->getEntityManager()->persist($bitrix24Account);
 
         //todo discuss add flush arg to contract or add flusher in usecases?
-        $this->getEntityManager()->flush();
+    //    $this->getEntityManager()->flush();
     }
 
     /**
