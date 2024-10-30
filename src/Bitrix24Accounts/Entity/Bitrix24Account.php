@@ -58,20 +58,21 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
      */
     private array $events = [];
 
+
     public function __construct(
         #[ORM\Id]
         #[ORM\Column(type: UuidType::NAME, unique: true)]
-        private  Uuid   $uuid,
+        private  Uuid  $uuid,
         #[ORM\Column(name: 'b24_user_id', type: 'integer', nullable: false)]
         #[SerializedName('b24_user_id')]
-        private readonly int             $bitrix24UserId,
+        private readonly int    $bitrix24UserId,
         #[ORM\Column(name: 'is_b24_user_admin', type: 'boolean', nullable: false)]
         #[SerializedName('is_b24_user_admin')]
-        private readonly bool            $isBitrix24UserAdmin,
+        private readonly bool   $isBitrix24UserAdmin,
         /** bitrix24 portal unique id */
         #[ORM\Column(name: 'member_id', type: 'string', nullable: false)]
         #[SerializedName('member_id')]
-        private readonly string          $memberId,
+        private readonly string $memberId,
         #[ORM\Column(name: 'domain_url', type: 'string', nullable: false)]
         #[SerializedName('domain_url')]
         private string                   $domainUrl,

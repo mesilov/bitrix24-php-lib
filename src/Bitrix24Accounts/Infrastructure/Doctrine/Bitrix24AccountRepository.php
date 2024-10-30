@@ -33,6 +33,8 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     #[Override]
     public function getById(Uuid $uuid): Bitrix24AccountInterface
     {
+       // print_r($uuid);
+     //   exit();
         $res = $this->getEntityManager()->getRepository(Bitrix24Account::class)->find($uuid);
         if ($res === null) {
             throw new Bitrix24AccountNotFoundException(sprintf('bitrix24 account not found by id %s', $uuid->toRfc4122()));
@@ -47,10 +49,12 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     #[Override]
     public function save(Bitrix24AccountInterface $bitrix24Account): void
     {
+
         $this->getEntityManager()->persist($bitrix24Account);
 
         //todo discuss add flush arg to contract or add flusher in usecases?
-    //    $this->getEntityManager()->flush();
+        $this->getEntityManager()->flush();
+
     }
 
     /**

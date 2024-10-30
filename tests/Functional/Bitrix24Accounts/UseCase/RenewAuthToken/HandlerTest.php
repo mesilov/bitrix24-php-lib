@@ -45,7 +45,7 @@ class HandlerTest extends TestCase
     public function testRenewAuthTokenWithoutBitrix24UserId(): void
     {
         $bitrix24Account = new Bitrix24Account(
-            Uuid::v4(),
+            Uuid::v7(),
             1,
             true,
             Uuid::v7()->toRfc4122(),
@@ -57,6 +57,7 @@ class HandlerTest extends TestCase
             1,
             new Scope()
         );
+
         $this->repository->save($bitrix24Account);
 
         $newAuthToken = new AuthToken('new_1', 'new_2', 3600);

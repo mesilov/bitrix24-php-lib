@@ -14,7 +14,7 @@
 
         <field name="domainUrl" type="string" column="domain_url" nullable="false"/>
 
-        <field name="accountStatus" type="string" column="account_status" nullable="false"/>
+        <field name="accountStatus" enum-type="string" column="account_status" nullable="false"/>
 
         <embedded name="authToken" class="Bitrix24\SDK\Core\Credentials\AuthToken"/>
 
