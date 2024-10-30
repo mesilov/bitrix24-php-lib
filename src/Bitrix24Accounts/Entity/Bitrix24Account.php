@@ -61,7 +61,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     public function __construct(
         #[ORM\Id]
         #[ORM\Column(type: UuidType::NAME, unique: true)]
-        private readonly Uuid            $id,
+        private  Uuid   $uuid,
         #[ORM\Column(name: 'b24_user_id', type: 'integer', nullable: false)]
         #[SerializedName('b24_user_id')]
         private readonly int             $bitrix24UserId,
@@ -100,7 +100,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     #[Override]
     public function getId(): Uuid
     {
-        return $this->id;
+        return $this->uuid;
     }
 
     #[Override]
@@ -150,7 +150,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
                 sprintf(
                     'member id %s for bitrix24 account %s for domain %s mismatch with member id %s for renewed access token',
                     $this->memberId,
-                    $this->id->toRfc4122(),
+                    $this->uuid->toRfc4122(),
                     $this->domainUrl,
                     $renewedAuthToken->memberId,
                 )
@@ -192,7 +192,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
             throw new InvalidArgumentException(
                 sprintf(
                     'bitrix24 account %s for domain %s must be in active or new state, now account in %s state. domain url cannot be changed',
-                    $this->id->toRfc4122(),
+                    $this->uuid->toRfc4122(),
                     $this->domainUrl,
                     $this->accountStatus->name
                 )
@@ -202,7 +202,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         $this->domainUrl = $newDomainUrl;
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24AccountDomainUrlChangedEvent(
-            $this->id,
+            $this->uuid,
             new CarbonImmutable()
         );
     }
@@ -227,7 +227,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         $this->applicationToken = $applicationToken;
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24AccountApplicationInstalledEvent(
-            $this->id,
+            $this->uuid,
             new CarbonImmutable()
         );
     }
@@ -254,7 +254,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
                     'application token «%s» mismatch with application token «%s» for bitrix24 account %s for domain %s',
                     $applicationToken,
                     $this->applicationToken,
-                    $this->id->toRfc4122(),
+                    $this->uuid->toRfc4122(),
                     $this->domainUrl
                 )
             );
@@ -263,7 +263,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         $this->accountStatus = Bitrix24AccountStatus::deleted;
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24AccountApplicationUninstalledEvent(
-            $this->id,
+            $this->uuid,
             new CarbonImmutable()
         );
     }
@@ -310,7 +310,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
 
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24AccountApplicationVersionUpdatedEvent(
-            $this->id,
+            $this->uuid,
             new CarbonImmutable()
         );
     }
@@ -346,7 +346,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         $this->comment = $comment;
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24AccountBlockedEvent(
-            $this->id,
+            $this->uuid,
             new CarbonImmutable()
         );
     }
