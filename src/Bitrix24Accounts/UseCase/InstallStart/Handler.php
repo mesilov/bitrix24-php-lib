@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallStart;
 
+use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
@@ -17,6 +18,7 @@ readonly class Handler
     public function __construct(
         private EventDispatcherInterface           $eventDispatcher,
         private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
+        private Flusher                            $flusher,
         private LoggerInterface                    $logger
     )
     {
@@ -45,6 +47,7 @@ readonly class Handler
                 $command->applicationScope
             )
         );
+        $this->flusher->flush();
         $this->eventDispatcher->dispatch(
             new Bitrix24AccountCreatedEvent(
                 $command->uuid,
