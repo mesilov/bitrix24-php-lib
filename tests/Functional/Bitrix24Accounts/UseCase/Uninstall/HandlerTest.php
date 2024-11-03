@@ -19,6 +19,7 @@ use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Bitrix24Accounts;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationUninstalledEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
@@ -28,7 +29,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
 
 #[CoversClass(Bitrix24Accounts\UseCase\Uninstall\Handler::class)]
@@ -36,8 +39,8 @@ class HandlerTest extends TestCase
 {
     private Bitrix24Accounts\UseCase\Uninstall\Handler $handler;
     private Flusher $flusher;
-
     private Bitrix24AccountRepositoryInterface $repository;
+    private TraceableEventDispatcher $eventDispatcher;
 
     #[Test]
     public function testUninstallWithHappyPath(): void
@@ -67,6 +70,10 @@ class HandlerTest extends TestCase
 
         $updated = $this->repository->getById($bitrix24Account->getId());
         $this->assertEquals(Bitrix24AccountStatus::deleted, $updated->getStatus());
+
+        $this->assertTrue(in_array(
+            Bitrix24AccountApplicationUninstalledEvent::class,
+            $this->eventDispatcher->getOrphanedEvents()));
     }
 
     #[Override]
@@ -75,8 +82,9 @@ class HandlerTest extends TestCase
         $entityManager = EntityManagerFactory::get();
         $this->repository = new Bitrix24AccountRepository($entityManager);
         $this->flusher = new Flusher($entityManager);
+        $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $this->handler = new Bitrix24Accounts\UseCase\Uninstall\Handler(
-            new EventDispatcher(),
+            $this->eventDispatcher,
             $this->repository,
             $this->flusher,
             new NullLogger()

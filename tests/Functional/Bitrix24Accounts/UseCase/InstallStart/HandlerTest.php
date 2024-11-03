@@ -20,6 +20,8 @@ use Bitrix24\Lib\Bitrix24Accounts;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountDomainUrlChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
@@ -34,7 +36,9 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Random\RandomException;
+use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
 
 #[CoversClass(Bitrix24Accounts\UseCase\InstallStart\Handler::class)]
@@ -43,6 +47,7 @@ class HandlerTest extends TestCase
     private Bitrix24Accounts\UseCase\InstallStart\Handler $handler;
     private Flusher $flusher;
     private Bitrix24AccountRepositoryInterface $repository;
+    private TraceableEventDispatcher $eventDispatcher;
 
     /**
      * @throws InvalidArgumentException
@@ -82,6 +87,11 @@ class HandlerTest extends TestCase
         $this->assertEquals($authToken, $account->getAuthToken());
         $this->assertEquals($appVersion, $account->getApplicationVersion());
         $this->assertEquals($scope, $account->getApplicationScope());
+
+
+        $this->assertTrue(in_array(
+            Bitrix24AccountCreatedEvent::class,
+            $this->eventDispatcher->getOrphanedEvents()));
     }
 
     #[Override]
@@ -90,8 +100,9 @@ class HandlerTest extends TestCase
         $entityManager = EntityManagerFactory::get();
         $this->repository = new Bitrix24AccountRepository($entityManager);
         $this->flusher = new Flusher($entityManager);
+        $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $this->handler = new Bitrix24Accounts\UseCase\InstallStart\Handler(
-            new EventDispatcher(),
+            $this->eventDispatcher,
             $this->repository,
             $this->flusher,
             new NullLogger()

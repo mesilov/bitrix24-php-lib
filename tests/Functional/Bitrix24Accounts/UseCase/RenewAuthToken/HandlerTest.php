@@ -31,15 +31,17 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
 
 #[CoversClass(Handler::class)]
 class HandlerTest extends TestCase
 {
     private Handler $handler;
-
     private Bitrix24AccountRepositoryInterface $repository;
+    private TraceableEventDispatcher $eventDispatcher;
 
     #[Test]
     public function testRenewAuthTokenWithoutBitrix24UserId(): void
@@ -77,6 +79,9 @@ class HandlerTest extends TestCase
         $updated = $this->repository->getById($bitrix24Account->getId());
         $this->assertEquals($newAuthToken->accessToken, $updated->getAuthToken()->accessToken);
         $this->assertEquals($newAuthToken->refreshToken, $updated->getAuthToken()->refreshToken);
+
+        // на продлении токенов событий не бросаем
+        $this->assertCount(0, $this->eventDispatcher->getOrphanedEvents());
     }
 
 
@@ -86,8 +91,9 @@ class HandlerTest extends TestCase
         $entityManager = EntityManagerFactory::get();
         $this->repository = new Bitrix24AccountRepository($entityManager);
         $this->flusher = new Flusher($entityManager);
+        $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $this->handler = new Handler(
-            new EventDispatcher(),
+            $this->eventDispatcher,
             $this->repository,
             $this->flusher,
             new NullLogger()
