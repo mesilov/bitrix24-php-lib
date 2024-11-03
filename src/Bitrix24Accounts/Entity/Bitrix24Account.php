@@ -62,23 +62,23 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     public function __construct(
         #[ORM\Id]
         #[ORM\Column(type: UuidType::NAME, unique: true)]
-        private  Uuid  $uuid,
+        private  Uuid           $id,
         #[ORM\Column(name: 'b24_user_id', type: 'integer', nullable: false)]
         #[SerializedName('b24_user_id')]
         private readonly int    $bitrix24UserId,
         #[ORM\Column(name: 'is_b24_user_admin', type: 'boolean', nullable: false)]
         #[SerializedName('is_b24_user_admin')]
-        private readonly bool   $isBitrix24UserAdmin,
+        private readonly bool            $isBitrix24UserAdmin,
         /** bitrix24 portal unique id */
         #[ORM\Column(name: 'member_id', type: 'string', nullable: false)]
         #[SerializedName('member_id')]
-        private readonly string $memberId,
+        private readonly string          $memberId,
         #[ORM\Column(name: 'domain_url', type: 'string', nullable: false)]
         #[SerializedName('domain_url')]
         private string                   $domainUrl,
         #[ORM\Column(name: 'account_status', type: 'string', nullable: false, enumType: Bitrix24AccountStatus::class)]
-        private Bitrix24AccountStatus    $accountStatus,
-        AuthToken $authToken,
+        private Bitrix24AccountStatus    $status,
+        AuthToken                        $authToken,
         #[ORM\Column(name: 'created_at_utc', type: 'carbon_immutable', precision: 3, nullable: false)]
         #[Ignore]
         private readonly CarbonImmutable $createdAt,
@@ -101,7 +101,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     #[Override]
     public function getId(): Uuid
     {
-        return $this->uuid;
+        return $this->id;
     }
 
     #[Override]
@@ -131,7 +131,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     #[Override]
     public function getStatus(): Bitrix24AccountStatus
     {
-        return $this->accountStatus;
+        return $this->status;
     }
 
     #[Override]
@@ -151,7 +151,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
                 sprintf(
                     'member id %s for bitrix24 account %s for domain %s mismatch with member id %s for renewed access token',
                     $this->memberId,
-                    $this->uuid->toRfc4122(),
+                    $this->id->toRfc4122(),
                     $this->domainUrl,
                     $renewedAuthToken->memberId,
                 )
@@ -189,13 +189,13 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
             throw new InvalidArgumentException('new domain url cannot be empty');
         }
 
-        if (Bitrix24AccountStatus::blocked === $this->accountStatus || Bitrix24AccountStatus::deleted === $this->accountStatus) {
+        if (Bitrix24AccountStatus::blocked === $this->status || Bitrix24AccountStatus::deleted === $this->status) {
             throw new InvalidArgumentException(
                 sprintf(
                     'bitrix24 account %s for domain %s must be in active or new state, now account in %s state. domain url cannot be changed',
-                    $this->uuid->toRfc4122(),
+                    $this->id->toRfc4122(),
                     $this->domainUrl,
-                    $this->accountStatus->name
+                    $this->status->name
                 )
             );
         }
@@ -203,7 +203,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         $this->domainUrl = $newDomainUrl;
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24AccountDomainUrlChangedEvent(
-            $this->uuid,
+            $this->id,
             new CarbonImmutable()
         );
     }
@@ -214,21 +214,21 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     #[Override]
     public function applicationInstalled(string $applicationToken): void
     {
-        if (Bitrix24AccountStatus::new !== $this->accountStatus) {
+        if (Bitrix24AccountStatus::new !== $this->status) {
             throw new InvalidArgumentException(sprintf(
                 'for finish installation bitrix24 account must be in status «new», current status - «%s»',
-                $this->accountStatus->name));
+                $this->status->name));
         }
 
         if ($applicationToken === '') {
             throw new InvalidArgumentException('application token cannot be empty');
         }
 
-        $this->accountStatus = Bitrix24AccountStatus::active;
+        $this->status = Bitrix24AccountStatus::active;
         $this->applicationToken = $applicationToken;
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24AccountApplicationInstalledEvent(
-            $this->uuid,
+            $this->id,
             new CarbonImmutable()
         );
     }
@@ -243,10 +243,10 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
             throw new InvalidArgumentException('application token cannot be empty');
         }
 
-        if (Bitrix24AccountStatus::active !== $this->accountStatus) {
+        if (Bitrix24AccountStatus::active !== $this->status) {
             throw new InvalidArgumentException(sprintf(
                 'for uninstall account must be in status «active», current status - «%s»',
-                $this->accountStatus->name));
+                $this->status->name));
         }
 
         if ($this->applicationToken !== $applicationToken) {
@@ -255,16 +255,16 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
                     'application token «%s» mismatch with application token «%s» for bitrix24 account %s for domain %s',
                     $applicationToken,
                     $this->applicationToken,
-                    $this->uuid->toRfc4122(),
+                    $this->id->toRfc4122(),
                     $this->domainUrl
                 )
             );
         }
 
-        $this->accountStatus = Bitrix24AccountStatus::deleted;
+        $this->status = Bitrix24AccountStatus::deleted;
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24AccountApplicationUninstalledEvent(
-            $this->uuid,
+            $this->id,
             new CarbonImmutable()
         );
     }
@@ -293,8 +293,8 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     #[Override]
     public function updateApplicationVersion(int $version, ?Scope $newScope): void
     {
-        if (Bitrix24AccountStatus::active !== $this->accountStatus) {
-            throw new InvalidArgumentException(sprintf('account must be in status «active», but now account in status «%s»', $this->accountStatus->name));
+        if (Bitrix24AccountStatus::active !== $this->status) {
+            throw new InvalidArgumentException(sprintf('account must be in status «active», but now account in status «%s»', $this->status->name));
         }
 
         if ($this->applicationVersion >= $version) {
@@ -311,7 +311,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
 
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24AccountApplicationVersionUpdatedEvent(
-            $this->uuid,
+            $this->id,
             new CarbonImmutable()
         );
     }
@@ -322,13 +322,13 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     #[Override]
     public function markAsActive(?string $comment): void
     {
-        if (Bitrix24AccountStatus::blocked !== $this->accountStatus) {
+        if (Bitrix24AccountStatus::blocked !== $this->status) {
             throw new InvalidArgumentException(
                 sprintf('you can activate account only in status blocked, now account in status %s',
-                    $this->accountStatus->name));
+                    $this->status->name));
         }
 
-        $this->accountStatus = Bitrix24AccountStatus::active;
+        $this->status = Bitrix24AccountStatus::active;
         $this->comment = $comment;
         $this->updatedAt = new CarbonImmutable();
     }
@@ -339,15 +339,15 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     #[Override]
     public function markAsBlocked(?string $comment): void
     {
-        if (Bitrix24AccountStatus::deleted === $this->accountStatus) {
+        if (Bitrix24AccountStatus::deleted === $this->status) {
             throw new InvalidArgumentException('you cannot block account in status «deleted»');
         }
 
-        $this->accountStatus = Bitrix24AccountStatus::blocked;
+        $this->status = Bitrix24AccountStatus::blocked;
         $this->comment = $comment;
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24AccountBlockedEvent(
-            $this->uuid,
+            $this->id,
             new CarbonImmutable()
         );
     }
