@@ -9,12 +9,25 @@
 export COMPOSE_HTTP_TIMEOUT=120
 export DOCKER_CLIENT_TIMEOUT=120
 
+# load default and personal env-variables
+ENV := $(PWD)/.env
+ENV_LOCAL := $(PWD)/.env.local
+include $(ENV)
+-include $(ENV_LOCAL)
+
 default:
 	@echo "make needs target:"
 	@egrep -e '^\S+' ./Makefile | grep -v default | sed -r 's/://' | sed -r 's/^/ - /'
 
 %:
 	@: # silence
+
+# Rule to print all environment variables for debugging
+debug-print-env:
+	@echo "DATABASE_HOST=$(DATABASE_HOST)"
+	@echo "DATABASE_NAME=$(DATABASE_NAME)"
+	@echo "DATABASE_USER=$(DATABASE_USER)"
+	@echo "DATABASE_PASSWORD=$(DATABASE_PASSWORD)"
 
 init:
 	@echo "remove all containers"
@@ -79,7 +92,7 @@ test-run-unit:
 	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=unit_tests --display-warnings --testdox
 
 # functional-tests, work with test database
-test-run-functional:
+test-run-functional: debug-print-env
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:create
 	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox

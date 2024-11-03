@@ -13,35 +13,36 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Unit\Bitrix24Accounts\Entity;
 
+use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
-use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Tests\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterfaceTest;
 use Carbon\CarbonImmutable;
-use Override;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * @internal
+ */
 #[CoversClass(Bitrix24Account::class)]
 class Bitrix24AccountTest extends Bitrix24AccountInterfaceTest
 {
-    #[Override]
+    #[\Override]
     protected function createBitrix24AccountImplementation(
-        Uuid                  $uuid,
-        int                   $bitrix24UserId,
-        bool                  $isBitrix24UserAdmin,
-        string                $memberId,
-        string                $domainUrl,
+        Uuid $uuid,
+        int $bitrix24UserId,
+        bool $isBitrix24UserAdmin,
+        string $memberId,
+        string $domainUrl,
         Bitrix24AccountStatus $bitrix24AccountStatus,
-        AuthToken             $authToken,
-        CarbonImmutable       $createdAt,
-        CarbonImmutable       $updatedAt,
-        int                   $applicationVersion,
-        Scope                 $applicationScope
-    ): Bitrix24AccountInterface
-    {
+        AuthToken $authToken,
+        CarbonImmutable $createdAt,
+        CarbonImmutable $updatedAt,
+        int $applicationVersion,
+        Scope $applicationScope
+    ): Bitrix24AccountInterface {
         return new Bitrix24Account(
             $uuid,
             $bitrix24UserId,
