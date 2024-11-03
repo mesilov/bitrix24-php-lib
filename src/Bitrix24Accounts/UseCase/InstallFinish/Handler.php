@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallFinish;
 
+use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
@@ -18,6 +19,7 @@ readonly class Handler
     public function __construct(
         private EventDispatcherInterface           $eventDispatcher,
         private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
+        private Flusher                            $flusher,
         private LoggerInterface                    $logger
     )
     {
@@ -35,10 +37,10 @@ readonly class Handler
             'b24_user_id' => $command->bitrix24UserId
         ]);
 
-        //todo discuss are we need add bitrix24UserId in contract?
         $accounts = $this->bitrix24AccountRepository->findByMemberId(
             $command->memberId,
-            Bitrix24AccountStatus::new
+            Bitrix24AccountStatus::new,
+            $command->bitrix24UserId
         );
         if ($accounts === []) {
             throw new Bitrix24AccountNotFoundException(sprintf(
@@ -63,6 +65,7 @@ readonly class Handler
         $targetAccount->applicationInstalled($command->applicationToken);
 
         $this->bitrix24AccountRepository->save($targetAccount);
+        $this->flusher->flush();
         foreach ($targetAccount->emitEvents() as $event) {
             $this->eventDispatcher->dispatch($event);
         }
