@@ -107,7 +107,6 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     /**
      * @param non-empty-string $applicationToken
      * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
-     * @todo discuss are we need add this method in contract in b24phpsdk?
      */
     public function findByApplicationToken(string $applicationToken): array
     {
