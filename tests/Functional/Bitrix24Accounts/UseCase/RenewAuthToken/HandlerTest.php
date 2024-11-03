@@ -85,9 +85,11 @@ class HandlerTest extends TestCase
     {
         $entityManager = EntityManagerFactory::get();
         $this->repository = new Bitrix24AccountRepository($entityManager);
+        $this->flusher = new Flusher($entityManager);
         $this->handler = new Handler(
             new EventDispatcher(),
             $this->repository,
+            $this->flusher,
             new NullLogger()
         );
     }
