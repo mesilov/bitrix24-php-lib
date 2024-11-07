@@ -25,18 +25,11 @@ use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Bitrix24\SDK\Core\Exceptions\UnknownScopeCodeException;
 use Bitrix24\SDK\Core\Response\DTO\RenewedAuthToken;
-use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Carbon\CarbonImmutable;
-use Doctrine\ORM\Mapping\Embedded;
 use Override;
-use Symfony\Bridge\Doctrine\Types\UuidType;
-use Symfony\Component\Serializer\Annotation\Ignore;
-use Symfony\Component\Serializer\Annotation\SerializedName;
 use Symfony\Component\Uid\Uuid;
-use Doctrine\ORM\Mapping as ORM;
 use Symfony\Contracts\EventDispatcher\Event;
 
-#[ORM\Entity(repositoryClass: Bitrix24AccountRepository::class)]
 class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEmitterInterface
 {
     private string $accessToken;
@@ -60,33 +53,16 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
 
 
     public function __construct(
-        #[ORM\Id]
-        #[ORM\Column(type: UuidType::NAME, unique: true)]
         private  Uuid           $id,
-        #[ORM\Column(name: 'b24_user_id', type: 'integer', nullable: false)]
-        #[SerializedName('b24_user_id')]
         private readonly int    $bitrix24UserId,
-        #[ORM\Column(name: 'is_b24_user_admin', type: 'boolean', nullable: false)]
-        #[SerializedName('is_b24_user_admin')]
         private readonly bool            $isBitrix24UserAdmin,
         /** bitrix24 portal unique id */
-        #[ORM\Column(name: 'member_id', type: 'string', nullable: false)]
-        #[SerializedName('member_id')]
         private readonly string          $memberId,
-        #[ORM\Column(name: 'domain_url', type: 'string', nullable: false)]
-        #[SerializedName('domain_url')]
         private string                   $domainUrl,
-        #[ORM\Column(name: 'account_status', type: 'string', nullable: false, enumType: Bitrix24AccountStatus::class)]
         private Bitrix24AccountStatus    $status,
         AuthToken                        $authToken,
-        #[ORM\Column(name: 'created_at_utc', type: 'carbon_immutable', precision: 3, nullable: false)]
-        #[Ignore]
         private readonly CarbonImmutable $createdAt,
-        #[ORM\Column(name: 'update_at_utc', type: 'carbon_immutable', precision: 3, nullable: false)]
-        #[Ignore]
         private CarbonImmutable          $updatedAt,
-        #[ORM\Column(name: 'application_version', type: 'integer', nullable: false)]
-        #[Ignore]
         private int                      $applicationVersion,
         Scope                            $applicationScope,
     )

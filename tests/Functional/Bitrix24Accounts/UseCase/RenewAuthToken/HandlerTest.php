@@ -40,6 +40,7 @@ use Symfony\Component\Uid\Uuid;
 class HandlerTest extends TestCase
 {
     private Handler $handler;
+    private Flusher $flusher;
     private Bitrix24AccountRepositoryInterface $repository;
     private TraceableEventDispatcher $eventDispatcher;
 
@@ -61,6 +62,8 @@ class HandlerTest extends TestCase
         );
 
         $this->repository->save($bitrix24Account);
+
+        $this->flusher->flush();
 
         $newAuthToken = new AuthToken('new_1', 'new_2', 3600);
         $this->handler->handle(
