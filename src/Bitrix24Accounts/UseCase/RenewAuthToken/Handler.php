@@ -62,6 +62,7 @@ readonly class Handler
         }
 
         $targetAccount = $accounts[0];
+
         /**
          * @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $targetAccount
          */
