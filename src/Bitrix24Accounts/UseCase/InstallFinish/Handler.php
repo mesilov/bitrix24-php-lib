@@ -17,13 +17,11 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 readonly class Handler
 {
     public function __construct(
-        private EventDispatcherInterface           $eventDispatcher,
+        private EventDispatcherInterface $eventDispatcher,
         private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
-        private Flusher                            $flusher,
-        private LoggerInterface                    $logger
-    )
-    {
-    }
+        private Flusher $flusher,
+        private LoggerInterface $logger
+    ) {}
 
     /**
      * @throws Bitrix24AccountNotFoundException
@@ -34,7 +32,7 @@ readonly class Handler
             'b24_domain_url' => $command->domainUrl,
             'b24_member_id' => $command->memberId,
             'b24_application_id' => $command->applicationToken,
-            'b24_user_id' => $command->bitrix24UserId
+            'b24_user_id' => $command->bitrix24UserId,
         ]);
 
         $accounts = $this->bitrix24AccountRepository->findByMemberId(
@@ -42,7 +40,7 @@ readonly class Handler
             Bitrix24AccountStatus::new,
             $command->bitrix24UserId
         );
-        if ($accounts === []) {
+        if ([] === $accounts) {
             throw new Bitrix24AccountNotFoundException(sprintf(
                 'bitrix24 account for domain %s with member id %s in status «new» not found',
                 $command->domainUrl,
@@ -59,9 +57,7 @@ readonly class Handler
         }
 
         $targetAccount = $accounts[0];
-        /**
-         * @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $targetAccount
-         */
+        // @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $targetAccount
         $targetAccount->applicationInstalled($command->applicationToken);
 
         $this->bitrix24AccountRepository->save($targetAccount);

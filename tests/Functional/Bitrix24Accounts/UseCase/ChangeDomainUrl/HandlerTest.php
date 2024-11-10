@@ -13,20 +13,16 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\UseCase\ChangeDomainUrl;
 
-use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
+use Bitrix24\Lib\Bitrix24Accounts;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
-use Bitrix24\Lib\Bitrix24Accounts;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
-use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
+use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountDomainUrlChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
-use Bitrix24\SDK\Core\Credentials\AuthToken;
-use Bitrix24\SDK\Core\Credentials\Scope;
-use Carbon\CarbonImmutable;
-use Override;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
@@ -34,6 +30,9 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * @internal
+ */
 #[CoversClass(Bitrix24Accounts\UseCase\ChangeDomainUrl\Handler::class)]
 class HandlerTest extends TestCase
 {
@@ -43,43 +42,7 @@ class HandlerTest extends TestCase
     private Bitrix24AccountRepositoryInterface $repository;
     private TraceableEventDispatcher $eventDispatcher;
 
-    #[Test]
-    public function testRenewAuthTokenWithoutBitrix24UserId(): void
-    {
-        $oldDomainUrl = Uuid::v7()->toRfc4122() . '-test.bitrix24.com';
-        $bitrix24Account = new Bitrix24Account(
-            Uuid::v7(),
-            1,
-            true,
-            Uuid::v7()->toRfc4122(),
-            $oldDomainUrl,
-            Bitrix24AccountStatus::active,
-            new AuthToken('old_1', 'old_2', 3600),
-            new CarbonImmutable(),
-            new CarbonImmutable(),
-            1,
-            new Scope()
-        );
-        $this->repository->save($bitrix24Account);
-        $this->flusher->flush();
-
-        $newDomainUrl = 'new' . $oldDomainUrl;
-        $this->handler->handle(
-            new Bitrix24Accounts\UseCase\ChangeDomainUrl\Command(
-                $oldDomainUrl,
-                $newDomainUrl
-            )
-        );
-
-        $updated = $this->repository->getById($bitrix24Account->getId());
-        $this->assertEquals($newDomainUrl, $updated->getDomainUrl());
-
-        $this->assertTrue(in_array(
-            Bitrix24AccountDomainUrlChangedEvent::class,
-            $this->eventDispatcher->getOrphanedEvents()));
-    }
-
-    #[Override]
+    #[\Override]
     protected function setUp(): void
     {
         $entityManager = EntityManagerFactory::get();
@@ -92,5 +55,84 @@ class HandlerTest extends TestCase
             $this->flusher,
             new NullLogger()
         );
+    }
+
+    #[Test]
+    #[TestDox('Test change domain url with happy path - one account')]
+    public function testChangeDomainUrlWithHappyPath(): void
+    {
+        $oldDomainUrl = Uuid::v7()->toRfc4122().'-test.bitrix24.com';
+        $newDomainUrl = 'new-'.$oldDomainUrl;
+
+        $bitrix24Account = (new Bitrix24AccountBuilder())
+            ->withDomainUrl($oldDomainUrl)
+            ->build()
+        ;
+        $this->repository->save($bitrix24Account);
+        $this->flusher->flush();
+
+        $this->handler->handle(
+            new Bitrix24Accounts\UseCase\ChangeDomainUrl\Command(
+                $oldDomainUrl,
+                $newDomainUrl
+            )
+        );
+
+        $updated = $this->repository->getById($bitrix24Account->getId());
+        $this->assertEquals($newDomainUrl, $updated->getDomainUrl());
+
+        $this->assertTrue(in_array(
+            Bitrix24AccountDomainUrlChangedEvent::class,
+            $this->eventDispatcher->getOrphanedEvents()
+        ));
+    }
+
+    #[Test]
+    #[TestDox('Test change domain url with happy path - many accounts')]
+    public function testChangeDomainUrlWithHappyPathForManyAccounts(): void
+    {
+        $oldDomainUrl = Uuid::v7()->toRfc4122().'-test.bitrix24.com';
+        $newDomainUrl = 'new-'.$oldDomainUrl;
+        $b24MemberId = Uuid::v7()->toRfc4122();
+
+        $bitrix24AccountA = (new Bitrix24AccountBuilder())
+            ->withDomainUrl($oldDomainUrl)
+            ->withMemberId($b24MemberId)
+            ->build();
+        $this->repository->save($bitrix24AccountA);
+
+        $bitrix24AccountB = (new Bitrix24AccountBuilder())
+            ->withDomainUrl($oldDomainUrl)
+            ->withMemberId($b24MemberId)
+            ->build();
+        $this->repository->save($bitrix24AccountB);
+
+        $this->flusher->flush();
+
+        $this->handler->handle(
+            new Bitrix24Accounts\UseCase\ChangeDomainUrl\Command(
+                $oldDomainUrl,
+                $newDomainUrl
+            )
+        );
+
+        $accounts = $this->repository->findByMemberId($b24MemberId);
+        foreach ($accounts as $account) {
+            $this->assertSame(
+                $account->getDomainUrl(),
+                $newDomainUrl,
+                sprintf(
+                    'domain url «%s» mismatch with expected «%s» for account «%s»',
+                    $account->getDomainUrl(),
+                    $newDomainUrl,
+                    $account->getId()->toRfc4122()
+                )
+            );
+        }
+
+        $this->assertTrue(in_array(
+            Bitrix24AccountDomainUrlChangedEvent::class,
+            $this->eventDispatcher->getOrphanedEvents()
+        ));
     }
 }

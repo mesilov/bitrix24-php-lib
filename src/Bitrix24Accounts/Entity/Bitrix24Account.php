@@ -51,22 +51,20 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
      */
     private array $events = [];
 
-
     public function __construct(
-        private  Uuid           $id,
-        private readonly int    $bitrix24UserId,
-        private readonly bool            $isBitrix24UserAdmin,
+        private Uuid $id,
+        private readonly int $bitrix24UserId,
+        private readonly bool $isBitrix24UserAdmin,
         /** bitrix24 portal unique id */
-        private readonly string          $memberId,
-        private string                   $domainUrl,
-        private Bitrix24AccountStatus    $status,
-        AuthToken                        $authToken,
+        private readonly string $memberId,
+        private string $domainUrl,
+        private Bitrix24AccountStatus $status,
+        AuthToken $authToken,
         private readonly CarbonImmutable $createdAt,
-        private CarbonImmutable          $updatedAt,
-        private int                      $applicationVersion,
-        Scope                            $applicationScope,
-    )
-    {
+        private CarbonImmutable $updatedAt,
+        private int $applicationVersion,
+        Scope $applicationScope,
+    ) {
         $this->authToken = $authToken;
         $this->accessToken = $authToken->accessToken;
         $this->refreshToken = $authToken->refreshToken;
@@ -161,7 +159,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     #[Override]
     public function changeDomainUrl(string $newDomainUrl): void
     {
-        if ($newDomainUrl === '') {
+        if ('' === $newDomainUrl) {
             throw new InvalidArgumentException('new domain url cannot be empty');
         }
 
@@ -193,10 +191,11 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         if (Bitrix24AccountStatus::new !== $this->status) {
             throw new InvalidArgumentException(sprintf(
                 'for finish installation bitrix24 account must be in status «new», current status - «%s»',
-                $this->status->name));
+                $this->status->name
+            ));
         }
 
-        if ($applicationToken === '') {
+        if ('' === $applicationToken) {
             throw new InvalidArgumentException('application token cannot be empty');
         }
 
@@ -215,14 +214,15 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     #[Override]
     public function applicationUninstalled(string $applicationToken): void
     {
-        if ($applicationToken === '') {
+        if ('' === $applicationToken) {
             throw new InvalidArgumentException('application token cannot be empty');
         }
 
         if (Bitrix24AccountStatus::active !== $this->status) {
             throw new InvalidArgumentException(sprintf(
                 'for uninstall account must be in status «active», current status - «%s»',
-                $this->status->name));
+                $this->status->name
+            ));
         }
 
         if ($this->applicationToken !== $applicationToken) {
@@ -275,13 +275,16 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
 
         if ($this->applicationVersion >= $version) {
             throw new InvalidArgumentException(
-                sprintf('you cannot downgrade application version or set some version, current version «%s», but you try to upgrade to «%s»',
+                sprintf(
+                    'you cannot downgrade application version or set some version, current version «%s», but you try to upgrade to «%s»',
                     $this->applicationVersion,
-                    $version));
+                    $version
+                )
+            );
         }
 
         $this->applicationVersion = $version;
-        if ($newScope instanceof \Bitrix24\SDK\Core\Credentials\Scope) {
+        if ($newScope instanceof Scope) {
             $this->applicationScope = $newScope->getScopeCodes();
         }
 
@@ -300,8 +303,11 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     {
         if (Bitrix24AccountStatus::blocked !== $this->status) {
             throw new InvalidArgumentException(
-                sprintf('you can activate account only in status blocked, now account in status %s',
-                    $this->status->name));
+                sprintf(
+                    'you can activate account only in status «blocked», now account in status «%s»',
+                    $this->status->name
+                )
+            );
         }
 
         $this->status = Bitrix24AccountStatus::active;
@@ -342,6 +348,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     {
         $events = $this->events;
         $this->events = [];
+
         return $events;
     }
 }

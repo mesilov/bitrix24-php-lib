@@ -13,20 +13,18 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\UseCase\InstallFinish;
 
-use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Bitrix24Accounts;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
+use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
-use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountDomainUrlChangedEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationInstalledEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
-use Bitrix24\SDK\Core\Credentials\AuthToken;
-use Bitrix24\SDK\Core\Credentials\Scope;
-use Carbon\CarbonImmutable;
 use Override;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
@@ -41,22 +39,15 @@ class HandlerTest extends TestCase
     private Flusher $flusher;
     private Bitrix24AccountRepositoryInterface $repository;
     private TraceableEventDispatcher $eventDispatcher;
+
     #[Test]
-    public function testRenewAuthTokenWithoutBitrix24UserId(): void
+    #[TestDox('test finish installation with happy path')]
+    public function testFinishInstallationWithHappyPath(): void
     {
-        $bitrix24Account = new Bitrix24Account(
-            Uuid::v7(),
-            1,
-            true,
-            Uuid::v7()->toRfc4122(),
-            Uuid::v7()->toRfc4122() . '-test.bitrix24.com',
-            Bitrix24AccountStatus::new,
-            new AuthToken('old_1', 'old_2', 3600),
-            new CarbonImmutable(),
-            new CarbonImmutable(),
-            1,
-            new Scope()
-        );
+        $bitrix24Account = (new Bitrix24AccountBuilder())
+            ->withStatus(Bitrix24AccountStatus::new)
+            ->build();
+
         $this->repository->save($bitrix24Account);
         $this->flusher->flush();
 
@@ -71,11 +62,19 @@ class HandlerTest extends TestCase
         );
 
         $updated = $this->repository->getById($bitrix24Account->getId());
-        $this->assertTrue($updated->isApplicationTokenValid($applicationToken));
-
-        $this->assertTrue(in_array(
-            Bitrix24AccountDomainUrlChangedEvent::class,
-            $this->eventDispatcher->getOrphanedEvents()));
+        $this->assertTrue(
+            $updated->isApplicationTokenValid($applicationToken),
+            sprintf('failed application token «%s» validation for bitrix24 account with id «%s»',
+                $applicationToken,
+                $bitrix24Account->getId()->toString()
+            ));
+        $this->assertTrue(
+            in_array(Bitrix24AccountApplicationInstalledEvent::class, $this->eventDispatcher->getOrphanedEvents(), true),
+            sprintf('emited event «%s» for bitrix24 account wiht id «%s» not found',
+                Bitrix24AccountApplicationInstalledEvent::class,
+                $bitrix24Account->getId()->toString()
+            )
+        );
     }
 
     #[Override]
