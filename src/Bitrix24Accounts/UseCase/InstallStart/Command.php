@@ -11,15 +11,13 @@ use Symfony\Component\Uid\Uuid;
 readonly class Command
 {
     public function __construct(
-        public Uuid      $uuid,
-        public int       $bitrix24UserId,
-        public bool      $isBitrix24UserAdmin,
-        public string    $memberId,
-        public string    $domainUrl,
+        public Uuid $uuid,
+        public int $bitrix24UserId,
+        public bool $isBitrix24UserAdmin,
+        public string $memberId,
+        public string $domainUrl,
         public AuthToken $authToken,
-        public int       $applicationVersion,
-        public Scope     $applicationScope
-    )
-    {
-    }
+        public int $applicationVersion,
+        public Scope $applicationScope
+    ) {}
 }

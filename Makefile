@@ -95,6 +95,7 @@ test-run-unit:
 test-run-functional: debug-print-env
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:create
+	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:update --dump-sql
 	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
 
 schema-drop:
