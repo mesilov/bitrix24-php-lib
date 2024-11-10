@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine;
 
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
-use Bitrix24\Lib\Bitrix24Accounts\UseCase\SaveAccount\Handler;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
@@ -21,31 +20,28 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
 {
     public function __construct(
         EntityManagerInterface $entityManager
-    )
-    {
+    ) {
         parent::__construct($entityManager, $entityManager->getClassMetadata(Bitrix24Account::class));
     }
 
     /**
      * @phpstan-return Bitrix24AccountInterface&AggregateRootEventsEmitterInterface
+     *
      * @throws Bitrix24AccountNotFoundException
      */
     #[Override]
     public function getById(Uuid $uuid): Bitrix24AccountInterface
     {
-       // print_r($uuid);
-     //   exit();
+        // print_r($uuid);
+        //   exit();
         $res = $this->getEntityManager()->getRepository(Bitrix24Account::class)->find($uuid);
-        if ($res === null) {
+        if (null === $res) {
             throw new Bitrix24AccountNotFoundException(sprintf('bitrix24 account not found by id %s', $uuid->toRfc4122()));
         }
 
         return $res;
     }
 
-    /**
-     * @inheritdoc
-     */
     #[Override]
     public function save(Bitrix24AccountInterface $bitrix24Account): void
     {
@@ -54,34 +50,44 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
 
     /**
      * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
+     *
+     * @throws InvalidArgumentException
      */
     #[Override]
-    public function findByMemberId(string $memberId, ?Bitrix24AccountStatus $bitrix24AccountStatus = null,  ?int $bitrix24UserId = null, ?bool $isAdmin = null): array
+    public function findByMemberId(string $memberId, ?Bitrix24AccountStatus $bitrix24AccountStatus = null, ?int $bitrix24UserId = null, ?bool $isAdmin = null): array
     {
+        if ('' === trim($memberId)) {
+            throw new InvalidArgumentException('memberId cannot be empty');
+        }
+
         $criteria = [
-            'memberId' => $memberId
+            'memberId' => $memberId,
         ];
         if ($bitrix24AccountStatus instanceof Bitrix24AccountStatus) {
             $criteria['status'] = $bitrix24AccountStatus->name;
         }
 
-        if ($isAdmin !== null) {
+        if (null !== $isAdmin) {
             $criteria['isBitrix24UserAdmin'] = $isAdmin;
         }
 
         return $this->findBy($criteria);
     }
 
-    /**
-     * @inheritdoc
-     */
     #[Override]
     public function delete(Uuid $uuid): void
     {
         $bitrix24Account = $this->getEntityManager()->getRepository(Bitrix24Account::class)->find($uuid);
 
-        if ($bitrix24Account === null) {
+        if (null === $bitrix24Account) {
             throw new Bitrix24AccountNotFoundException(sprintf('bitrix24 account not found by id %s', $uuid->toRfc4122()));
+        }
+        if (Bitrix24AccountStatus::deleted !== $bitrix24Account->getStatus()) {
+            throw new InvalidArgumentException(sprintf(
+                'you cannot delete bitrix24account «%s», they must be in status «deleted», current status «%s»',
+                $bitrix24Account->getId()->toRfc4122(),
+                $bitrix24Account->getStatus()->name
+            ));
         }
 
         $this->getEntityManager()->remove($bitrix24Account);
@@ -98,6 +104,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
 
     /**
      * @param non-empty-string $applicationToken
+     *
      * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
      */
     public function findByApplicationToken(string $applicationToken): array
@@ -111,12 +118,13 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
 
     /**
      * @throws InvalidArgumentException
+     *
      * @phpstan-return Bitrix24AccountInterface&AggregateRootEventsEmitterInterface
      */
     #[Override]
     public function findOneAdminByMemberId(string $memberId): ?Bitrix24AccountInterface
     {
-        if (trim($memberId) === '') {
+        if ('' === trim($memberId)) {
             throw new InvalidArgumentException('memberId cannot be an empty string');
         }
 
@@ -131,13 +139,15 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
 
     /**
      * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
-     * @return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
+     *
+     * @return array<AggregateRootEventsEmitterInterface&Bitrix24AccountInterface>
+     *
      * @throws InvalidArgumentException
      */
     #[Override]
     public function findByDomain(string $domainUrl, ?Bitrix24AccountStatus $bitrix24AccountStatus = null, ?bool $isAdmin = null): array
     {
-        if (trim($domainUrl) === '') {
+        if ('' === trim($domainUrl)) {
             throw new InvalidArgumentException('domainUrl cannot be an empty string');
         }
 
@@ -148,7 +158,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
             $criteria['status'] = $bitrix24AccountStatus->name;
         }
 
-        if ($isAdmin !== null) {
+        if (null !== $isAdmin) {
             $criteria['isBitrix24UserAdmin'] = $isAdmin;
         }
 
