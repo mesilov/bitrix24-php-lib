@@ -189,10 +189,12 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     public function applicationInstalled(string $applicationToken): void
     {
         if (Bitrix24AccountStatus::new !== $this->status) {
-            throw new InvalidArgumentException(sprintf(
-                'for finish installation bitrix24 account must be in status «new», current status - «%s»',
-                $this->status->name
-            ));
+            throw new InvalidArgumentException(
+                sprintf(
+                    'for finish installation bitrix24 account must be in status «new», current status - «%s»',
+                    $this->status->name
+                )
+            );
         }
 
         if ('' === $applicationToken) {
@@ -219,10 +221,12 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         }
 
         if (Bitrix24AccountStatus::active !== $this->status) {
-            throw new InvalidArgumentException(sprintf(
-                'for uninstall account must be in status «active», current status - «%s»',
-                $this->status->name
-            ));
+            throw new InvalidArgumentException(
+                sprintf(
+                    'for uninstall account must be in status «active», current status - «%s»',
+                    $this->status->name
+                )
+            );
         }
 
         if ($this->applicationToken !== $applicationToken) {
@@ -270,7 +274,9 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     public function updateApplicationVersion(int $version, ?Scope $newScope): void
     {
         if (Bitrix24AccountStatus::active !== $this->status) {
-            throw new InvalidArgumentException(sprintf('account must be in status «active», but now account in status «%s»', $this->status->name));
+            throw new InvalidArgumentException(
+                sprintf('account must be in status «active», but now account in status «%s»', $this->status->name)
+            );
         }
 
         if ($this->applicationVersion >= $version) {
@@ -330,7 +336,8 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24AccountBlockedEvent(
             $this->id,
-            new CarbonImmutable()
+            new CarbonImmutable(),
+            $this->comment
         );
     }
 
