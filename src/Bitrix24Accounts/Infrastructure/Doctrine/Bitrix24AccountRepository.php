@@ -36,7 +36,9 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         //   exit();
         $res = $this->getEntityManager()->getRepository(Bitrix24Account::class)->find($uuid);
         if (null === $res) {
-            throw new Bitrix24AccountNotFoundException(sprintf('bitrix24 account not found by id %s', $uuid->toRfc4122()));
+            throw new Bitrix24AccountNotFoundException(
+                sprintf('bitrix24 account not found by id %s', $uuid->toRfc4122())
+            );
         }
 
         return $res;
@@ -54,8 +56,12 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
      * @throws InvalidArgumentException
      */
     #[Override]
-    public function findByMemberId(string $memberId, ?Bitrix24AccountStatus $bitrix24AccountStatus = null, ?int $bitrix24UserId = null, ?bool $isAdmin = null): array
-    {
+    public function findByMemberId(
+        string $memberId,
+        ?Bitrix24AccountStatus $bitrix24AccountStatus = null,
+        ?int $bitrix24UserId = null,
+        ?bool $isAdmin = null
+    ): array {
         if ('' === trim($memberId)) {
             throw new InvalidArgumentException('memberId cannot be empty');
         }
@@ -65,6 +71,9 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         ];
         if ($bitrix24AccountStatus instanceof Bitrix24AccountStatus) {
             $criteria['status'] = $bitrix24AccountStatus->name;
+        }
+        if (null !== $bitrix24UserId) {
+            $criteria['bitrix24UserId'] = $bitrix24UserId;
         }
 
         if (null !== $isAdmin) {
@@ -80,14 +89,18 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         $bitrix24Account = $this->getEntityManager()->getRepository(Bitrix24Account::class)->find($uuid);
 
         if (null === $bitrix24Account) {
-            throw new Bitrix24AccountNotFoundException(sprintf('bitrix24 account not found by id %s', $uuid->toRfc4122()));
+            throw new Bitrix24AccountNotFoundException(
+                sprintf('bitrix24 account not found by id %s', $uuid->toRfc4122())
+            );
         }
         if (Bitrix24AccountStatus::deleted !== $bitrix24Account->getStatus()) {
-            throw new InvalidArgumentException(sprintf(
-                'you cannot delete bitrix24account «%s», they must be in status «deleted», current status «%s»',
-                $bitrix24Account->getId()->toRfc4122(),
-                $bitrix24Account->getStatus()->name
-            ));
+            throw new InvalidArgumentException(
+                sprintf(
+                    'you cannot delete bitrix24account «%s», they must be in status «deleted», current status «%s»',
+                    $bitrix24Account->getId()->toRfc4122(),
+                    $bitrix24Account->getStatus()->name
+                )
+            );
         }
 
         $this->getEntityManager()->remove($bitrix24Account);
@@ -106,9 +119,14 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
      * @param non-empty-string $applicationToken
      *
      * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
+     * @throws InvalidArgumentException
      */
     public function findByApplicationToken(string $applicationToken): array
     {
+        if ($applicationToken === '') {
+            throw new InvalidArgumentException('application token cannot be an empty string');
+        }
+
         return $this->getEntityManager()->getRepository(Bitrix24Account::class)->findBy(
             [
                 'applicationToken' => $applicationToken,
@@ -132,7 +150,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
             [
                 'memberId' => $memberId,
                 'isBitrix24UserAdmin' => true,
-                'status' => Bitrix24AccountStatus::active,
+                'status' => [Bitrix24AccountStatus::active, Bitrix24AccountStatus::new],
             ]
         );
     }
@@ -145,8 +163,11 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
      * @throws InvalidArgumentException
      */
     #[Override]
-    public function findByDomain(string $domainUrl, ?Bitrix24AccountStatus $bitrix24AccountStatus = null, ?bool $isAdmin = null): array
-    {
+    public function findByDomain(
+        string $domainUrl,
+        ?Bitrix24AccountStatus $bitrix24AccountStatus = null,
+        ?bool $isAdmin = null
+    ): array {
         if ('' === trim($domainUrl)) {
             throw new InvalidArgumentException('domainUrl cannot be an empty string');
         }
