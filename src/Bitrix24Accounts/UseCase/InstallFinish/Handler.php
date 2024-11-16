@@ -11,6 +11,7 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24Accou
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\MultipleBitrix24AccountsFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -25,6 +26,8 @@ readonly class Handler
 
     /**
      * @throws Bitrix24AccountNotFoundException
+     * @throws MultipleBitrix24AccountsFoundException
+     * @throws InvalidArgumentException
      */
     public function handle(Command $command): void
     {
@@ -41,23 +44,29 @@ readonly class Handler
             $command->bitrix24UserId
         );
         if ([] === $accounts) {
-            throw new Bitrix24AccountNotFoundException(sprintf(
-                'bitrix24 account for domain %s with member id %s in status «new» not found',
-                $command->domainUrl,
-                $command->memberId
-            ));
+            throw new Bitrix24AccountNotFoundException(
+                sprintf(
+                    'bitrix24 account for domain %s with member id %s in status «new» not found',
+                    $command->domainUrl,
+                    $command->memberId
+                )
+            );
         }
 
         if (count($accounts) > 1) {
-            throw new MultipleBitrix24AccountsFoundException(sprintf(
-                'multiple bitrix24 accounts for domain %s with member id %s in status «new» found',
-                $command->domainUrl,
-                $command->memberId
-            ));
+            throw new MultipleBitrix24AccountsFoundException(
+                sprintf(
+                    'multiple bitrix24 accounts for domain %s with member id %s in status «new» found',
+                    $command->domainUrl,
+                    $command->memberId
+                )
+            );
         }
 
+        /**
+         * @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $targetAccount
+         */
         $targetAccount = $accounts[0];
-        // @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $targetAccount
         $targetAccount->applicationInstalled($command->applicationToken);
 
         $this->bitrix24AccountRepository->save($targetAccount);
