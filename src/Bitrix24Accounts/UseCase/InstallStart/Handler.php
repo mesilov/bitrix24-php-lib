@@ -16,12 +16,11 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 readonly class Handler
 {
     public function __construct(
-        private EventDispatcherInterface           $eventDispatcher,
+        private EventDispatcherInterface $eventDispatcher,
         private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
-        private Flusher                            $flusher,
-        private LoggerInterface                    $logger
-    )
-    {
+        private Flusher $flusher,
+        private LoggerInterface $logger
+    ) {
     }
 
     public function handle(Command $command): void
@@ -32,28 +31,26 @@ readonly class Handler
             'member_id' => $command->memberId
         ]);
 
-        $this->bitrix24AccountRepository->save(
-            new Bitrix24Account(
-                $command->uuid,
-                $command->bitrix24UserId,
-                $command->isBitrix24UserAdmin,
-                $command->memberId,
-                $command->domainUrl,
-                Bitrix24AccountStatus::new,
-                $command->authToken,
-                new CarbonImmutable(),
-                new CarbonImmutable(),
-                $command->applicationVersion,
-                $command->applicationScope
-            )
+        $newAccount = new Bitrix24Account(
+            $command->uuid,
+            $command->bitrix24UserId,
+            $command->isBitrix24UserAdmin,
+            $command->memberId,
+            $command->domainUrl,
+            Bitrix24AccountStatus::new,
+            $command->authToken,
+            new CarbonImmutable(),
+            new CarbonImmutable(),
+            $command->applicationVersion,
+            $command->applicationScope
         );
+        $this->bitrix24AccountRepository->save($newAccount);
         $this->flusher->flush();
-        $this->eventDispatcher->dispatch(
-            new Bitrix24AccountCreatedEvent(
-                $command->uuid,
-                new CarbonImmutable()
-            )
-        );
+
+        foreach ($newAccount->emitEvents() as $event) {
+            $this->eventDispatcher->dispatch($event);
+        }
+
         $this->logger->debug('Bitrix24Accounts.InstallStart.Finish');
     }
 }

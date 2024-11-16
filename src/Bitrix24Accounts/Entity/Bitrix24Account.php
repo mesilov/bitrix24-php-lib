@@ -18,6 +18,7 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountAp
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationUninstalledEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationVersionUpdatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountBlockedEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountDomainUrlChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
@@ -26,7 +27,6 @@ use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Bitrix24\SDK\Core\Exceptions\UnknownScopeCodeException;
 use Bitrix24\SDK\Core\Response\DTO\RenewedAuthToken;
 use Carbon\CarbonImmutable;
-use Override;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\EventDispatcher\Event;
 
@@ -70,45 +70,50 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         $this->refreshToken = $authToken->refreshToken;
         $this->expires = $authToken->expires;
         $this->applicationScope = $applicationScope->getScopeCodes();
+
+        $this->events[] = new Bitrix24AccountCreatedEvent(
+            $this->id,
+            $this->createdAt
+        );
     }
 
-    #[Override]
+    #[\Override]
     public function getId(): Uuid
     {
         return $this->id;
     }
 
-    #[Override]
+    #[\Override]
     public function getBitrix24UserId(): int
     {
         return $this->bitrix24UserId;
     }
 
-    #[Override]
+    #[\Override]
     public function isBitrix24UserAdmin(): bool
     {
         return $this->isBitrix24UserAdmin;
     }
 
-    #[Override]
+    #[\Override]
     public function getMemberId(): string
     {
         return $this->memberId;
     }
 
-    #[Override]
+    #[\Override]
     public function getDomainUrl(): string
     {
         return $this->domainUrl;
     }
 
-    #[Override]
+    #[\Override]
     public function getStatus(): Bitrix24AccountStatus
     {
         return $this->status;
     }
 
-    #[Override]
+    #[\Override]
     public function getAuthToken(): AuthToken
     {
         return new AuthToken($this->accessToken, $this->refreshToken, $this->expires);
@@ -117,7 +122,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     /**
      * @throws InvalidArgumentException
      */
-    #[Override]
+    #[\Override]
     public function renewAuthToken(RenewedAuthToken $renewedAuthToken): void
     {
         if ($this->memberId !== $renewedAuthToken->memberId) {
@@ -138,7 +143,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         $this->updatedAt = new CarbonImmutable();
     }
 
-    #[Override]
+    #[\Override]
     public function getApplicationVersion(): int
     {
         return $this->applicationVersion;
@@ -147,7 +152,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     /**
      * @throws UnknownScopeCodeException
      */
-    #[Override]
+    #[\Override]
     public function getApplicationScope(): Scope
     {
         return new Scope($this->applicationScope);
@@ -156,7 +161,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     /**
      * @throws InvalidArgumentException
      */
-    #[Override]
+    #[\Override]
     public function changeDomainUrl(string $newDomainUrl): void
     {
         if ('' === $newDomainUrl) {
@@ -185,7 +190,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     /**
      * @throws InvalidArgumentException
      */
-    #[Override]
+    #[\Override]
     public function applicationInstalled(string $applicationToken): void
     {
         if (Bitrix24AccountStatus::new !== $this->status) {
@@ -213,7 +218,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     /**
      * @throws InvalidArgumentException
      */
-    #[Override]
+    #[\Override]
     public function applicationUninstalled(string $applicationToken): void
     {
         if ('' === $applicationToken) {
@@ -249,19 +254,19 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         );
     }
 
-    #[Override]
+    #[\Override]
     public function isApplicationTokenValid(string $applicationToken): bool
     {
         return $this->applicationToken === $applicationToken;
     }
 
-    #[Override]
+    #[\Override]
     public function getCreatedAt(): CarbonImmutable
     {
         return $this->createdAt;
     }
 
-    #[Override]
+    #[\Override]
     public function getUpdatedAt(): CarbonImmutable
     {
         return $this->updatedAt;
@@ -270,7 +275,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     /**
      * @throws InvalidArgumentException
      */
-    #[Override]
+    #[\Override]
     public function updateApplicationVersion(int $version, ?Scope $newScope): void
     {
         if (Bitrix24AccountStatus::active !== $this->status) {
@@ -304,7 +309,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     /**
      * @throws InvalidArgumentException
      */
-    #[Override]
+    #[\Override]
     public function markAsActive(?string $comment): void
     {
         if (Bitrix24AccountStatus::blocked !== $this->status) {
@@ -324,7 +329,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     /**
      * @throws InvalidArgumentException
      */
-    #[Override]
+    #[\Override]
     public function markAsBlocked(?string $comment): void
     {
         if (Bitrix24AccountStatus::deleted === $this->status) {
@@ -341,7 +346,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         );
     }
 
-    #[Override]
+    #[\Override]
     public function getComment(): ?string
     {
         return $this->comment;
@@ -350,7 +355,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     /**
      * @return Event[]
      */
-    #[Override]
+    #[\Override]
     public function emitEvents(): array
     {
         $events = $this->events;
