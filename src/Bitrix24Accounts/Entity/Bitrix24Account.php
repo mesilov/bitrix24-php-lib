@@ -64,6 +64,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         private CarbonImmutable $updatedAt,
         private int $applicationVersion,
         Scope $applicationScope,
+        bool $isEmitBitrix24AccountCreatedEvent = false
     ) {
         $this->authToken = $authToken;
         $this->accessToken = $authToken->accessToken;
@@ -71,10 +72,12 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         $this->expires = $authToken->expires;
         $this->applicationScope = $applicationScope->getScopeCodes();
 
-        $this->events[] = new Bitrix24AccountCreatedEvent(
-            $this->id,
-            $this->createdAt
-        );
+        if ($isEmitBitrix24AccountCreatedEvent) {
+            $this->events[] = new Bitrix24AccountCreatedEvent(
+                $this->id,
+                $this->createdAt
+            );
+        }
     }
 
     #[\Override]
@@ -113,10 +116,14 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         return $this->status;
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     #[\Override]
     public function getAuthToken(): AuthToken
     {
-        return new AuthToken($this->accessToken, $this->refreshToken, $this->expires);
+        $this->authToken = new AuthToken($this->accessToken, $this->refreshToken, $this->expires);
+        return $this->authToken;
     }
 
     /**

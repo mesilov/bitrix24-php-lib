@@ -40,7 +40,8 @@ readonly class Handler
             new CarbonImmutable(),
             new CarbonImmutable(),
             $command->applicationVersion,
-            $command->applicationScope
+            $command->applicationScope,
+            true
         );
         $this->bitrix24AccountRepository->save($newAccount);
         $this->flusher->flush();
