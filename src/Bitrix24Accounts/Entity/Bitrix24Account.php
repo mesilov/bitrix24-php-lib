@@ -32,12 +32,6 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEmitterInterface
 {
-    private string $accessToken;
-
-    private string $refreshToken;
-
-    private int $expires;
-
     private array $applicationScope;
 
     private ?string $applicationToken = null;
@@ -67,17 +61,8 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         bool $isEmitBitrix24AccountCreatedEvent = false
     ) {
         $this->authToken = $authToken;
-        $this->accessToken = $authToken->accessToken;
-        $this->refreshToken = $authToken->refreshToken;
-        $this->expires = $authToken->expires;
         $this->applicationScope = $applicationScope->getScopeCodes();
-
-        if ($isEmitBitrix24AccountCreatedEvent) {
-            $this->events[] = new Bitrix24AccountCreatedEvent(
-                $this->id,
-                $this->createdAt
-            );
-        }
+        $this->addAccountCreatedEventIfNeeded($isEmitBitrix24AccountCreatedEvent);
     }
 
     #[\Override]
@@ -122,7 +107,6 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     #[\Override]
     public function getAuthToken(): AuthToken
     {
-        $this->authToken = new AuthToken($this->accessToken, $this->refreshToken, $this->expires);
         return $this->authToken;
     }
 
@@ -144,9 +128,12 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
             );
         }
 
-        $this->accessToken = $renewedAuthToken->authToken->accessToken;
-        $this->refreshToken = $renewedAuthToken->authToken->refreshToken;
-        $this->expires = $renewedAuthToken->authToken->expires;
+        $this->authToken = new AuthToken(
+            $renewedAuthToken->authToken->accessToken,
+            $renewedAuthToken->authToken->refreshToken,
+            $renewedAuthToken->authToken->expires
+        );
+
         $this->updatedAt = new CarbonImmutable();
     }
 
@@ -369,5 +356,16 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         $this->events = [];
 
         return $events;
+    }
+
+    public function addAccountCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
+    {
+        if ($isEmitCreatedEvent) {
+            // Создание события и добавление его в массив событий
+            $this->events[] = new Bitrix24AccountCreatedEvent(
+                $this->id,
+                $this->createdAt
+            );
+        }
     }
 }

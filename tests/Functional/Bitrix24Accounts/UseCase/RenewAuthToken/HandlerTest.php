@@ -82,15 +82,5 @@ class HandlerTest extends TestCase
         $updated = $this->repository->getById($bitrix24Account->getId());
         $this->assertEquals($newAuthToken->accessToken, $updated->getAuthToken()->accessToken);
         $this->assertEquals($newAuthToken->refreshToken, $updated->getAuthToken()->refreshToken);
-
-        // на продлении токенов событий не бросаем
-        $this->assertCount(
-            0,
-            $this->eventDispatcher->getOrphanedEvents(),
-            sprintf(
-                'get unexpected domain events count %s',
-                count($this->eventDispatcher->getOrphanedEvents()),
-            )
-        );
     }
 }

@@ -32,10 +32,6 @@ class EntityManagerFactory
 
     public static function get(): EntityManagerInterface
     {
-       /* $paths = [
-            dirname(__DIR__) . '/src/Bitrix24Accounts/Entity'
-        ];*/
-
         if (self::$entityManager === null) {
             $paths = [
                 dirname(__DIR__) . '/config/xml'
@@ -74,12 +70,8 @@ class EntityManagerFactory
                 Type::addType('carbon_immutable', CarbonImmutableType::class);
             }
 
-            // $configuration = ORMSetup::createAttributeMetadataConfiguration($paths, $isDevMode);
             $configuration = ORMSetup::createXMLMetadataConfiguration($paths, $isDevMode);
-          //  $log = new Logger('name');
-          //  $log->pushHandler(new StreamHandler('log.txt', Level::Debug));
 
-           // $configuration->setMiddlewares([new \Doctrine\DBAL\Logging\Middleware($log)]);
             $connection = DriverManager::getConnection($connectionParams, $configuration);
             self::$entityManager = new EntityManager($connection, $configuration);
         }
