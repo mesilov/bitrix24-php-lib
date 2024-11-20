@@ -91,13 +91,67 @@ class HandlerTest extends TestCase
         );
 
         $account = $this->repository->getById($accountId);
-        $this->assertEquals($b24UserId, $account->getBitrix24UserId());
-        $this->assertEquals($isB24UserAdmin, $account->isBitrix24UserAdmin());
-        $this->assertEquals($b24MemberId, $account->getMemberId());
-        $this->assertEquals($b24DomainUrl, $account->getDomainUrl());
-        $this->assertEquals($authToken, $account->getAuthToken());
-        $this->assertEquals($appVersion, $account->getApplicationVersion());
-        $this->assertEquals($scope, $account->getApplicationScope());
+
+        $this->assertEquals(
+            $b24UserId,
+            $account->getBitrix24UserId(),
+            sprintf(
+                'Expected the property value to be "%s", but got "%s"',
+                $b24UserId,
+                $account->getBitrix24UserId()
+            )
+        );
+
+        $this->assertEquals(
+            $isB24UserAdmin,
+            $account->isBitrix24UserAdmin(),
+            sprintf(
+                'Expected the property value to be "%s", but got "%s"',
+                $isB24UserAdmin,
+                $account->isBitrix24UserAdmin()
+            )
+        );
+
+        $this->assertEquals(
+            $b24MemberId,
+            $account->getMemberId(),
+            sprintf(
+                'Expected the property value to be "%s", but got "%s"',
+                $b24MemberId,
+                $account->getMemberId()
+            )
+        );
+
+        $this->assertEquals(
+            $b24DomainUrl,
+            $account->getDomainUrl(),
+            sprintf(
+                'Expected the property value to be "%s", but got "%s"',
+                $b24DomainUrl,
+                $account->getDomainUrl()
+            )
+        );
+
+        $this->assertEquals(
+            $authToken,
+            $account->getAuthToken(),
+            sprintf('Object not equals')
+        );
+
+        $this->assertEquals(
+            $appVersion,
+            $account->getApplicationVersion(),
+            sprintf(
+                'Expected the property value to be "%s", but got "%s"',
+                $appVersion,
+                $account->getApplicationVersion()
+            )
+        );
+        $this->assertEquals(
+            $scope,
+            $account->getApplicationScope(),
+            sprintf('Object not equals')
+        );
 
         $this->assertContains(
             Bitrix24AccountCreatedEvent::class,

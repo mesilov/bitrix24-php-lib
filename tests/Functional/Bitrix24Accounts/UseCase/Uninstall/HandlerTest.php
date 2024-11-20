@@ -69,11 +69,21 @@ class HandlerTest extends TestCase
         $this->handler->handle(new Bitrix24Accounts\UseCase\Uninstall\Command($applicationToken));
 
         $updated = $this->repository->getById($bitrix24Account->getId());
-        $this->assertEquals(Bitrix24AccountStatus::deleted, $updated->getStatus());
+        $this->assertEquals(
+            Bitrix24AccountStatus::deleted,
+            $updated->getStatus(),
+            sprintf('Expected status deleted')
+        );
 
         $this->assertTrue(in_array(
             Bitrix24AccountApplicationUninstalledEvent::class,
-            $this->eventDispatcher->getOrphanedEvents()));
+            $this->eventDispatcher->getOrphanedEvents()
+        ),
+            sprintf(
+                'Event %s was expected to be in the list of orphan events, but it is missing',
+                Bitrix24AccountApplicationUninstalledEvent::class
+            )
+        );
     }
 
     #[Override]

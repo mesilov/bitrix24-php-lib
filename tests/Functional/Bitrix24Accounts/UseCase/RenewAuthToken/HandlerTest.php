@@ -80,7 +80,24 @@ class HandlerTest extends TestCase
             )
         );
         $updated = $this->repository->getById($bitrix24Account->getId());
-        $this->assertEquals($newAuthToken->accessToken, $updated->getAuthToken()->accessToken);
-        $this->assertEquals($newAuthToken->refreshToken, $updated->getAuthToken()->refreshToken);
+        $this->assertEquals(
+            $newAuthToken->accessToken,
+            $updated->getAuthToken()->accessToken,
+            sprintf(
+                'Expected accessToken %s but got %s',
+                $newAuthToken->accessToken,
+                $updated->getAuthToken()->accessToken
+            )
+        );
+
+        $this->assertEquals(
+            $newAuthToken->refreshToken,
+            $updated->getAuthToken()->refreshToken,
+            sprintf(
+                'Expected refreshToken %s but got %s',
+                $newAuthToken->refreshToken,
+                $updated->getAuthToken()->refreshToken
+            )
+        );
     }
 }

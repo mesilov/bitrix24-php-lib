@@ -61,13 +61,12 @@ class HandlerTest extends TestCase
     #[TestDox('Test change domain url with happy path - one account')]
     public function testChangeDomainUrlWithHappyPath(): void
     {
-        $oldDomainUrl = Uuid::v7()->toRfc4122().'-test.bitrix24.com';
-        $newDomainUrl = 'new-'.$oldDomainUrl;
+        $oldDomainUrl = Uuid::v7()->toRfc4122() . '-test.bitrix24.com';
+        $newDomainUrl = 'new-' . $oldDomainUrl;
 
         $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withDomainUrl($oldDomainUrl)
-            ->build()
-        ;
+            ->build();
         $this->repository->save($bitrix24Account);
         $this->flusher->flush();
 
@@ -79,20 +78,33 @@ class HandlerTest extends TestCase
         );
 
         $updated = $this->repository->getById($bitrix24Account->getId());
-        $this->assertEquals($newDomainUrl, $updated->getDomainUrl());
+        $this->assertEquals(
+            $newDomainUrl,
+            $updated->getDomainUrl(),
+            sprintf(
+                'New domain url %s must be equals domain url %s after update',
+                $newDomainUrl,
+                $updated->getDomainUrl()
+            )
+        );
 
         $this->assertTrue(in_array(
             Bitrix24AccountDomainUrlChangedEvent::class,
-            $this->eventDispatcher->getOrphanedEvents()
-        ));
+            $this->eventDispatcher->getOrphanedEvents(),
+        ),
+            sprintf(
+                'Event %s was expected to be in the list of orphan events, but it is missing',
+                Bitrix24AccountDomainUrlChangedEvent::class
+            )
+        );
     }
 
     #[Test]
     #[TestDox('Test change domain url with happy path - many accounts')]
     public function testChangeDomainUrlWithHappyPathForManyAccounts(): void
     {
-        $oldDomainUrl = Uuid::v7()->toRfc4122().'-test.bitrix24.com';
-        $newDomainUrl = 'new-'.$oldDomainUrl;
+        $oldDomainUrl = Uuid::v7()->toRfc4122() . '-test.bitrix24.com';
+        $newDomainUrl = 'new-' . $oldDomainUrl;
         $b24MemberId = Uuid::v7()->toRfc4122();
 
         $bitrix24AccountA = (new Bitrix24AccountBuilder())
@@ -133,6 +145,11 @@ class HandlerTest extends TestCase
         $this->assertTrue(in_array(
             Bitrix24AccountDomainUrlChangedEvent::class,
             $this->eventDispatcher->getOrphanedEvents()
-        ));
+        ),
+            sprintf(
+                'Event %s was expected to be in the list of orphan events, but it is missing',
+                Bitrix24AccountDomainUrlChangedEvent::class
+            )
+        );
     }
 }
