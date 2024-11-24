@@ -36,32 +36,7 @@ readonly class Handler
         ]);
 
         // get all active bitrix24 accounts
-        $accounts = $this->bitrix24AccountRepository->findByMemberId(
-            $command->renewedAuthToken->memberId,
-            Bitrix24AccountStatus::active,
-            $command->bitrix24UserId
-        );
-
-        if ($command->bitrix24UserId === null && count($accounts) > 1) {
-            throw new MultipleBitrix24AccountsFoundException(
-                sprintf('updating auth token failure - for domain %s with member id %s found multiple active accounts, try pass bitrix24_user_id in command',
-                    $command->renewedAuthToken->domain,
-                    $command->renewedAuthToken->memberId
-                )
-            );
-        }
-
-        if ($command->bitrix24UserId !== null && count($accounts) > 1) {
-            throw new MultipleBitrix24AccountsFoundException(
-                sprintf('updating auth token failure - for domain %s with member id %s and bitrix24 user id %s found multiple active accounts',
-                    $command->renewedAuthToken->domain,
-                    $command->renewedAuthToken->memberId,
-                    $command->bitrix24UserId
-                )
-            );
-        }
-
-        $targetAccount = $accounts[0];
+        $targetAccount = $this->getSingleAccountByMemberId($command->renewedAuthToken->domain, $command->renewedAuthToken->memberId,Bitrix24AccountStatus::active,$command->bitrix24UserId);
 
         /**
          * @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $targetAccount
@@ -74,5 +49,35 @@ readonly class Handler
         }
 
         $this->logger->debug('Bitrix24Accounts.RenewAuthToken.finish');
+    }
+
+    public function getSingleAccountByMemberId(string $domainUrl, string $memberId, Bitrix24AccountStatus $status, int|null $bitrix24UserId): Bitrix24AccountInterface
+    {
+        $accounts = $this->bitrix24AccountRepository->findByMemberId(
+            $memberId,
+            $status,
+            $bitrix24UserId
+        );
+
+        if ($bitrix24UserId === null && count($accounts) > 1) {
+            throw new MultipleBitrix24AccountsFoundException(
+                sprintf('updating auth token failure - for domain %s with member id %s found multiple active accounts, try pass bitrix24_user_id in command',
+                    $domainUrl,
+                    $memberId
+                )
+            );
+        }
+
+        if ($bitrix24UserId !== null && count($accounts) > 1) {
+            throw new MultipleBitrix24AccountsFoundException(
+                sprintf('updating auth token failure - for domain %s with member id %s and bitrix24 user id %s found multiple active accounts',
+                    $domainUrl,
+                    $memberId,
+                    $bitrix24UserId
+                )
+            );
+        }
+
+        return $accounts[0];
     }
 }
