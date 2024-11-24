@@ -32,8 +32,6 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     #[Override]
     public function getById(Uuid $uuid): Bitrix24AccountInterface
     {
-        // print_r($uuid);
-        //   exit();
         $res = $this->getEntityManager()->getRepository(Bitrix24Account::class)->find($uuid);
         if (null === $res) {
             throw new Bitrix24AccountNotFoundException(
@@ -106,12 +104,15 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         $this->getEntityManager()->remove($bitrix24Account);
     }
 
-    public function findAllActive(): array
+    public function findAllActive(int|null $limit = null, int|null $offset = null): array
     {
         return $this->getEntityManager()->getRepository(Bitrix24Account::class)->findBy(
             [
                 'status' => Bitrix24AccountStatus::active,
-            ]
+            ],
+            null,
+            $limit,
+            $offset
         );
     }
 

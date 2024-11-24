@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Accounts\ReadModel;
 
+use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\Pagination\PaginationInterface;
 use Knp\Component\Pager\PaginatorInterface;
@@ -21,13 +22,14 @@ class Fetcher
         int $size
     ): PaginationInterface
     {
+
         $queryBuilder = $this->em->getConnection()->createQueryBuilder()
             ->select(
                 'b24account.id as id',
                 'b24account.status as status',
                 'b24account.member_id as member_id',
                 'b24account.domain_url as domain_url',
-                'b24account.app_version as application_version',
+                'b24account.application_version as application_version',
                 'b24account.created_at_utc as created_at',
                 'b24account.updated_at_utc as updated_at',
             )

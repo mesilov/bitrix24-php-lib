@@ -13,7 +13,7 @@ $conn = DriverManager::getConnection(
     [
         'driver' => 'pdo_pgsql',
         'memory' => true,
-        'dbname' => 'b24phpLibTest',
+        'dbname' => $_ENV['DATABASE_NAME'],
     ]);
 
 return DependencyFactory::fromConnection($config, new ExistingConnection($conn));

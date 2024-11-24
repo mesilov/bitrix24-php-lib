@@ -20,7 +20,7 @@
 
         <field name="createdAt" type="carbon_immutable" column="created_at_utc" precision="3" nullable="false"/>
 
-        <field name="updatedAt" type="carbon_immutable" column="update_at_utc" precision="3" nullable="false"/>
+        <field name="updatedAt" type="carbon_immutable" column="updated_at_utc" precision="3" nullable="false"/>
 
         <field name="applicationVersion" type="integer" column="application_version" nullable="false"/>
 

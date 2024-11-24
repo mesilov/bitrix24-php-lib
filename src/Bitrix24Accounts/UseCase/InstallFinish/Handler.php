@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallFinish;
 
+use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
@@ -38,35 +39,12 @@ readonly class Handler
             'b24_user_id' => $command->bitrix24UserId,
         ]);
 
-        $accounts = $this->bitrix24AccountRepository->findByMemberId(
-            $command->memberId,
-            Bitrix24AccountStatus::new,
-            $command->bitrix24UserId
-        );
-        if ([] === $accounts) {
-            throw new Bitrix24AccountNotFoundException(
-                sprintf(
-                    'bitrix24 account for domain %s with member id %s in status «new» not found',
-                    $command->domainUrl,
-                    $command->memberId
-                )
-            );
-        }
-
-        if (count($accounts) > 1) {
-            throw new MultipleBitrix24AccountsFoundException(
-                sprintf(
-                    'multiple bitrix24 accounts for domain %s with member id %s in status «new» found',
-                    $command->domainUrl,
-                    $command->memberId
-                )
-            );
-        }
 
         /**
          * @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $targetAccount
          */
-        $targetAccount = $accounts[0];
+        $targetAccount = $this->getSingleAccountByMemberId($command->domainUrl, $command->memberId,Bitrix24AccountStatus::new, $command->bitrix24UserId);
+
         $targetAccount->applicationInstalled($command->applicationToken);
 
         $this->bitrix24AccountRepository->save($targetAccount);
@@ -76,5 +54,36 @@ readonly class Handler
         }
 
         $this->logger->debug('Bitrix24Accounts.InstallFinish.Finish');
+    }
+
+    public function getSingleAccountByMemberId(string $domainUrl, string $memberId, Bitrix24AccountStatus $status, int|null $bitrix24UserId): Bitrix24AccountInterface
+    {
+        $accounts = $this->bitrix24AccountRepository->findByMemberId(
+            $memberId,
+            $status,
+            $bitrix24UserId
+        );
+
+        if ([] === $accounts) {
+            throw new Bitrix24AccountNotFoundException(
+                sprintf(
+                    'bitrix24 account for domain %s with member id %s in status «new» not found',
+                    $domainUrl,
+                    $memberId
+                )
+            );
+        }
+
+        if (count($accounts) > 1) {
+            throw new MultipleBitrix24AccountsFoundException(
+                sprintf(
+                    'multiple bitrix24 accounts for domain %s with member id %s in status «new» found',
+                    $domainUrl,
+                    $memberId
+                )
+            );
+        }
+
+        return $accounts[0];
     }
 }

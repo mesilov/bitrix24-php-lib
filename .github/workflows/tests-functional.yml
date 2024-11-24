@@ -68,8 +68,9 @@ jobs:
       - name: "Run functional tests"
         run: |
             php bin/doctrine orm:schema-tool:drop --force
-            php bin/doctrine orm:schema-tool:create
+            php bin/doctrine orm:schema-tool:create --dump-sql
             php bin/doctrine orm:schema-tool:update --dump-sql
+            php bin/doctrine orm:info
             php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox            
 
       - name: "is functional tests succeeded"
