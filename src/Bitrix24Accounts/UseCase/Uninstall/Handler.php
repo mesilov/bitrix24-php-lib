@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\Uninstall;
 
+use Bitrix24\Lib\AggregateRoot;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
@@ -19,7 +20,7 @@ readonly class Handler
         private EventDispatcherInterface $eventDispatcher,
         private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
         private Flusher $flusher,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -28,6 +29,8 @@ readonly class Handler
      */
     public function handle(Command $command): void
     {
+        var_dump('handle');
+        $aggregateRoot = new AggregateRoot();
         $this->logger->debug('Bitrix24Accounts.Uninstall.start', [
             'b24_application_token' => $command->applicationToken,
         ]);
@@ -41,6 +44,7 @@ readonly class Handler
             $account->applicationUninstalled($command->applicationToken);
             $this->bitrix24AccountRepository->save($account);
             $this->flusher->flush();
+
             foreach ($account->emitEvents() as $event) {
                 $this->eventDispatcher->dispatch($event);
             }

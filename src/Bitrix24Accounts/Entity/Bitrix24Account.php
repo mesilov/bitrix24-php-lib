@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Accounts\Entity;
 
+use Bitrix24\Lib\AggregateRoot;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationInstalledEvent;
@@ -30,7 +31,7 @@ use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEmitterInterface
+class Bitrix24Account implements Bitrix24AccountInterface
 {
     private array $applicationScope;
 
@@ -40,10 +41,7 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
 
     private AuthToken $authToken;
 
-    /**
-     * @var Event[]
-     */
-    private array $events = [];
+    private array $events;
 
     public function __construct(
         private Uuid $id,
@@ -207,6 +205,8 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
             $this->id,
             new CarbonImmutable()
         );
+        var_dump('applicationInstalled');
+     //   dd($this->events);
     }
 
     /**
@@ -346,19 +346,12 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         return $this->comment;
     }
 
-    /**
-     * @return Event[]
-     */
-    #[\Override]
-    public function emitEvents(): array
+    public function getEvents(): array
     {
-        $events = $this->events;
-        $this->events = [];
-
-        return $events;
+        return $this->events;
     }
 
-    public function addAccountCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
+    private function addAccountCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
     {
         if ($isEmitCreatedEvent) {
             // Создание события и добавление его в массив событий

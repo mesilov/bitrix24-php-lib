@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\UseCase\Uninstall;
 
+use Bitrix24\Lib\AggregateRoot;
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
@@ -45,6 +46,7 @@ class HandlerTest extends TestCase
     #[Test]
     public function testUninstallWithHappyPath(): void
     {
+        var_dump('testUninstallWithHappyPath');
         $oldDomainUrl = Uuid::v7()->toRfc4122() . '-test.bitrix24.com';
         $bitrix24Account = new Bitrix24Account(
             Uuid::v7(),
@@ -65,9 +67,10 @@ class HandlerTest extends TestCase
         $this->repository->save($bitrix24Account);
         $this->flusher->flush();
 
-
+        var_dump('beforehandle');
+        var_dump($this->eventDispatcher->getOrphanedEvents());
         $this->handler->handle(new Bitrix24Accounts\UseCase\Uninstall\Command($applicationToken));
-
+        var_dump($this->eventDispatcher->getOrphanedEvents());
         $updated = $this->repository->getById($bitrix24Account->getId());
         $this->assertEquals(
             Bitrix24AccountStatus::deleted,
@@ -89,15 +92,18 @@ class HandlerTest extends TestCase
     #[Override]
     protected function setUp(): void
     {
+        var_dump('setUp');
+
         $entityManager = EntityManagerFactory::get();
         $this->repository = new Bitrix24AccountRepository($entityManager);
         $this->flusher = new Flusher($entityManager);
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
+
         $this->handler = new Bitrix24Accounts\UseCase\Uninstall\Handler(
             $this->eventDispatcher,
             $this->repository,
             $this->flusher,
-            new NullLogger()
+            new NullLogger(),
         );
     }
 }
