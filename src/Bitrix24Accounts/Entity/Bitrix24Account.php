@@ -31,7 +31,7 @@ use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class Bitrix24Account implements Bitrix24AccountInterface
+class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
 {
     private array $applicationScope;
 
@@ -40,8 +40,6 @@ class Bitrix24Account implements Bitrix24AccountInterface
     private ?string $comment = null;
 
     private AuthToken $authToken;
-
-    private array $events;
 
     public function __construct(
         private Uuid $id,
@@ -97,6 +95,11 @@ class Bitrix24Account implements Bitrix24AccountInterface
     public function getStatus(): Bitrix24AccountStatus
     {
         return $this->status;
+    }
+
+    public function setStatus(Bitrix24AccountStatus $status): void
+    {
+        $this->status = $status;
     }
 
     /**
@@ -205,8 +208,6 @@ class Bitrix24Account implements Bitrix24AccountInterface
             $this->id,
             new CarbonImmutable()
         );
-        var_dump('applicationInstalled');
-     //   dd($this->events);
     }
 
     /**

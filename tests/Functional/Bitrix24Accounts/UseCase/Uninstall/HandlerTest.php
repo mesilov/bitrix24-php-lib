@@ -46,7 +46,6 @@ class HandlerTest extends TestCase
     #[Test]
     public function testUninstallWithHappyPath(): void
     {
-        var_dump('testUninstallWithHappyPath');
         $oldDomainUrl = Uuid::v7()->toRfc4122() . '-test.bitrix24.com';
         $bitrix24Account = new Bitrix24Account(
             Uuid::v7(),
@@ -67,10 +66,7 @@ class HandlerTest extends TestCase
         $this->repository->save($bitrix24Account);
         $this->flusher->flush();
 
-        var_dump('beforehandle');
-        var_dump($this->eventDispatcher->getOrphanedEvents());
         $this->handler->handle(new Bitrix24Accounts\UseCase\Uninstall\Command($applicationToken));
-        var_dump($this->eventDispatcher->getOrphanedEvents());
         $updated = $this->repository->getById($bitrix24Account->getId());
         $this->assertEquals(
             Bitrix24AccountStatus::deleted,
@@ -92,7 +88,6 @@ class HandlerTest extends TestCase
     #[Override]
     protected function setUp(): void
     {
-        var_dump('setUp');
 
         $entityManager = EntityManagerFactory::get();
         $this->repository = new Bitrix24AccountRepository($entityManager);

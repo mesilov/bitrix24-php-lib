@@ -100,8 +100,8 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
                 )
             );
         }
-
-        $this->getEntityManager()->remove($bitrix24Account);
+        $bitrix24Account->setStatus(Bitrix24AccountStatus::deleted);
+        $this->save($bitrix24Account);
     }
 
     public function findAllActive(int|null $limit = null, int|null $offset = null): array

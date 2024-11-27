@@ -29,8 +29,6 @@ readonly class Handler
      */
     public function handle(Command $command): void
     {
-        var_dump('handle');
-        $aggregateRoot = new AggregateRoot();
         $this->logger->debug('Bitrix24Accounts.Uninstall.start', [
             'b24_application_token' => $command->applicationToken,
         ]);
