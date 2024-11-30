@@ -101,7 +101,7 @@ test-run-functional: debug-print-env
 
 # Запустить один функциональный тест с дебагером
 run-one-functional-test: debug-print-env
-	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testDeleteNotInDeletedState' tests/Functional/Bitrix24Accounts/Infrastructure/Doctrine/Bitrix24AccountRepositoryTest.php
+	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testListReturnsPaginatedResults' tests/Functional/Bitrix24Accounts/FetcherTest.php
 
 schema-drop:
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
