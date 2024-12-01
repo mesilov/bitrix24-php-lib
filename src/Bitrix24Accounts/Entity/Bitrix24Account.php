@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Accounts\Entity;
 
+use Bitrix24\Lib\AggregateRoot;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationInstalledEvent;
@@ -30,20 +31,15 @@ use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEmitterInterface
+class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
 {
-    private array $applicationScope;
+    private array|Scope $applicationScope;
 
     private ?string $applicationToken = null;
 
     private ?string $comment = null;
 
     private AuthToken $authToken;
-
-    /**
-     * @var Event[]
-     */
-    private array $events = [];
 
     public function __construct(
         private Uuid $id,
@@ -61,7 +57,8 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         bool $isEmitBitrix24AccountCreatedEvent = false
     ) {
         $this->authToken = $authToken;
-        $this->applicationScope = $applicationScope->getScopeCodes();
+        $array =  $applicationScope->getScopeCodes();
+        $this->applicationScope = $array;
         $this->addAccountCreatedEventIfNeeded($isEmitBitrix24AccountCreatedEvent);
     }
 
@@ -99,6 +96,11 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
     public function getStatus(): Bitrix24AccountStatus
     {
         return $this->status;
+    }
+
+    public function setStatus(Bitrix24AccountStatus $status): void
+    {
+        $this->status = $status;
     }
 
     /**
@@ -143,13 +145,11 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         return $this->applicationVersion;
     }
 
-    /**
-     * @throws UnknownScopeCodeException
-     */
     #[\Override]
     public function getApplicationScope(): Scope
     {
         return new Scope($this->applicationScope);
+     //   return $this->applicationScope;
     }
 
     /**
@@ -346,19 +346,12 @@ class Bitrix24Account implements Bitrix24AccountInterface, AggregateRootEventsEm
         return $this->comment;
     }
 
-    /**
-     * @return Event[]
-     */
-    #[\Override]
-    public function emitEvents(): array
+    public function getEvents(): array
     {
-        $events = $this->events;
-        $this->events = [];
-
-        return $events;
+        return $this->events;
     }
 
-    public function addAccountCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
+    private function addAccountCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
     {
         if ($isEmitCreatedEvent) {
             // Создание события и добавление его в массив событий

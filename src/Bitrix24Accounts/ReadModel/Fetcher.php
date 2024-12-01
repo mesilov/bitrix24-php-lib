@@ -6,9 +6,9 @@ namespace Bitrix24\Lib\Bitrix24Accounts\ReadModel;
 
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\Event\Subscriber\Paginate\Callback\CallbackPagination;
 use Knp\Component\Pager\Pagination\PaginationInterface;
 use Knp\Component\Pager\PaginatorInterface;
-
 class Fetcher
 {
     public function __construct(
@@ -23,7 +23,7 @@ class Fetcher
     ): PaginationInterface
     {
 
-        $queryBuilder = $this->em->getConnection()->createQueryBuilder()
+     /*   $queryBuilder = $this->em->getConnection()->createQueryBuilder()
             ->select(
                 'b24account.id as id',
                 'b24account.status as status',
@@ -35,7 +35,11 @@ class Fetcher
             )
             ->from('bitrix24account', 'b24account')
             ->orderBy('b24account.created_at_utc', 'DESC');
+    */
+       // var_dump($queryBuilder->getMaxResults());
+        $query =  $this->em->createQuery("SELECT b24account FROM Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account b24account");
 
-        return $this->paginator->paginate($queryBuilder, $page, $size);
+        return $this->paginator->paginate($query, $page, $size);
+     //   return $this->paginator->paginate($queryBuilder->getSQL(), $page, $size);
     }
 }

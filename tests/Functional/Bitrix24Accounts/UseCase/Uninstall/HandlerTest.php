@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\UseCase\Uninstall;
 
+use Bitrix24\Lib\AggregateRoot;
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
@@ -20,6 +21,7 @@ use Bitrix24\Lib\Bitrix24Accounts;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationUninstalledEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
@@ -65,10 +67,11 @@ class HandlerTest extends TestCase
         $this->repository->save($bitrix24Account);
         $this->flusher->flush();
 
-
         $this->handler->handle(new Bitrix24Accounts\UseCase\Uninstall\Command($applicationToken));
 
+        $this->expectException(Bitrix24AccountNotFoundException::class);
         $updated = $this->repository->getById($bitrix24Account->getId());
+
         $this->assertEquals(
             Bitrix24AccountStatus::deleted,
             $updated->getStatus(),
@@ -89,15 +92,17 @@ class HandlerTest extends TestCase
     #[Override]
     protected function setUp(): void
     {
+
         $entityManager = EntityManagerFactory::get();
         $this->repository = new Bitrix24AccountRepository($entityManager);
         $this->flusher = new Flusher($entityManager);
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
+
         $this->handler = new Bitrix24Accounts\UseCase\Uninstall\Handler(
             $this->eventDispatcher,
             $this->repository,
             $this->flusher,
-            new NullLogger()
+            new NullLogger(),
         );
     }
 }
