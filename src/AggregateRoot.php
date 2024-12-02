@@ -8,6 +8,12 @@ use Symfony\Contracts\EventDispatcher\Event;
 class AggregateRoot implements AggregateRootEventsEmitterInterface
 {
     protected array $events = [];
+
+    public function getEvents(): array
+    {
+        return $this->events;
+    }
+
     public function emitEvents(): array
     {
         $events = $this->events;

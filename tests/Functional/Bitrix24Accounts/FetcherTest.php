@@ -52,9 +52,7 @@ class FetcherTest extends TestCase
     public function testListReturnsPaginatedResults(): void
     {
 
-        $bitrix24Account = (new Bitrix24AccountBuilder())
-            ->build()
-        ;
+        $bitrix24Account = (new Bitrix24AccountBuilder())->build();
         $this->repository->save($bitrix24Account);
         $this->flusher->flush();
 
