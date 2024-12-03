@@ -41,8 +41,11 @@ use Symfony\Component\Uid\Uuid;
 class HandlerTest extends TestCase
 {
     private Bitrix24Accounts\UseCase\InstallStart\Handler $handler;
+
     private Flusher $flusher;
+
     private Bitrix24AccountRepositoryInterface $repository;
+
     private TraceableEventDispatcher $eventDispatcher;
 
     #[\Override]
@@ -69,7 +72,7 @@ class HandlerTest extends TestCase
     #[Test]
     public function testInstallStartHappyPath(): void
     {
-        $accountId = Uuid::v7();
+        $uuidV7 = Uuid::v7();
         $b24UserId = random_int(1, 100_000);
         $isB24UserAdmin = true;
         $b24MemberId = Uuid::v7()->toRfc4122();
@@ -79,7 +82,7 @@ class HandlerTest extends TestCase
         $scope = new Scope(['crm']);
         $this->handler->handle(
             new Bitrix24Accounts\UseCase\InstallStart\Command(
-                $accountId,
+                $uuidV7,
                 $b24UserId,
                 $isB24UserAdmin,
                 $b24MemberId,
@@ -90,67 +93,67 @@ class HandlerTest extends TestCase
             )
         );
 
-        $account = $this->repository->getById($accountId);
+        $bitrix24Account = $this->repository->getById($uuidV7);
 
         $this->assertEquals(
             $b24UserId,
-            $account->getBitrix24UserId(),
+            $bitrix24Account->getBitrix24UserId(),
             sprintf(
                 'Expected the property value to be "%s", but got "%s"',
                 $b24UserId,
-                $account->getBitrix24UserId()
+                $bitrix24Account->getBitrix24UserId()
             )
         );
 
         $this->assertEquals(
             $isB24UserAdmin,
-            $account->isBitrix24UserAdmin(),
+            $bitrix24Account->isBitrix24UserAdmin(),
             sprintf(
                 'Expected the property value to be "%s", but got "%s"',
                 $isB24UserAdmin,
-                $account->isBitrix24UserAdmin()
+                $bitrix24Account->isBitrix24UserAdmin()
             )
         );
 
         $this->assertEquals(
             $b24MemberId,
-            $account->getMemberId(),
+            $bitrix24Account->getMemberId(),
             sprintf(
                 'Expected the property value to be "%s", but got "%s"',
                 $b24MemberId,
-                $account->getMemberId()
+                $bitrix24Account->getMemberId()
             )
         );
 
         $this->assertEquals(
             $b24DomainUrl,
-            $account->getDomainUrl(),
+            $bitrix24Account->getDomainUrl(),
             sprintf(
                 'Expected the property value to be "%s", but got "%s"',
                 $b24DomainUrl,
-                $account->getDomainUrl()
+                $bitrix24Account->getDomainUrl()
             )
         );
 
         $this->assertEquals(
             $authToken,
-            $account->getAuthToken(),
-            sprintf('Object not equals')
+            $bitrix24Account->getAuthToken(),
+            'Object not equals'
         );
 
         $this->assertEquals(
             $appVersion,
-            $account->getApplicationVersion(),
+            $bitrix24Account->getApplicationVersion(),
             sprintf(
                 'Expected the property value to be "%s", but got "%s"',
                 $appVersion,
-                $account->getApplicationVersion()
+                $bitrix24Account->getApplicationVersion()
             )
         );
         $this->assertEquals(
             $scope,
-            $account->getApplicationScope(),
-            sprintf('Object not equals')
+            $bitrix24Account->getApplicationScope(),
+            'Object not equals'
         );
 
         $this->assertContains(

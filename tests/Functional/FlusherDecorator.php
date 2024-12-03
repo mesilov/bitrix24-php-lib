@@ -13,6 +13,7 @@ readonly class FlusherDecorator implements TestRepositoryFlusherInterface
         private Flusher $flusher
     ) {}
 
+    #[\Override]
     public function flush(): void
     {
         $this->flusher->flush();

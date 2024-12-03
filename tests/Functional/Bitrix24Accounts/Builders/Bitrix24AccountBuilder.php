@@ -24,18 +24,28 @@ use Symfony\Component\Uid\Uuid;
 
 class Bitrix24AccountBuilder
 {
-    private Uuid $id;
-    private int $bitrix24UserId;
-    private bool $isBitrix24UserAdmin;
+    private readonly Uuid $id;
+
+    private readonly int $bitrix24UserId;
+
+    private readonly bool $isBitrix24UserAdmin;
+
     /** bitrix24 portal unique id */
     private string $memberId;
+
     private string $domainUrl;
-    private Bitrix24AccountStatus $status;
-    private AuthToken $authToken;
-    private CarbonImmutable $createdAt;
-    private CarbonImmutable $updatedAt;
-    private int $applicationVersion;
-    private Scope $applicationScope;
+
+    private Bitrix24AccountStatus $status = Bitrix24AccountStatus::active;
+
+    private readonly AuthToken $authToken;
+
+    private readonly CarbonImmutable $createdAt;
+
+    private readonly CarbonImmutable $updatedAt;
+
+    private readonly int $applicationVersion;
+
+    private readonly Scope $applicationScope;
 
     public function __construct()
     {
@@ -44,7 +54,6 @@ class Bitrix24AccountBuilder
         $this->isBitrix24UserAdmin = true;
         $this->memberId = Uuid::v4()->toRfc4122();
         $this->domainUrl = Uuid::v7()->toRfc4122() . '-test.bitrix24.com';
-        $this->status = Bitrix24AccountStatus::active;
         $this->authToken = new AuthToken('old_1', 'old_2', 3600);
         $this->createdAt = CarbonImmutable::now();
         $this->updatedAt = CarbonImmutable::now();
@@ -64,9 +73,9 @@ class Bitrix24AccountBuilder
         return $this;
     }
 
-    public function withStatus(Bitrix24AccountStatus $status): self
+    public function withStatus(Bitrix24AccountStatus $bitrix24AccountStatus): self
     {
-        $this->status = $status;
+        $this->status = $bitrix24AccountStatus;
         return $this;
     }
 

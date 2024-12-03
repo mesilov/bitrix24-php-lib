@@ -32,7 +32,7 @@ class EntityManagerFactory
 
     public static function get(): EntityManagerInterface
     {
-        if (self::$entityManager === null) {
+        if (!self::$entityManager instanceof \Doctrine\ORM\EntityManager) {
             $paths = [
                 dirname(__DIR__) . '/config/xml'
             ];
@@ -75,6 +75,7 @@ class EntityManagerFactory
             $connection = DriverManager::getConnection($connectionParams, $configuration);
             self::$entityManager = new EntityManager($connection, $configuration);
         }
+
         return self::$entityManager;
     }
 }

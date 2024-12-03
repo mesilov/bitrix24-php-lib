@@ -29,7 +29,7 @@ readonly class Handler
             'member_id' => $command->memberId,
         ]);
 
-        $newAccount = new Bitrix24Account(
+        $bitrix24Account = new Bitrix24Account(
             $command->uuid,
             $command->bitrix24UserId,
             $command->isBitrix24UserAdmin,
@@ -43,10 +43,10 @@ readonly class Handler
             $command->applicationScope,
             true
         );
-        $this->bitrix24AccountRepository->save($newAccount);
+        $this->bitrix24AccountRepository->save($bitrix24Account);
         $this->flusher->flush();
 
-        foreach ($newAccount->emitEvents() as $event) {
+        foreach ($bitrix24Account->emitEvents() as $event) {
             $this->eventDispatcher->dispatch($event);
         }
 

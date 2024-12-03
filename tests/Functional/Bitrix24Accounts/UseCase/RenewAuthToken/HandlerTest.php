@@ -38,8 +38,11 @@ use Symfony\Component\Stopwatch\Stopwatch;
 class HandlerTest extends TestCase
 {
     private Handler $handler;
+
     private Flusher $flusher;
+
     private Bitrix24AccountRepositoryInterface $repository;
+
     private TraceableEventDispatcher $eventDispatcher;
 
     #[\Override]

@@ -36,26 +36,27 @@ readonly class Handler
         ]);
 
         // get all active bitrix24 accounts
-        $targetAccount = $this->getSingleAccountByMemberId($command->renewedAuthToken->domain, $command->renewedAuthToken->memberId,Bitrix24AccountStatus::active,$command->bitrix24UserId);
+        $bitrix24Account = $this->getSingleAccountByMemberId($command->renewedAuthToken->domain, $command->renewedAuthToken->memberId,Bitrix24AccountStatus::active,$command->bitrix24UserId);
 
         /**
          * @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $targetAccount
          */
-        $targetAccount->renewAuthToken($command->renewedAuthToken);
-        $this->bitrix24AccountRepository->save($targetAccount);
+        $bitrix24Account->renewAuthToken($command->renewedAuthToken);
+
+        $this->bitrix24AccountRepository->save($bitrix24Account);
         $this->flusher->flush();
-        foreach ($targetAccount->emitEvents() as $event) {
+        foreach ($bitrix24Account->emitEvents() as $event) {
             $this->eventDispatcher->dispatch($event);
         }
 
         $this->logger->debug('Bitrix24Accounts.RenewAuthToken.finish');
     }
 
-    public function getSingleAccountByMemberId(string $domainUrl, string $memberId, Bitrix24AccountStatus $status, int|null $bitrix24UserId): Bitrix24AccountInterface
+    public function getSingleAccountByMemberId(string $domainUrl, string $memberId, Bitrix24AccountStatus $bitrix24AccountStatus, int|null $bitrix24UserId): Bitrix24AccountInterface
     {
         $accounts = $this->bitrix24AccountRepository->findByMemberId(
             $memberId,
-            $status,
+            $bitrix24AccountStatus,
             $bitrix24UserId
         );
 

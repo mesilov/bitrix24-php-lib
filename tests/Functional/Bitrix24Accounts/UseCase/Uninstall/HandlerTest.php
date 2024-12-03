@@ -40,8 +40,11 @@ use Symfony\Component\Uid\Uuid;
 class HandlerTest extends TestCase
 {
     private Bitrix24Accounts\UseCase\Uninstall\Handler $handler;
+
     private Flusher $flusher;
+
     private Bitrix24AccountRepositoryInterface $repository;
+
     private TraceableEventDispatcher $eventDispatcher;
 
     #[Test]
@@ -75,7 +78,7 @@ class HandlerTest extends TestCase
         $this->assertEquals(
             Bitrix24AccountStatus::deleted,
             $updated->getStatus(),
-            sprintf('Expected status deleted')
+            'Expected status deleted'
         );
 
         $this->assertTrue(in_array(

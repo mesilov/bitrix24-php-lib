@@ -33,31 +33,25 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
 {
-    private Scope $applicationScope;
-
     private ?string $applicationToken = null;
 
     private ?string $comment = null;
 
-    private AuthToken $authToken;
-
     public function __construct(
-        private Uuid $id,
+        private readonly Uuid $id,
         private readonly int $bitrix24UserId,
         private readonly bool $isBitrix24UserAdmin,
         /** bitrix24 portal unique id */
         private readonly string $memberId,
         private string $domainUrl,
         private Bitrix24AccountStatus $status,
-        AuthToken $authToken,
+        private AuthToken $authToken,
         private readonly CarbonImmutable $createdAt,
         private CarbonImmutable $updatedAt,
         private int $applicationVersion,
-        Scope $applicationScope,
+        private Scope $applicationScope,
         bool $isEmitBitrix24AccountCreatedEvent = false
     ) {
-        $this->authToken = $authToken;
-        $this->applicationScope = $applicationScope;
         $this->addAccountCreatedEventIfNeeded($isEmitBitrix24AccountCreatedEvent);
     }
 
@@ -97,9 +91,9 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         return $this->status;
     }
 
-    public function setStatus(Bitrix24AccountStatus $status): void
+    public function setStatus(Bitrix24AccountStatus $bitrix24AccountStatus): void
     {
-        $this->status = $status;
+        $this->status = $bitrix24AccountStatus;
     }
 
     /**

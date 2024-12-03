@@ -14,6 +14,7 @@ class AggregateRoot implements AggregateRootEventsEmitterInterface
         return $this->events;
     }
 
+    #[\Override]
     public function emitEvents(): array
     {
         $events = $this->events;

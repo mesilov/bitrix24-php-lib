@@ -71,6 +71,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         if ($bitrix24AccountStatus instanceof Bitrix24AccountStatus) {
             $criteria['status'] = $bitrix24AccountStatus->name;
         }
+
         if (null !== $bitrix24UserId) {
             $criteria['bitrix24UserId'] = $bitrix24UserId;
         }
@@ -92,6 +93,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
                 sprintf('bitrix24 account not found by id %s', $uuid->toRfc4122())
             );
         }
+
         if (Bitrix24AccountStatus::deleted !== $bitrix24Account->getStatus()) {
             throw new InvalidArgumentException(
                 sprintf(
@@ -101,6 +103,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
                 )
             );
         }
+
         $bitrix24Account->setStatus(Bitrix24AccountStatus::deleted);
         $this->save($bitrix24Account);
     }
@@ -123,6 +126,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
      * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
      * @throws InvalidArgumentException
      */
+    #[\Override]
     public function findByApplicationToken(string $applicationToken): array
     {
         if ($applicationToken === '') {

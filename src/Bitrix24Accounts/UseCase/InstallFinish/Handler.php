@@ -41,26 +41,26 @@ readonly class Handler
 
 
         /**
-         * @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $targetAccount
+         * @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account
          */
-        $targetAccount = $this->getSingleAccountByMemberId($command->domainUrl, $command->memberId,Bitrix24AccountStatus::new, $command->bitrix24UserId);
+        $bitrix24Account = $this->getSingleAccountByMemberId($command->domainUrl, $command->memberId,Bitrix24AccountStatus::new, $command->bitrix24UserId);
 
-        $targetAccount->applicationInstalled($command->applicationToken);
+        $bitrix24Account->applicationInstalled($command->applicationToken);
 
-        $this->bitrix24AccountRepository->save($targetAccount);
+        $this->bitrix24AccountRepository->save($bitrix24Account);
         $this->flusher->flush();
-        foreach ($targetAccount->emitEvents() as $event) {
+        foreach ($bitrix24Account->emitEvents() as $event) {
             $this->eventDispatcher->dispatch($event);
         }
 
         $this->logger->debug('Bitrix24Accounts.InstallFinish.Finish');
     }
 
-    public function getSingleAccountByMemberId(string $domainUrl, string $memberId, Bitrix24AccountStatus $status, int|null $bitrix24UserId): Bitrix24AccountInterface
+    public function getSingleAccountByMemberId(string $domainUrl, string $memberId, Bitrix24AccountStatus $bitrix24AccountStatus, int|null $bitrix24UserId): Bitrix24AccountInterface
     {
         $accounts = $this->bitrix24AccountRepository->findByMemberId(
             $memberId,
-            $status,
+            $bitrix24AccountStatus,
             $bitrix24UserId
         );
 

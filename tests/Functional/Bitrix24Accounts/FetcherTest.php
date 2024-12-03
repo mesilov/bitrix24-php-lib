@@ -29,10 +29,12 @@ class FetcherTest extends TestCase
     private PaginatorInterface $paginator;
 
     private Bitrix24AccountRepositoryInterface $repository;
+
     private Fetcher $fetcher;
 
     private Flusher $flusher;
 
+    #[\Override]
     protected function setUp(): void
     {
         $this->entityManager = EntityManagerFactory::get();
@@ -40,10 +42,10 @@ class FetcherTest extends TestCase
         $eventDispatcher->addSubscriber(new PaginationSubscriber());
         $eventDispatcher->addSubscriber(new SortableSubscriber());
    //     dd(Request::createFromGlobals());
-        $requestStack = new RequestStack();
+        new RequestStack();
        // Request::createFromGlobals()
-        $accessor = new RequestArgumentAccess(new RequestStack());
-        $this->paginator = new Paginator($eventDispatcher, $accessor);
+        $requestArgumentAccess = new RequestArgumentAccess(new RequestStack());
+        $this->paginator = new Paginator($eventDispatcher, $requestArgumentAccess);
         $this->fetcher = new Fetcher($this->entityManager, $this->paginator);
         $this->flusher = new Flusher($this->entityManager);
         $this->repository = new Bitrix24AccountRepository($this->entityManager);
@@ -60,14 +62,14 @@ class FetcherTest extends TestCase
         $page = 1;
         $size = 10;
         // Вызов метода list
-        $result = $this->fetcher->list($page, $size);
+        $pagination = $this->fetcher->list($page, $size);
        // var_dump($result->getItems());
        // var_dump($result->count());
         // Проверка, что результат является экземпляром PaginationInterface
-        $this->assertInstanceOf(PaginationInterface::class, $result);
+        $this->assertInstanceOf(PaginationInterface::class, $pagination);
 
         // Проверка, что данные возвращаются корректно
-        $this->assertGreaterThan(0, $result->count()); // Проверяем, что есть хотя бы одна запись
+        $this->assertGreaterThan(0, $pagination->count()); // Проверяем, что есть хотя бы одна запись
     }
 
 }

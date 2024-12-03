@@ -37,9 +37,11 @@ use Symfony\Component\Uid\Uuid;
 class HandlerTest extends TestCase
 {
     private Bitrix24Accounts\UseCase\ChangeDomainUrl\Handler $handler;
+
     private Flusher $flusher;
 
     private Bitrix24AccountRepositoryInterface $repository;
+
     private TraceableEventDispatcher $eventDispatcher;
 
     #[\Override]
