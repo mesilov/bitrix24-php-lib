@@ -34,8 +34,9 @@ jobs:
 
       - name: "Install dependencies"
         run: |
-          composer update bitrix24/b24-php-sdk --prefer-source
           composer update ${{ env.COMPOSER_FLAGS }}
+          composer clear-cache
+          composer update bitrix24/b24-php-sdk --prefer-source
 
       - name: "run unit tests"
         run: "php vendor/bin/phpunit --testsuite=unit_tests --display-warnings --testdox"
