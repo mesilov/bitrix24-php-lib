@@ -33,7 +33,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
 {
-    private array|Scope $applicationScope;
+    private Scope $applicationScope;
 
     private ?string $applicationToken = null;
 
@@ -57,8 +57,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         bool $isEmitBitrix24AccountCreatedEvent = false
     ) {
         $this->authToken = $authToken;
-        $array =  $applicationScope->getScopeCodes();
-        $this->applicationScope = $array;
+        $this->applicationScope = $applicationScope->getScopeCodes();
         $this->addAccountCreatedEventIfNeeded($isEmitBitrix24AccountCreatedEvent);
     }
 
@@ -148,8 +147,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
     #[\Override]
     public function getApplicationScope(): Scope
     {
-        return new Scope($this->applicationScope);
-     //   return $this->applicationScope;
+        return $this->applicationScope;
     }
 
     /**
@@ -346,10 +344,6 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         return $this->comment;
     }
 
-    public function getEvents(): array
-    {
-        return $this->events;
-    }
 
     private function addAccountCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
     {
