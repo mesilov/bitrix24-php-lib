@@ -39,7 +39,7 @@ readonly class Handler
         $bitrix24Account = $this->getSingleAccountByMemberId($command->renewedAuthToken->domain, $command->renewedAuthToken->memberId,Bitrix24AccountStatus::active,$command->bitrix24UserId);
 
         /**
-         * @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $targetAccount
+         * @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $bitrix24Account
          */
         $bitrix24Account->renewAuthToken($command->renewedAuthToken);
 
