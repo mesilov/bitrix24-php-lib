@@ -57,7 +57,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         bool $isEmitBitrix24AccountCreatedEvent = false
     ) {
         $this->authToken = $authToken;
-        $this->applicationScope = $applicationScope->getScopeCodes();
+        $this->applicationScope = $applicationScope;
         $this->addAccountCreatedEventIfNeeded($isEmitBitrix24AccountCreatedEvent);
     }
 
@@ -288,7 +288,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
 
         $this->applicationVersion = $version;
         if ($newScope instanceof Scope) {
-            $this->applicationScope = $newScope->getScopeCodes();
+            $this->applicationScope = $newScope;
         }
 
         $this->updatedAt = new CarbonImmutable();
