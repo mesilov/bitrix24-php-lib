@@ -5,7 +5,7 @@ on:
   pull_request:
 
 env:
-  COMPOSER_FLAGS: "--ansi --no-interaction --no-progress --prefer-source"
+  COMPOSER_FLAGS: "--ansi --no-interaction --no-progress --prefer-dist"
   DATABASE_HOST: localhost
   DATABASE_USER: b24phpLibTest
   DATABASE_PASSWORD: b24phpLibTest
@@ -57,6 +57,11 @@ jobs:
       - name: "Install dependencies with Composer"
         run: |
           composer update ${{ env.COMPOSER_FLAGS }}
+
+      - name: "Install b24-php-sdk from source"
+        run: |
+          composer remove bitrix24/b24phpsdk --no-update
+          composer require bitrix24/b24phpsdk --prefer-source --no-cache --ansi --no-interaction --no-progress          
 
       - name: "Wait for PostgreSQL to be ready"
         run: |
