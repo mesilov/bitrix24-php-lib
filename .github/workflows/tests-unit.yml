@@ -37,7 +37,7 @@ jobs:
           composer update ${{ env.COMPOSER_FLAGS }}
           composer update bitrix24/b24phpsdk --prefer-source --no-cache
 
-      - name: "Install b24-php-sdk from source"
+      - name: "Install b24phpsdk from source"
         run: |
           composer remove bitrix24/b24phpsdk --no-update
           composer require bitrix24/b24phpsdk --prefer-source --no-cache --ansi --no-interaction --no-progress
