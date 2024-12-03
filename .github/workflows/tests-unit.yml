@@ -39,7 +39,8 @@ jobs:
 
       - name: "Install b24-php-sdk from source"
         run: |
-          composer update bitrix24/b24-php-sdk --prefer-source --no-cache --ansi --no-interaction --no-progress
+          composer remove bitrix24/b24-php-sdk --no-update
+          composer require bitrix24/b24-php-sdk --prefer-source --no-cache --ansi --no-interaction --no-progress
 
       - name: "run unit tests"
         run: "php vendor/bin/phpunit --testsuite=unit_tests --display-warnings --testdox"
