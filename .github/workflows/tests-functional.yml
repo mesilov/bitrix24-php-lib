@@ -5,7 +5,7 @@ on:
   pull_request:
 
 env:
-  COMPOSER_FLAGS: "--ansi --no-interaction --no-progress --prefer-dist"
+  COMPOSER_FLAGS: "--ansi --no-interaction --no-progress"
   DATABASE_HOST: localhost
   DATABASE_USER: b24phpLibTest
   DATABASE_PASSWORD: b24phpLibTest
