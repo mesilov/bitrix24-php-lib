@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the bitrix24-php-lib package.
  *
@@ -21,15 +22,12 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountAp
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountBlockedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountDomainUrlChangedEvent;
-use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
-use Bitrix24\SDK\Core\Exceptions\UnknownScopeCodeException;
 use Bitrix24\SDK\Core\Response\DTO\RenewedAuthToken;
 use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
-use Symfony\Contracts\EventDispatcher\Event;
 
 class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
 {
@@ -337,7 +335,6 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
     {
         return $this->comment;
     }
-
 
     private function addAccountCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
     {

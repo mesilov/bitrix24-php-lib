@@ -15,7 +15,5 @@ readonly class Command
          * @var non-empty-string $newDomainUrlHost
          */
         public string $newDomainUrlHost
-    )
-    {
-    }
+    ) {}
 }

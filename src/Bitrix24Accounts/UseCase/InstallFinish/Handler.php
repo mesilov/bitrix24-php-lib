@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallFinish;
 
-use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
@@ -39,11 +38,10 @@ readonly class Handler
             'b24_user_id' => $command->bitrix24UserId,
         ]);
 
-
         /**
          * @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account
          */
-        $bitrix24Account = $this->getSingleAccountByMemberId($command->domainUrl, $command->memberId,Bitrix24AccountStatus::new, $command->bitrix24UserId);
+        $bitrix24Account = $this->getSingleAccountByMemberId($command->domainUrl, $command->memberId, Bitrix24AccountStatus::new, $command->bitrix24UserId);
 
         $bitrix24Account->applicationInstalled($command->applicationToken);
 
@@ -56,7 +54,7 @@ readonly class Handler
         $this->logger->debug('Bitrix24Accounts.InstallFinish.Finish');
     }
 
-    public function getSingleAccountByMemberId(string $domainUrl, string $memberId, Bitrix24AccountStatus $bitrix24AccountStatus, int|null $bitrix24UserId): Bitrix24AccountInterface
+    public function getSingleAccountByMemberId(string $domainUrl, string $memberId, Bitrix24AccountStatus $bitrix24AccountStatus, ?int $bitrix24UserId): Bitrix24AccountInterface
     {
         $accounts = $this->bitrix24AccountRepository->findByMemberId(
             $memberId,

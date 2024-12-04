@@ -64,9 +64,11 @@ php-cli-bash:
 composer-install:
 	@echo "install dependencies…"
 	docker-compose run --rm php-cli composer install
+
 composer-update:
 	@echo "update dependencies…"
 	docker-compose run --rm php-cli composer update
+
 composer-dumpautoload:
 	docker-compose run --rm php-cli composer dumpautoload
 # вызов composer с любыми параметрами
@@ -76,6 +78,9 @@ composer-dumpautoload:
 composer:
 	docker-compose run --rm php-cli composer $(filter-out $@,$(MAKECMDGOALS))
 
+# check allowed licenses
+lint-allowed-licenses:
+	vendor/bin/composer-license-checker
 # linters
 lint-phpstan:
 	docker-compose run --rm php-cli php vendor/bin/phpstan analyse --memory-limit 2G
@@ -90,12 +95,10 @@ lint-cs-fixer-fix:
 
 # unit-tests
 test-run-unit:
-	docker-compose run --rm php-cli composer update bitrix24/b24-php-sdk --prefer-source
 	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=unit_tests --display-warnings --testdox
 
 # functional-tests, work with test database
 test-run-functional: debug-print-env
-	docker-compose run --rm php-cli composer update bitrix24/b24-php-sdk --prefer-source
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:create
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:update --dump-sql
@@ -103,7 +106,6 @@ test-run-functional: debug-print-env
 
 # Запустить один функциональный тест с дебагером
 run-one-functional-test: debug-print-env
-	docker-compose run --rm php-cli composer update bitrix24/b24-php-sdk --prefer-source
 	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testListReturnsPaginatedResults' tests/Functional/Bitrix24Accounts/FetcherTest.php
 
 schema-drop:

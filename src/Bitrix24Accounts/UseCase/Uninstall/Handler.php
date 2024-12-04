@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\Uninstall;
 
-use Bitrix24\Lib\AggregateRoot;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
