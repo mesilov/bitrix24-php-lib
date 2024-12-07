@@ -40,12 +40,14 @@ readonly class Handler
         foreach ($accounts as $account) {
             $account->applicationUninstalled($command->applicationToken);
             $this->bitrix24AccountRepository->save($account);
-            $this->flusher->flush();
+
 
             foreach ($account->emitEvents() as $event) {
                 $this->eventDispatcher->dispatch($event);
             }
         }
+
+        $this->flusher->flush();
 
         $this->logger->debug('Bitrix24Accounts.Uninstall.Finish');
     }

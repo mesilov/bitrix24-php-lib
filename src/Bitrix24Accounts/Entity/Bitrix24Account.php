@@ -89,11 +89,6 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         return $this->status;
     }
 
-    public function setStatus(Bitrix24AccountStatus $bitrix24AccountStatus): void
-    {
-        $this->status = $bitrix24AccountStatus;
-    }
-
     /**
      * @throws InvalidArgumentException
      */
