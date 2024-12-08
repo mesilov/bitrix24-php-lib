@@ -25,6 +25,7 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24Accou
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Carbon\CarbonImmutable;
 use Override;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -47,6 +48,10 @@ class HandlerTest extends TestCase
 
     private TraceableEventDispatcher $eventDispatcher;
 
+    /**
+     * @throws InvalidArgumentException
+     * @throws Bitrix24AccountNotFoundException
+     */
     #[Test]
     public function testUninstallWithHappyPath(): void
     {
@@ -97,12 +102,12 @@ class HandlerTest extends TestCase
     {
 
         $entityManager = EntityManagerFactory::get();
+        $eventDispatcher = new EventDispatcher();
         $this->repository = new Bitrix24AccountRepository($entityManager);
-        $this->flusher = new Flusher($entityManager);
+        $this->flusher = new Flusher($entityManager, $eventDispatcher);
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
 
         $this->handler = new Bitrix24Accounts\UseCase\Uninstall\Handler(
-            $this->eventDispatcher,
             $this->repository,
             $this->flusher,
             new NullLogger(),

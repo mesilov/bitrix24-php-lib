@@ -4,14 +4,29 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Services;
 
+
+use Bitrix24\Lib\AggregateRoot;
 use Doctrine\ORM\EntityManagerInterface;
-
-final readonly class Flusher
+use Symfony\Component\EventDispatcher\EventDispatcher;
+class Flusher
 {
-    public function __construct(private EntityManagerInterface $em) {}
+    private $em;
+    private $eventDispatcher;
+    public function __construct(EntityManagerInterface $em,EventDispatcher $eventDispatcher) {
+        $this->em = $em;
+        $this->eventDispatcher = $eventDispatcher;
+    }
 
-    public function flush(): void
+    public function flush(AggregateRoot ...$roots): void
     {
         $this->em->flush();
+
+        foreach ($roots as $root) {
+            $events = $root->emitEvents();
+            foreach ($events as $event) {
+                var_dump($event);
+                $this->eventDispatcher->dispatch($event);
+            }
+        }
     }
 }

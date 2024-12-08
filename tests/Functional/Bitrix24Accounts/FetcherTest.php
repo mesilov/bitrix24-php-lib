@@ -43,7 +43,7 @@ class FetcherTest extends TestCase
         $requestArgumentAccess = new RequestArgumentAccess(new RequestStack());
         $this->paginator = new Paginator($eventDispatcher, $requestArgumentAccess);
         $this->fetcher = new Fetcher($this->entityManager, $this->paginator);
-        $this->flusher = new Flusher($this->entityManager);
+        $this->flusher = new Flusher($this->entityManager,$eventDispatcher);
         $this->repository = new Bitrix24AccountRepository($this->entityManager);
     }
 
