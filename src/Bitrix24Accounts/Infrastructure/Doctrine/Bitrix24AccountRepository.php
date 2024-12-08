@@ -102,7 +102,6 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
             );
         }
 
-        $bitrix24Account->setStatus(Bitrix24AccountStatus::deleted);
         $this->save($bitrix24Account);
     }
 

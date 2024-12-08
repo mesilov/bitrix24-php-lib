@@ -49,11 +49,11 @@ class HandlerTest extends TestCase
     protected function setUp(): void
     {
         $entityManager = EntityManagerFactory::get();
+        $eventDispatcher = new EventDispatcher();
         $this->repository = new Bitrix24AccountRepository($entityManager);
-        $this->flusher = new Flusher($entityManager);
+        $this->flusher = new Flusher($entityManager,$eventDispatcher);
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $this->handler = new Handler(
-            $this->eventDispatcher,
             $this->repository,
             $this->flusher,
             new NullLogger()

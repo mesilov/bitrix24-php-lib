@@ -19,7 +19,6 @@ use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuild
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpFoundation\Request;
 use Knp\Component\Pager\ArgumentAccess\RequestArgumentAccess;
 
 class FetcherTest extends TestCase
@@ -41,13 +40,10 @@ class FetcherTest extends TestCase
         $eventDispatcher = new EventDispatcher();
         $eventDispatcher->addSubscriber(new PaginationSubscriber());
         $eventDispatcher->addSubscriber(new SortableSubscriber());
-   //     dd(Request::createFromGlobals());
-        new RequestStack();
-       // Request::createFromGlobals()
         $requestArgumentAccess = new RequestArgumentAccess(new RequestStack());
         $this->paginator = new Paginator($eventDispatcher, $requestArgumentAccess);
         $this->fetcher = new Fetcher($this->entityManager, $this->paginator);
-        $this->flusher = new Flusher($this->entityManager);
+        $this->flusher = new Flusher($this->entityManager,$eventDispatcher);
         $this->repository = new Bitrix24AccountRepository($this->entityManager);
     }
 
@@ -63,8 +59,7 @@ class FetcherTest extends TestCase
         $size = 10;
         // Вызов метода list
         $pagination = $this->fetcher->list($page, $size);
-       // var_dump($result->getItems());
-       // var_dump($result->count());
+
         // Проверка, что результат является экземпляром PaginationInterface
         $this->assertInstanceOf(PaginationInterface::class, $pagination);
 

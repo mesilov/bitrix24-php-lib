@@ -16,7 +16,6 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 readonly class Handler
 {
     public function __construct(
-        private EventDispatcherInterface $eventDispatcher,
         private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
         private Flusher $flusher,
         private LoggerInterface $logger,
@@ -40,12 +39,9 @@ readonly class Handler
         foreach ($accounts as $account) {
             $account->applicationUninstalled($command->applicationToken);
             $this->bitrix24AccountRepository->save($account);
-            $this->flusher->flush();
-
-            foreach ($account->emitEvents() as $event) {
-                $this->eventDispatcher->dispatch($event);
-            }
         }
+        $this->flusher->flush(...$accounts);
+
 
         $this->logger->debug('Bitrix24Accounts.Uninstall.Finish');
     }
