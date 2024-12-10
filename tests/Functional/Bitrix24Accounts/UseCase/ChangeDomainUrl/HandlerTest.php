@@ -26,10 +26,9 @@ use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
-use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
-
+use Symfony\Component\EventDispatcher\EventDispatcher;
 /**
  * @internal
  */
@@ -50,8 +49,8 @@ class HandlerTest extends TestCase
         $entityManager = EntityManagerFactory::get();
         $eventDispatcher = new EventDispatcher();
         $this->repository = new Bitrix24AccountRepository($entityManager);
-        $this->flusher = new Flusher($entityManager,$eventDispatcher);
         $this->eventDispatcher = new TraceableEventDispatcher($eventDispatcher, new Stopwatch());
+        $this->flusher = new Flusher($entityManager,$this->eventDispatcher);
         $this->handler = new Bitrix24Accounts\UseCase\ChangeDomainUrl\Handler(
             $this->repository,
             $this->flusher,

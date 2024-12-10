@@ -106,7 +106,7 @@ test-run-functional: debug-print-env
 
 # Запустить один функциональный тест с дебагером
 run-one-functional-test: debug-print-env
-	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testChangeDomainUrlWithHappyPath' tests/Functional/Bitrix24Accounts/UseCase/ChangeDomainUrl/HandlerTest.php
+	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testChangeDomainUrlWithHappyPathForManyAccounts' tests/Functional/Bitrix24Accounts/UseCase/ChangeDomainUrl/HandlerTest.php
 
 schema-drop:
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force

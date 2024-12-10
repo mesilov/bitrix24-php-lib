@@ -28,14 +28,9 @@ readonly class Handler
         foreach ($accounts as $account) {
             $account->changeDomainUrl($command->newDomainUrlHost);
             $this->bitrix24AccountRepository->save($account);
-          //  $this->flusher->flush();
-            // todo выяснить почему он не видит объединение типов
-            // @phpstan-ignore-next-line
-        /*    foreach ($account->emitEvents() as $event) {
-                $this->eventDispatcher->dispatch($event);
-            }*/
-
         }
+
+        //используется как оператор распаковки (splat operator) для передачи массива как отдельных аргументов:
         $this->flusher->flush(...$accounts);
 
         $this->logger->debug('Bitrix24Accounts.ChangeDomainUrl.Finish');
