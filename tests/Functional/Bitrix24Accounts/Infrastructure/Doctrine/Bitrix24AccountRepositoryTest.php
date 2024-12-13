@@ -28,6 +28,7 @@ use Bitrix24\SDK\Tests\Application\Contracts\TestRepositoryFlusherInterface;
 use Carbon\CarbonImmutable;
 use Override;
 use PHPUnit\Framework\Attributes\CoversClass;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Uid\Uuid;
 
 #[CoversClass(Bitrix24AccountRepository::class)]
@@ -73,6 +74,8 @@ class Bitrix24AccountRepositoryTest extends Bitrix24AccountRepositoryInterfaceTe
     #[Override]
     protected function createRepositoryFlusherImplementation(): TestRepositoryFlusherInterface
     {
-        return new FlusherDecorator(new Flusher(EntityManagerFactory::get()));
+        $entityManager = EntityManagerFactory::get();
+        $eventDispatcher = new EventDispatcher();
+        return new FlusherDecorator(new Flusher($entityManager, $eventDispatcher));
     }
 }

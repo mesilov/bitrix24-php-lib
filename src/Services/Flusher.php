@@ -12,7 +12,7 @@ class Flusher
 {
     private $em;
     private $eventDispatcher;
-    public function __construct(EntityManagerInterface $em,EventDispatcherInterface $eventDispatcher) {
+    public function __construct(EntityManagerInterface $em, EventDispatcherInterface $eventDispatcher) {
         $this->em = $em;
         $this->eventDispatcher = $eventDispatcher;
     }
@@ -22,7 +22,6 @@ class Flusher
         $this->em->flush();
         foreach ($roots as $root) {
             $events = $root->emitEvents();
-            var_dump($events);
             foreach ($events as $event) {
                 $this->eventDispatcher->dispatch($event);
             }

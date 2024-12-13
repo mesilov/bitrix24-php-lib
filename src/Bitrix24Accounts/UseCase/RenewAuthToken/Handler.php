@@ -11,7 +11,6 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\MultipleBitri
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class Handler
 {
@@ -45,9 +44,6 @@ readonly class Handler
 
         $this->bitrix24AccountRepository->save($bitrix24Account);
         $this->flusher->flush($bitrix24Account);
-      /*  foreach ($bitrix24Account->emitEvents() as $event) {
-            $this->eventDispatcher->dispatch($event);
-        }*/
 
         $this->logger->debug('Bitrix24Accounts.RenewAuthToken.finish');
     }

@@ -18,7 +18,6 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 readonly class Handler
 {
     public function __construct(
-        private EventDispatcherInterface $eventDispatcher,
         private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
         private Flusher $flusher,
         private LoggerInterface $logger
@@ -46,10 +45,8 @@ readonly class Handler
         $bitrix24Account->applicationInstalled($command->applicationToken);
 
         $this->bitrix24AccountRepository->save($bitrix24Account);
-        $this->flusher->flush();
-        foreach ($bitrix24Account->emitEvents() as $event) {
-            $this->eventDispatcher->dispatch($event);
-        }
+        $this->flusher->flush($bitrix24Account);
+
 
         $this->logger->debug('Bitrix24Accounts.InstallFinish.Finish');
     }

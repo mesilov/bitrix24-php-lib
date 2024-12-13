@@ -28,8 +28,8 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Stopwatch\Stopwatch;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 /**
  * @internal
@@ -50,9 +50,9 @@ class HandlerTest extends TestCase
     {
         $entityManager = EntityManagerFactory::get();
         $eventDispatcher = new EventDispatcher();
-        $this->repository = new Bitrix24AccountRepository($entityManager);
-        $this->flusher = new Flusher($entityManager,$eventDispatcher);
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
+        $this->repository = new Bitrix24AccountRepository($entityManager);
+        $this->flusher = new Flusher($entityManager,$this->eventDispatcher);
         $this->handler = new Handler(
             $this->repository,
             $this->flusher,
