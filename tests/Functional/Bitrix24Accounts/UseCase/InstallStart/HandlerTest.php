@@ -53,9 +53,9 @@ class HandlerTest extends TestCase
     {
         $entityManager = EntityManagerFactory::get();
         $eventDispatcher = new EventDispatcher();
-        $this->repository = new Bitrix24AccountRepository($entityManager);
-        $this->flusher = new Flusher($entityManager,$eventDispatcher);
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
+        $this->repository = new Bitrix24AccountRepository($entityManager);
+        $this->flusher = new Flusher($entityManager,$this->eventDispatcher);
         $this->handler = new Bitrix24Accounts\UseCase\InstallStart\Handler(
             $this->repository,
             $this->flusher,

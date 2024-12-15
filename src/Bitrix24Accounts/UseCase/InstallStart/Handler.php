@@ -22,7 +22,7 @@ readonly class Handler
 
     public function handle(Command $command): void
     {
-        $this->logger->debug('Bitrix24Accounts.InstallStart.start', [
+        $this->logger->info('Bitrix24Accounts.InstallStart.start', [
             'id' => $command->uuid->toRfc4122(),
             'domain_url' => $command->domainUrl,
             'member_id' => $command->memberId,
@@ -44,12 +44,12 @@ readonly class Handler
         );
         $this->bitrix24AccountRepository->save($bitrix24Account);
         $this->flusher->flush($bitrix24Account);
-    //    $this->flusher->flush();
-        /*foreach ($bitrix24Account->emitEvents() as $event) {
 
-            $this->eventDispatcher->dispatch($event);
-        }*/
-
-        $this->logger->debug('Bitrix24Accounts.InstallStart.Finish');
+        $this->logger->info('Bitrix24Accounts.InstallStart.Finish',
+        [
+            'id' => $command->uuid->toRfc4122(),
+            'domain_url' => $command->domainUrl,
+            'member_id' => $command->memberId,
+        ]);
     }
 }

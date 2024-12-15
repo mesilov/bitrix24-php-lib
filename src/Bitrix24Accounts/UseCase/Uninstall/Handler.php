@@ -22,27 +22,26 @@ readonly class Handler
     ) {}
 
     /**
-     * @throws Bitrix24AccountNotFoundException
      * @throws InvalidArgumentException
      */
     public function handle(Command $command): void
     {
-        $this->logger->debug('Bitrix24Accounts.Uninstall.start', [
+        $this->logger->info('Bitrix24Accounts.Uninstall.start', [
             'b24_application_token' => $command->applicationToken,
         ]);
 
-        /**
-         * @var AggregateRootEventsEmitterInterface[]|Bitrix24AccountInterface[] $accounts
-         */
         $accounts = $this->bitrix24AccountRepository->findByApplicationToken($command->applicationToken);
-
+        $accountsCount = count($accounts);
         foreach ($accounts as $account) {
             $account->applicationUninstalled($command->applicationToken);
             $this->bitrix24AccountRepository->save($account);
         }
         $this->flusher->flush(...$accounts);
 
-
-        $this->logger->debug('Bitrix24Accounts.Uninstall.Finish');
+        $this->logger->info('Bitrix24Accounts.Uninstall.Finish',
+        [
+            'accountsCount' => $accountsCount,
+            'b24_application_token' => $command->applicationToken,
+        ]);
     }
 }

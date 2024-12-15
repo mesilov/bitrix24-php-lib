@@ -11,7 +11,6 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\MultipleBitri
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class Handler
 {
@@ -26,7 +25,7 @@ readonly class Handler
      */
     public function handle(Command $command): void
     {
-        $this->logger->debug('Bitrix24Accounts.RenewAuthToken.start', [
+        $this->logger->info('Bitrix24Accounts.RenewAuthToken.start', [
             'domain_url' => $command->renewedAuthToken->domain,
             'member_id' => $command->renewedAuthToken->memberId,
             'bitrix24_user_id' => $command->bitrix24UserId,
@@ -39,17 +38,19 @@ readonly class Handler
             $command->bitrix24UserId
         );
 
-        //  Bitrix24Account extends AggregateRoot and implement AggregateRootEventsEmitterInterface
-        /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account */
+
         $bitrix24Account->renewAuthToken($command->renewedAuthToken);
 
         $this->bitrix24AccountRepository->save($bitrix24Account);
-        $this->flusher->flush($bitrix24Account);
-      /*  foreach ($bitrix24Account->emitEvents() as $event) {
-            $this->eventDispatcher->dispatch($event);
-        }*/
 
-        $this->logger->debug('Bitrix24Accounts.RenewAuthToken.finish');
+        $this->flusher->flush($bitrix24Account);
+
+        $this->logger->info('Bitrix24Accounts.RenewAuthToken.finish',
+        [
+            'domain_url' => $command->renewedAuthToken->domain,
+            'member_id' => $command->renewedAuthToken->memberId,
+            'bitrix24_user_id' => $command->bitrix24UserId,
+        ]);
     }
 
     /**

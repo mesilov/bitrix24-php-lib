@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Tests\Functional\Bitrix24Accounts;
 
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
-use Bitrix24\Lib\Bitrix24Accounts\ReadModel\Fetcher;
+use Bitrix24\Lib\Bitrix24Accounts\ReadModel\Bitrix24AccountFetcher;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Knp\Component\Pager\Event\Subscriber\Paginate\PaginationSubscriber;
@@ -21,7 +21,7 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Knp\Component\Pager\ArgumentAccess\RequestArgumentAccess;
 
-class FetcherTest extends TestCase
+class Bitrix24AccountsFetcherTest extends TestCase
 {
     private EntityManagerInterface $entityManager;
 
@@ -29,7 +29,7 @@ class FetcherTest extends TestCase
 
     private Bitrix24AccountRepositoryInterface $repository;
 
-    private Fetcher $fetcher;
+    private Bitrix24AccountFetcher $fetcher;
 
     private Flusher $flusher;
 
@@ -42,7 +42,7 @@ class FetcherTest extends TestCase
         $eventDispatcher->addSubscriber(new SortableSubscriber());
         $requestArgumentAccess = new RequestArgumentAccess(new RequestStack());
         $this->paginator = new Paginator($eventDispatcher, $requestArgumentAccess);
-        $this->fetcher = new Fetcher($this->entityManager, $this->paginator);
+        $this->fetcher = new Bitrix24AccountFetcher($this->entityManager, $this->paginator);
         $this->flusher = new Flusher($this->entityManager,$eventDispatcher);
         $this->repository = new Bitrix24AccountRepository($this->entityManager);
     }
@@ -65,6 +65,38 @@ class FetcherTest extends TestCase
 
         // Проверка, что данные возвращаются корректно
         $this->assertGreaterThan(0, $pagination->count()); // Проверяем, что есть хотя бы одна запись
+    }
+
+    public function testColumnNamesInBitrix24Accounts(): void
+    {
+        // Ожидаемые названия столбцов
+        $expectedColumns = [
+            'id',
+            'status',
+            'b24_user_id',
+            'is_b24_user_admin',
+            'member_id',
+            'domain_url',
+            'application_token',
+            'created_at_utc',
+            'updated_at_utc',
+            'application_version',
+            'authtoken_access_token',
+            'authtoken_refresh_token',
+            'authtoken_expires',
+            'authtoken_expires_in',
+            'applicationscope_current_scope'
+        ];
+
+        // Получение фактических названий столбцов из базы данных
+        $connection = $this->entityManager->getConnection();
+        $schemaManager = $connection->createSchemaManager();
+        $columns = $schemaManager->listTableColumns('bitrix24account');
+        $actualColumns = array_keys($columns);
+
+        foreach ($expectedColumns as $column) {
+            $this->assertContains($column, $actualColumns, "Column '$column' is missing in table 'bitrix24account'.");
+        }
     }
 
 }

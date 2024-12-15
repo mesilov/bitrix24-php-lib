@@ -39,9 +39,6 @@ jobs:
           POSTGRES_PASSWORD: b24phpLibTest
           POSTGRES_DB: b24phpLibTest
           DATABASE_HOST: localhost
-          DATABASE_USER: b24phpLibTest
-          DATABASE_PASSWORD: b24phpLibTest
-          DATABASE_NAME: b24phpLibTest
 
     steps:
       - name: "Checkout code"

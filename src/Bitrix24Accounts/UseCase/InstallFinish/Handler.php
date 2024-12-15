@@ -18,7 +18,6 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 readonly class Handler
 {
     public function __construct(
-        private EventDispatcherInterface $eventDispatcher,
         private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
         private Flusher $flusher,
         private LoggerInterface $logger
@@ -31,27 +30,28 @@ readonly class Handler
      */
     public function handle(Command $command): void
     {
-        $this->logger->debug('Bitrix24Accounts.InstallFinish.start', [
+        $this->logger->info('Bitrix24Accounts.InstallFinish.start', [
             'b24_domain_url' => $command->domainUrl,
             'b24_member_id' => $command->memberId,
             'b24_application_id' => $command->applicationToken,
             'b24_user_id' => $command->bitrix24UserId,
         ]);
 
-        /**
-         * @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account
-         */
         $bitrix24Account = $this->getSingleAccountByMemberId($command->domainUrl, $command->memberId, Bitrix24AccountStatus::new, $command->bitrix24UserId);
 
         $bitrix24Account->applicationInstalled($command->applicationToken);
 
         $this->bitrix24AccountRepository->save($bitrix24Account);
-        $this->flusher->flush();
-        foreach ($bitrix24Account->emitEvents() as $event) {
-            $this->eventDispatcher->dispatch($event);
-        }
+        $this->flusher->flush($bitrix24Account);
 
-        $this->logger->debug('Bitrix24Accounts.InstallFinish.Finish');
+
+        $this->logger->info('Bitrix24Accounts.InstallFinish.Finish',
+        [
+            'b24_domain_url' => $command->domainUrl,
+            'b24_member_id' => $command->memberId,
+            'b24_application_id' => $command->applicationToken,
+            'b24_user_id' => $command->bitrix24UserId,
+        ]);
     }
 
     public function getSingleAccountByMemberId(string $domainUrl, string $memberId, Bitrix24AccountStatus $bitrix24AccountStatus, ?int $bitrix24UserId): Bitrix24AccountInterface
