@@ -25,7 +25,7 @@ readonly class Handler
      */
     public function handle(Command $command): void
     {
-        $this->logger->debug('Bitrix24Accounts.RenewAuthToken.start', [
+        $this->logger->info('Bitrix24Accounts.RenewAuthToken.start', [
             'domain_url' => $command->renewedAuthToken->domain,
             'member_id' => $command->renewedAuthToken->memberId,
             'bitrix24_user_id' => $command->bitrix24UserId,
@@ -45,7 +45,12 @@ readonly class Handler
         $this->bitrix24AccountRepository->save($bitrix24Account);
         $this->flusher->flush($bitrix24Account);
 
-        $this->logger->debug('Bitrix24Accounts.RenewAuthToken.finish');
+        $this->logger->info('Bitrix24Accounts.RenewAuthToken.finish',
+        [
+            'domain_url' => $command->renewedAuthToken->domain,
+            'member_id' => $command->renewedAuthToken->memberId,
+            'bitrix24_user_id' => $command->bitrix24UserId,
+        ]);
     }
 
     /**

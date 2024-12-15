@@ -7,7 +7,7 @@ namespace Bitrix24\Lib\Bitrix24Accounts\ReadModel;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\Pagination\PaginationInterface;
 use Knp\Component\Pager\PaginatorInterface;
-class Fetcher
+class Bitrix24AccountFetcher
 {
 
     public function __construct(

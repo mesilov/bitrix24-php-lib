@@ -30,16 +30,13 @@ readonly class Handler
      */
     public function handle(Command $command): void
     {
-        $this->logger->debug('Bitrix24Accounts.InstallFinish.start', [
+        $this->logger->info('Bitrix24Accounts.InstallFinish.start', [
             'b24_domain_url' => $command->domainUrl,
             'b24_member_id' => $command->memberId,
             'b24_application_id' => $command->applicationToken,
             'b24_user_id' => $command->bitrix24UserId,
         ]);
 
-        /**
-         * @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account
-         */
         $bitrix24Account = $this->getSingleAccountByMemberId($command->domainUrl, $command->memberId, Bitrix24AccountStatus::new, $command->bitrix24UserId);
 
         $bitrix24Account->applicationInstalled($command->applicationToken);
@@ -48,7 +45,13 @@ readonly class Handler
         $this->flusher->flush($bitrix24Account);
 
 
-        $this->logger->debug('Bitrix24Accounts.InstallFinish.Finish');
+        $this->logger->info('Bitrix24Accounts.InstallFinish.Finish',
+        [
+            'b24_domain_url' => $command->domainUrl,
+            'b24_member_id' => $command->memberId,
+            'b24_application_id' => $command->applicationToken,
+            'b24_user_id' => $command->bitrix24UserId,
+        ]);
     }
 
     public function getSingleAccountByMemberId(string $domainUrl, string $memberId, Bitrix24AccountStatus $bitrix24AccountStatus, ?int $bitrix24UserId): Bitrix24AccountInterface
