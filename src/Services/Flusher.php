@@ -6,6 +6,7 @@ namespace Bitrix24\Lib\Services;
 
 
 use Bitrix24\Lib\AggregateRoot;
+use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 class Flusher
@@ -17,7 +18,7 @@ class Flusher
         $this->eventDispatcher = $eventDispatcher;
     }
 
-    public function flush(AggregateRoot ...$roots): void
+    public function flush(AggregateRootEventsEmitterInterface ...$roots): void
     {
         $this->em->flush();
         foreach ($roots as $root) {

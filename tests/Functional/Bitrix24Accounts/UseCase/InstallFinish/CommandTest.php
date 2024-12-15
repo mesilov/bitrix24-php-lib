@@ -112,7 +112,6 @@ class CommandTest extends TestCase
         );
     }
 
-    #[Override]
     protected function setUp(): void
     {
         $entityManager = EntityManagerFactory::get();

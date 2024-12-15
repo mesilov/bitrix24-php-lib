@@ -38,11 +38,11 @@ readonly class Handler
             $command->bitrix24UserId
         );
 
-        //  Bitrix24Account extends AggregateRoot and implement AggregateRootEventsEmitterInterface
-        /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account */
+
         $bitrix24Account->renewAuthToken($command->renewedAuthToken);
 
         $this->bitrix24AccountRepository->save($bitrix24Account);
+
         $this->flusher->flush($bitrix24Account);
 
         $this->logger->info('Bitrix24Accounts.RenewAuthToken.finish',
