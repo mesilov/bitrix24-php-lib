@@ -19,8 +19,7 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
 use PHPUnit\Framework\TestCase;
-use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
-
+use InvalidArgumentException;
 #[CoversClass(Command::class)]
 class CommandTest extends TestCase
 {
@@ -102,7 +101,7 @@ class CommandTest extends TestCase
         $this->flusher->flush();
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Domain URL cannot be empty.');
+        $this->expectExceptionMessage('Domain URL is not valid.');
 
         $applicationToken = Uuid::v7()->toRfc4122();
         new Command($applicationToken,

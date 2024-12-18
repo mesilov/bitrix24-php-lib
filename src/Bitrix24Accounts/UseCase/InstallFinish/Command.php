@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallFinish;
+use InvalidArgumentException;
 
-use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 readonly class Command
 {
     public function __construct(
@@ -25,9 +25,12 @@ readonly class Command
         if (empty($this->memberId)) {
             throw new InvalidArgumentException('Member ID cannot be empty.');
         }
-
-        if (empty($this->domainUrl)) {
-            throw new InvalidArgumentException('Domain URL cannot be empty.');
+        /*$pattern = '/^(https?:\/\/)?([a-z0-9-]+\.[a-z]{2,})(\/[^\s]*)?$/i';
+        if (!preg_match($pattern, $this->domainUrl)) {
+            throw new InvalidArgumentException('Domain URL is not valid.');
+        }*/
+        if (!filter_var($this->domainUrl, FILTER_VALIDATE_URL)) {
+            throw new InvalidArgumentException('Domain URL is not valid.');
         }
     }
 }

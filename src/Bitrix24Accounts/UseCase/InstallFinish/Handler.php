@@ -37,6 +37,7 @@ readonly class Handler
             'b24_user_id' => $command->bitrix24UserId,
         ]);
 
+        /** @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $bitrix24Account */
         $bitrix24Account = $this->getSingleAccountByMemberId($command->domainUrl, $command->memberId, Bitrix24AccountStatus::new, $command->bitrix24UserId);
 
         $bitrix24Account->applicationInstalled($command->applicationToken);
@@ -54,7 +55,7 @@ readonly class Handler
         ]);
     }
 
-    public function getSingleAccountByMemberId(string $domainUrl, string $memberId, Bitrix24AccountStatus $bitrix24AccountStatus, ?int $bitrix24UserId): Bitrix24AccountInterface
+    private function getSingleAccountByMemberId(string $domainUrl, string $memberId, Bitrix24AccountStatus $bitrix24AccountStatus, ?int $bitrix24UserId): Bitrix24AccountInterface
     {
         $accounts = $this->bitrix24AccountRepository->findByMemberId(
             $memberId,

@@ -30,6 +30,7 @@ readonly class Handler
             'b24_application_token' => $command->applicationToken,
         ]);
 
+        /** @var Bitrix24AccountInterface[]|AggregateRootEventsEmitterInterface[] $accounts */
         $accounts = $this->bitrix24AccountRepository->findByApplicationToken($command->applicationToken);
         $accountsCount = count($accounts);
         foreach ($accounts as $account) {
