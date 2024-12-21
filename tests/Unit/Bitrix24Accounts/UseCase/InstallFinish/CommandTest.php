@@ -2,24 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\UseCase\InstallFinish;
+namespace Bitrix24\Lib\Tests\Unit\Bitrix24Accounts\UseCase\InstallFinish;
 
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
+use Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallFinish\Command;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
-use Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallFinish\Command;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestDox;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
-use PHPUnit\Framework\TestCase;
-use InvalidArgumentException;
+
 #[CoversClass(Command::class)]
 class CommandTest extends TestCase
 {

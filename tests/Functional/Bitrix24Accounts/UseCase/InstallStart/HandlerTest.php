@@ -156,6 +156,8 @@ class HandlerTest extends TestCase
             'Object not equals'
         );
 
+        $this->assertEquals('new',$bitrix24Account->getStatus()->value);
+
         $this->assertContains(
             Bitrix24AccountCreatedEvent::class,
             $this->eventDispatcher->getOrphanedEvents(),

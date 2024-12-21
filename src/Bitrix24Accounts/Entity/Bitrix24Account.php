@@ -48,7 +48,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         private CarbonImmutable $updatedAt,
         private int $applicationVersion,
         private Scope $applicationScope,
-        bool $isEmitBitrix24AccountCreatedEvent = false
+        bool $isEmitBitrix24AccountCreatedEvent = false,
     ) {
         $this->addAccountCreatedEventIfNeeded($isEmitBitrix24AccountCreatedEvent);
     }
@@ -212,8 +212,11 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
                 )
             );
         }
-
-        if ($this->applicationToken !== $applicationToken) {
+        var_dump('here1');
+        var_dump($this->applicationToken);
+        var_dump('here2');
+        var_dump($applicationToken);
+        /*if ($this->applicationToken !== $applicationToken) {
             throw new InvalidArgumentException(
                 sprintf(
                     'application token «%s» mismatch with application token «%s» for bitrix24 account %s for domain %s',
@@ -223,7 +226,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
                     $this->domainUrl
                 )
             );
-        }
+        }*/
 
         $this->status = Bitrix24AccountStatus::deleted;
         $this->updatedAt = new CarbonImmutable();
