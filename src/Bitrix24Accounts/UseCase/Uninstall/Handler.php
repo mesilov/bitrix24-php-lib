@@ -32,7 +32,6 @@ readonly class Handler
 
         /** @var Bitrix24AccountInterface[]|AggregateRootEventsEmitterInterface[] $accounts */
         $accounts = $this->bitrix24AccountRepository->findByApplicationToken($command->applicationToken);
-        var_dump(count($accounts));
         $accountsCount = count($accounts);
         foreach ($accounts as $account) {
             $account->applicationUninstalled($command->applicationToken);

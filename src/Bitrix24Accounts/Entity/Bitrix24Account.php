@@ -212,10 +212,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
                 )
             );
         }
-        var_dump('here1');
-        var_dump($this->applicationToken);
-        var_dump('here2');
-        var_dump($applicationToken);
+
         /*if ($this->applicationToken !== $applicationToken) {
             throw new InvalidArgumentException(
                 sprintf(
