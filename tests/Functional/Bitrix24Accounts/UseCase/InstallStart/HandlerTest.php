@@ -33,7 +33,7 @@ use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
-
+use Doctrine\ORM\Exception\EntityIdentityCollisionException;
 /**
  * @internal
  */
@@ -156,7 +156,8 @@ class HandlerTest extends TestCase
             'Object not equals'
         );
 
-       // var_dump($this->eventDispatcher->getOrphanedEvents());
+        $this->assertEquals('new',$bitrix24Account->getStatus()->value);
+
         $this->assertContains(
             Bitrix24AccountCreatedEvent::class,
             $this->eventDispatcher->getOrphanedEvents(),
@@ -165,5 +166,45 @@ class HandlerTest extends TestCase
                 Bitrix24AccountCreatedEvent::class
             )
         );
+    }
+
+    #[Test]
+    public function testReinstallApplication(): void
+    {
+        $uuidV7 = Uuid::v7();
+        $b24UserId = random_int(1, 100_000);
+        $isB24UserAdmin = true;
+        $b24MemberId = Uuid::v7()->toRfc4122();
+        $b24DomainUrl = 'https://'.Uuid::v7()->toRfc4122().'-test.bitrix24.com';
+        $authToken = new AuthToken('old_1', 'old_2', 3600);
+        $appVersion = 1;
+        $scope = new Scope(['crm']);
+        $this->handler->handle(
+            new Bitrix24Accounts\UseCase\InstallStart\Command(
+                $uuidV7,
+                $b24UserId,
+                $isB24UserAdmin,
+                $b24MemberId,
+                $b24DomainUrl,
+                $authToken,
+                $appVersion,
+                $scope
+            )
+        );
+
+        $this->expectException(EntityIdentityCollisionException::class);
+        $this->handler->handle(
+            new Bitrix24Accounts\UseCase\InstallStart\Command(
+                $uuidV7,
+                $b24UserId,
+                $isB24UserAdmin,
+                $b24MemberId,
+                $b24DomainUrl,
+                $authToken,
+                $appVersion,
+                $scope
+            )
+        );
+
     }
 }

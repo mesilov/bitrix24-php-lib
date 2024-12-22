@@ -19,6 +19,7 @@ use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountReposit
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Bitrix24Accounts;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
+use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationUninstalledEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
@@ -56,28 +57,47 @@ class HandlerTest extends TestCase
     public function testUninstallWithHappyPath(): void
     {
         $oldDomainUrl = Uuid::v7()->toRfc4122() . '-test.bitrix24.com';
+        $applicationToken = Uuid::v7()->toRfc4122();
+        $id = Uuid::v7();
+        $memberId = Uuid::v7()->toRfc4122();
         $bitrix24Account = new Bitrix24Account(
-            Uuid::v7(),
+            $id,
             1,
             true,
-            Uuid::v7()->toRfc4122(),
+            $memberId,
             $oldDomainUrl,
-            Bitrix24AccountStatus::new,
+            Bitrix24AccountStatus::active,
             new AuthToken('old_1', 'old_2', 3600),
             new CarbonImmutable(),
             new CarbonImmutable(),
             1,
-            new Scope()
+            new Scope(),
+            false
         );
 
-        $applicationToken = Uuid::v7()->toRfc4122();
-        $bitrix24Account->applicationInstalled($applicationToken);
         $this->repository->save($bitrix24Account);
         $this->flusher->flush();
 
+        $qb = $this->repository->createQueryBuilder('b24account')
+            ->where('b24account.memberId = :memberId')
+            ->setParameter('memberId', $memberId);
+
+        $qb->update()
+            ->set('b24account.applicationToken', ':applicationToken')
+            ->setParameter('applicationToken', $applicationToken);
+
+        $query = $qb->getQuery();
+        $query->execute();
+
+        /*
+            $bitrix24Account->applicationInstalled($applicationToken);
+            $this->repository->save($bitrix24Account);
+            $this->flusher->flush();
+        */
+
         $this->handler->handle(new Bitrix24Accounts\UseCase\Uninstall\Command($applicationToken));
 
-        $this->expectException(Bitrix24AccountNotFoundException::class);
+        //$this->expectException(Bitrix24AccountNotFoundException::class);
         $updated = $this->repository->getById($bitrix24Account->getId());
 
         $this->assertEquals(

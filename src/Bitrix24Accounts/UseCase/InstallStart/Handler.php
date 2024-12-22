@@ -16,9 +16,11 @@ readonly class Handler
 {
     public function __construct(
         private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
-        private Flusher $flusher,
-        private LoggerInterface $logger
-    ) {}
+        private Flusher                            $flusher,
+        private LoggerInterface                    $logger
+    )
+    {
+    }
 
     public function handle(Command $command): void
     {
@@ -46,10 +48,11 @@ readonly class Handler
         $this->flusher->flush($bitrix24Account);
 
         $this->logger->info('Bitrix24Accounts.InstallStart.Finish',
-        [
-            'id' => $command->uuid->toRfc4122(),
-            'domain_url' => $command->domainUrl,
-            'member_id' => $command->memberId,
-        ]);
+            [
+                'id' => $command->uuid->toRfc4122(),
+                'domain_url' => $command->domainUrl,
+                'member_id' => $command->memberId,
+            ]);
+
     }
 }

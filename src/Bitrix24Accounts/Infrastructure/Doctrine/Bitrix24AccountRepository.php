@@ -32,13 +32,23 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     public function getById(Uuid $uuid): Bitrix24AccountInterface
     {
         $account = $this->getEntityManager()->getRepository(Bitrix24Account::class)->find($uuid);
-        if (null === $account || Bitrix24AccountStatus::deleted === $account->getStatus()) {
+        if (null === $account) {
             throw new Bitrix24AccountNotFoundException(
                 sprintf('bitrix24 account not found by id %s', $uuid->toRfc4122())
             );
         }
 
         return $account;
+    }
+
+    public function existsById(Uuid $uuid): bool
+    {
+        if ($this->getEntityManager()->getRepository(Bitrix24Account::class)->find($uuid))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     #[\Override]
