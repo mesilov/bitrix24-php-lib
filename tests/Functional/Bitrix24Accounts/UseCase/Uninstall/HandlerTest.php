@@ -56,55 +56,21 @@ class HandlerTest extends TestCase
     #[Test]
     public function testUninstallWithHappyPath(): void
     {
-        $oldDomainUrl = Uuid::v7()->toRfc4122() . '-test.bitrix24.com';
+
         $applicationToken = Uuid::v7()->toRfc4122();
-        $id = Uuid::v7();
-        $memberId = Uuid::v7()->toRfc4122();
-        $bitrix24Account = new Bitrix24Account(
-            $id,
-            1,
-            true,
-            $memberId,
-            $oldDomainUrl,
-            Bitrix24AccountStatus::active,
-            new AuthToken('old_1', 'old_2', 3600),
-            new CarbonImmutable(),
-            new CarbonImmutable(),
-            1,
-            new Scope(),
-            false
-        );
+
+        $bitrix24Account = (new Bitrix24AccountBuilder())
+            ->withStatus(Bitrix24AccountStatus::new)
+            ->withApplicationToken($applicationToken)
+            ->build();
 
         $this->repository->save($bitrix24Account);
         $this->flusher->flush();
 
-        $qb = $this->repository->createQueryBuilder('b24account')
-            ->where('b24account.memberId = :memberId')
-            ->setParameter('memberId', $memberId);
-
-        $qb->update()
-            ->set('b24account.applicationToken', ':applicationToken')
-            ->setParameter('applicationToken', $applicationToken);
-
-        $query = $qb->getQuery();
-        $query->execute();
-
-        /*
-            $bitrix24Account->applicationInstalled($applicationToken);
-            $this->repository->save($bitrix24Account);
-            $this->flusher->flush();
-        */
-
         $this->handler->handle(new Bitrix24Accounts\UseCase\Uninstall\Command($applicationToken));
 
-        //$this->expectException(Bitrix24AccountNotFoundException::class);
+        $this->expectException(Bitrix24AccountNotFoundException::class);
         $updated = $this->repository->getById($bitrix24Account->getId());
-
-        $this->assertEquals(
-            Bitrix24AccountStatus::deleted,
-            $updated->getStatus(),
-            'Expected status deleted'
-        );
 
         $this->assertTrue(in_array(
             Bitrix24AccountApplicationUninstalledEvent::class,

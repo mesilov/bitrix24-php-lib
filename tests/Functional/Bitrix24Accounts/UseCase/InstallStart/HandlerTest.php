@@ -17,6 +17,7 @@ use Bitrix24\Lib\Bitrix24Accounts;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
@@ -52,7 +53,6 @@ class HandlerTest extends TestCase
     protected function setUp(): void
     {
         $entityManager = EntityManagerFactory::get();
-        $eventDispatcher = new EventDispatcher();
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $this->repository = new Bitrix24AccountRepository($entityManager);
         $this->flusher = new Flusher($entityManager,$this->eventDispatcher);
@@ -156,7 +156,7 @@ class HandlerTest extends TestCase
             'Object not equals'
         );
 
-        $this->assertEquals('new',$bitrix24Account->getStatus()->value);
+        $this->assertEquals(Bitrix24AccountStatus::new,$bitrix24Account->getStatus());
 
         $this->assertContains(
             Bitrix24AccountCreatedEvent::class,

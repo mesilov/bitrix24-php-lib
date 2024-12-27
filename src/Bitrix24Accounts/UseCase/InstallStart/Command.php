@@ -39,16 +39,12 @@ readonly class Command
             throw new InvalidArgumentException('Member ID must be a non-empty string.');
         }
 
-      /*  if (!filter_var($this->domainUrl, FILTER_VALIDATE_URL)) {
+        if (!filter_var($this->domainUrl, FILTER_VALIDATE_URL)) {
             throw new InvalidArgumentException('Domain URL is not valid.');
-        }*/
+        }
 
         if ($this->applicationVersion <= 0) {
             throw new InvalidArgumentException('Application version must be a positive integer.');
-        }
-
-        if (!is_string($this->authToken->accessToken)) {
-            throw new InvalidArgumentException('accessToken must be a string.');
         }
     }
 }

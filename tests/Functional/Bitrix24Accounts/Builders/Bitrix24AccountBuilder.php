@@ -47,6 +47,8 @@ class Bitrix24AccountBuilder
 
     private readonly Scope $applicationScope;
 
+    private ?string $applicationToken = null;
+
     public function __construct()
     {
         $this->id = Uuid::v7();
@@ -73,6 +75,12 @@ class Bitrix24AccountBuilder
         return $this;
     }
 
+    public function withApplicationToken(string $applicationToken): self
+    {
+        $this->applicationToken = $applicationToken;
+        return $this;
+    }
+
     public function withStatus(Bitrix24AccountStatus $bitrix24AccountStatus): self
     {
         $this->status = $bitrix24AccountStatus;
@@ -81,7 +89,7 @@ class Bitrix24AccountBuilder
 
     public function build(): AggregateRootEventsEmitterInterface&Bitrix24AccountInterface
     {
-        return new Bitrix24Account(
+        $account = new Bitrix24Account(
             $this->id,
             $this->bitrix24UserId,
             $this->isBitrix24UserAdmin,
@@ -94,5 +102,11 @@ class Bitrix24AccountBuilder
             $this->applicationVersion,
             $this->applicationScope
         );
+
+        if (isset($this->applicationToken) && $this->status == Bitrix24AccountStatus::new) {
+            $account->applicationInstalled($this->applicationToken);
+        }
+
+        return $account;
     }
 }
