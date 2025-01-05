@@ -41,7 +41,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
             ->setParameter('id', $uuid)
             ->setParameter('status', Bitrix24AccountStatus::deleted)
             ->getQuery()
-            ->getOneOrNullResult();
+           ->getOneOrNullResult();
         // $account = $this->getEntityManager()->getRepository(Bitrix24Account::class)->find($uuid);
         if (null === $account) {
             throw new Bitrix24AccountNotFoundException(

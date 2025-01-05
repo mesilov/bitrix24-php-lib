@@ -44,15 +44,21 @@ readonly class Handler
             $command->applicationScope,
             true
         );
-        $this->bitrix24AccountRepository->save($bitrix24Account);
-        $this->flusher->flush($bitrix24Account);
 
-        $this->logger->info('Bitrix24Accounts.InstallStart.Finish',
-            [
-                'id' => $command->uuid->toRfc4122(),
-                'domain_url' => $command->domainUrl,
-                'member_id' => $command->memberId,
-            ]);
+        $isAccountExists = $this->bitrix24AccountRepository->existsById($bitrix24Account->getId());
+
+        if (!$isAccountExists) {
+            $this->bitrix24AccountRepository->save($bitrix24Account);
+            $this->flusher->flush($bitrix24Account);
+
+            $this->logger->info('Bitrix24Accounts.InstallStart.Finish',
+                [
+                    'id' => $command->uuid->toRfc4122(),
+                    'domain_url' => $command->domainUrl,
+                    'member_id' => $command->memberId,
+                ]);
+        }
+
 
     }
 }

@@ -34,7 +34,7 @@ use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
-use Doctrine\ORM\Exception\EntityIdentityCollisionException;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 /**
  * @internal
  */
@@ -169,7 +169,7 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    public function testReinstallApplication(): void
+    public function testCreateExistingAccount(): void
     {
         $uuidV7 = Uuid::v7();
         $b24UserId = random_int(1, 100_000);
@@ -192,7 +192,6 @@ class HandlerTest extends TestCase
             )
         );
 
-        $this->expectException(EntityIdentityCollisionException::class);
         $this->handler->handle(
             new Bitrix24Accounts\UseCase\InstallStart\Command(
                 $uuidV7,
@@ -205,6 +204,18 @@ class HandlerTest extends TestCase
                 $scope
             )
         );
+
+        $accounts = $this->repository->find(['id' => $uuidV7]);
+
+        if ($accounts instanceof Bitrix24AccountInterface) {
+            // Если это один объект, количество будет 1
+            $count = 1;
+        } else {
+            // Если ничего не найдено, количество будет 0
+            $count = 0;
+        }
+
+        $this->assertEquals(1, $count);
 
     }
 }

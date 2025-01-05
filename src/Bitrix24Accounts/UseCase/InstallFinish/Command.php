@@ -25,10 +25,6 @@ readonly class Command
         if (empty($this->memberId)) {
             throw new InvalidArgumentException('Member ID cannot be empty.');
         }
-        /*$pattern = '/^(https?:\/\/)?([a-z0-9-]+\.[a-z]{2,})(\/[^\s]*)?$/i';
-        if (!preg_match($pattern, $this->domainUrl)) {
-            throw new InvalidArgumentException('Domain URL is not valid.');
-        }*/
         if (!filter_var($this->domainUrl, FILTER_VALIDATE_URL)) {
             throw new InvalidArgumentException('Domain URL is not valid.');
         }
