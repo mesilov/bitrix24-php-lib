@@ -45,7 +45,7 @@ class Bitrix24AccountBuilder
 
     private readonly int $applicationVersion;
 
-    private readonly Scope $applicationScope;
+    private Scope $applicationScope;
 
     private ?string $applicationToken = null;
 
@@ -72,6 +72,12 @@ class Bitrix24AccountBuilder
     public function withDomainUrl(string $domainUrl): self
     {
         $this->domainUrl = $domainUrl;
+        return $this;
+    }
+
+    public function withApplicationScope(Scope $applicationScope): self
+    {
+        $this->applicationScope = $applicationScope;
         return $this;
     }
 

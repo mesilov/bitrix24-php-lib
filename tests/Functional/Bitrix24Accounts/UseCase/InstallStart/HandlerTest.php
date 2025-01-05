@@ -17,6 +17,7 @@ use Bitrix24\Lib\Bitrix24Accounts;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
+use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
@@ -72,86 +73,82 @@ class HandlerTest extends TestCase
     #[Test]
     public function testInstallStartHappyPath(): void
     {
-        $uuidV7 = Uuid::v7();
-        $b24UserId = random_int(1, 100_000);
-        $isB24UserAdmin = true;
-        $b24MemberId = Uuid::v7()->toRfc4122();
-        $b24DomainUrl = Uuid::v7()->toRfc4122().'-test.bitrix24.com';
-        $authToken = new AuthToken('old_1', 'old_2', 3600);
-        $appVersion = 1;
-        $scope = new Scope(['crm']);
+        $bitrix24AccountBuilder = (new Bitrix24AccountBuilder())
+            ->withApplicationScope(new Scope(['crm']))
+            ->build();
+
         $this->handler->handle(
             new Bitrix24Accounts\UseCase\InstallStart\Command(
-                $uuidV7,
-                $b24UserId,
-                $isB24UserAdmin,
-                $b24MemberId,
-                $b24DomainUrl,
-                $authToken,
-                $appVersion,
-                $scope
+                $bitrix24AccountBuilder->getId(),
+                $bitrix24AccountBuilder->getBitrix24UserId(),
+                $bitrix24AccountBuilder->isBitrix24UserAdmin(),
+                $bitrix24AccountBuilder->getMemberId(),
+                $bitrix24AccountBuilder->getDomainUrl(),
+                $bitrix24AccountBuilder->getAuthToken(),
+                $bitrix24AccountBuilder->getApplicationVersion(),
+                $bitrix24AccountBuilder->getApplicationScope()
             )
         );
 
-        $bitrix24Account = $this->repository->getById($uuidV7);
+        $bitrix24Account = $this->repository->getById($bitrix24AccountBuilder->getId());
 
         $this->assertEquals(
-            $b24UserId,
+            $bitrix24AccountBuilder->getBitrix24UserId(),
             $bitrix24Account->getBitrix24UserId(),
             sprintf(
                 'Expected the property value to be "%s", but got "%s"',
-                $b24UserId,
+                $bitrix24AccountBuilder->getBitrix24UserId(),
                 $bitrix24Account->getBitrix24UserId()
             )
         );
 
         $this->assertEquals(
-            $isB24UserAdmin,
+            $bitrix24AccountBuilder->isBitrix24UserAdmin(),
             $bitrix24Account->isBitrix24UserAdmin(),
             sprintf(
                 'Expected the property value to be "%s", but got "%s"',
-                $isB24UserAdmin,
+                $bitrix24AccountBuilder->isBitrix24UserAdmin(),
                 $bitrix24Account->isBitrix24UserAdmin()
             )
         );
 
         $this->assertEquals(
-            $b24MemberId,
+            $bitrix24AccountBuilder->getMemberId(),
             $bitrix24Account->getMemberId(),
             sprintf(
                 'Expected the property value to be "%s", but got "%s"',
-                $b24MemberId,
+                $bitrix24AccountBuilder->getMemberId(),
                 $bitrix24Account->getMemberId()
             )
         );
 
         $this->assertEquals(
-            $b24DomainUrl,
+            $bitrix24AccountBuilder->getDomainUrl(),
             $bitrix24Account->getDomainUrl(),
             sprintf(
                 'Expected the property value to be "%s", but got "%s"',
-                $b24DomainUrl,
+                $bitrix24AccountBuilder->getDomainUrl(),
                 $bitrix24Account->getDomainUrl()
             )
         );
 
         $this->assertEquals(
-            $authToken,
+            $bitrix24AccountBuilder->getAuthToken(),
             $bitrix24Account->getAuthToken(),
             'Object not equals'
         );
 
         $this->assertEquals(
-            $appVersion,
+            $bitrix24AccountBuilder->getApplicationVersion(),
             $bitrix24Account->getApplicationVersion(),
             sprintf(
                 'Expected the property value to be "%s", but got "%s"',
-                $appVersion,
+                $bitrix24AccountBuilder->getApplicationVersion(),
                 $bitrix24Account->getApplicationVersion()
             )
         );
         $this->assertEquals(
-            $scope,
+            $bitrix24AccountBuilder->getApplicationScope(),
             $bitrix24Account->getApplicationScope(),
             'Object not equals'
         );
@@ -168,54 +165,49 @@ class HandlerTest extends TestCase
         );
     }
 
+    /**
+     * @throws Bitrix24AccountNotFoundException
+     * @throws InvalidArgumentException
+     * @throws UnknownScopeCodeException
+     */
     #[Test]
     public function testCreateExistingAccount(): void
     {
-        $uuidV7 = Uuid::v7();
-        $b24UserId = random_int(1, 100_000);
-        $isB24UserAdmin = true;
-        $b24MemberId = Uuid::v7()->toRfc4122();
-        $b24DomainUrl = 'https://'.Uuid::v7()->toRfc4122().'-test.bitrix24.com';
-        $authToken = new AuthToken('old_1', 'old_2', 3600);
-        $appVersion = 1;
-        $scope = new Scope(['crm']);
+        $bitrix24Account = (new Bitrix24AccountBuilder())
+            ->withApplicationScope(new Scope(['crm']))
+            ->build();
+
+
         $this->handler->handle(
             new Bitrix24Accounts\UseCase\InstallStart\Command(
-                $uuidV7,
-                $b24UserId,
-                $isB24UserAdmin,
-                $b24MemberId,
-                $b24DomainUrl,
-                $authToken,
-                $appVersion,
-                $scope
+                $bitrix24Account->getId(),
+                $bitrix24Account->getBitrix24UserId(),
+                $bitrix24Account->isBitrix24UserAdmin(),
+                $bitrix24Account->getMemberId(),
+                $bitrix24Account->getDomainUrl(),
+                $bitrix24Account->getAuthToken(),
+                $bitrix24Account->getApplicationVersion(),
+                $bitrix24Account->getApplicationScope()
             )
+        );
+
+
+        $this->expectException(Bitrix24AccountNotFoundException::class);
+        $this->expectExceptionMessage(
+            sprintf('bitrix24account with uuid "%s" already exists', $bitrix24Account->getId())
         );
 
         $this->handler->handle(
             new Bitrix24Accounts\UseCase\InstallStart\Command(
-                $uuidV7,
-                $b24UserId,
-                $isB24UserAdmin,
-                $b24MemberId,
-                $b24DomainUrl,
-                $authToken,
-                $appVersion,
-                $scope
+                $bitrix24Account->getId(),
+                $bitrix24Account->getBitrix24UserId(),
+                $bitrix24Account->isBitrix24UserAdmin(),
+                $bitrix24Account->getMemberId(),
+                $bitrix24Account->getDomainUrl(),
+                $bitrix24Account->getAuthToken(),
+                $bitrix24Account->getApplicationVersion(),
+                $bitrix24Account->getApplicationScope()
             )
         );
-
-        $accounts = $this->repository->find(['id' => $uuidV7]);
-
-        if ($accounts instanceof Bitrix24AccountInterface) {
-            // Если это один объект, количество будет 1
-            $count = 1;
-        } else {
-            // Если ничего не найдено, количество будет 0
-            $count = 0;
-        }
-
-        $this->assertEquals(1, $count);
-
     }
 }
