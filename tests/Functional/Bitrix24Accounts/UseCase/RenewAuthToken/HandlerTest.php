@@ -64,8 +64,7 @@ class HandlerTest extends TestCase
     public function testRenewAuthTokenWithoutBitrix24UserId(): void
     {
         $bitrix24Account = (new Bitrix24AccountBuilder())
-            ->build()
-        ;
+            ->build();
         $this->repository->save($bitrix24Account);
         $this->flusher->flush();
 

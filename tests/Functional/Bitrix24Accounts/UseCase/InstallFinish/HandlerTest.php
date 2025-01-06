@@ -65,7 +65,7 @@ class HandlerTest extends TestCase
         );
 
         $updated = $this->repository->getById($bitrix24Account->getId());
-        $this->assertEquals('active', $updated->getStatus()->value,'expected status is active');
+        $this->assertEquals(Bitrix24AccountStatus::active, $updated->getStatus(),'expected status is active');
         $this->assertTrue(
             $updated->isApplicationTokenValid($applicationToken),
             sprintf('failed application token «%s» validation for bitrix24 account with id «%s»',

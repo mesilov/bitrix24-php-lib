@@ -7,6 +7,7 @@ namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallStart;
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Carbon\CarbonImmutable;
 use Psr\Log\LoggerInterface;
@@ -44,15 +45,31 @@ readonly class Handler
             $command->applicationScope,
             true
         );
-        $this->bitrix24AccountRepository->save($bitrix24Account);
-        $this->flusher->flush($bitrix24Account);
 
-        $this->logger->info('Bitrix24Accounts.InstallStart.Finish',
-            [
-                'id' => $command->uuid->toRfc4122(),
-                'domain_url' => $command->domainUrl,
-                'member_id' => $command->memberId,
-            ]);
+        $isAccountExists = $this->bitrix24AccountRepository->existsById($bitrix24Account->getId());
 
+        if (!$isAccountExists) {
+            $this->bitrix24AccountRepository->save($bitrix24Account);
+            $this->flusher->flush($bitrix24Account);
+
+            $this->logger->info('Bitrix24Accounts.InstallStart.Finish',
+                [
+                    'id' => $command->uuid->toRfc4122(),
+                    'domain_url' => $command->domainUrl,
+                    'member_id' => $command->memberId,
+                ]);
+        }else{
+            $this->logger->info('Bitrix24Accounts.InstallStart.AlreadyExists',
+                [
+                    'id' => $command->uuid->toRfc4122(),
+                    'domain_url' => $command->domainUrl,
+                    'member_id' => $command->memberId,
+                ]
+            );
+
+            throw new Bitrix24AccountNotFoundException(
+                sprintf('bitrix24account with uuid "%s" already exists', $command->uuid->toRfc4122())
+            );
+        }
     }
 }

@@ -46,9 +46,5 @@ readonly class Command
         if ($this->applicationVersion <= 0) {
             throw new InvalidArgumentException('Application version must be a positive integer.');
         }
-
-        if (!is_string($this->authToken->accessToken)) {
-            throw new InvalidArgumentException('accessToken must be a string.');
-        }
     }
 }
