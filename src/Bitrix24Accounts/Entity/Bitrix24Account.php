@@ -195,14 +195,14 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         );
     }
 
-    private function guardEmpty($applicationToken)
+    private function guardEmptyToken($applicationToken)
     {
         if ('' === $applicationToken) {
             throw new InvalidArgumentException('application token cannot be empty');
         }
     }
 
-    private function guardTokenMismatch($applicationToken)
+    private function guardTokenMismatch($applicationToken): void
     {
         if ($this->applicationToken !== $applicationToken) {
             throw new InvalidArgumentException(
@@ -217,7 +217,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         }
     }
 
-    private function guardStatusIsActive()
+    private function guardApplicationIsActive(): void
     {
         if (Bitrix24AccountStatus::active !== $this->status) {
             throw new InvalidArgumentException(
@@ -236,9 +236,9 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
     public function applicationUninstalled(string $applicationToken): void
     {
 
-        $this->guardEmpty($applicationToken);
+        $this->guardEmptyToken($applicationToken);
         $this->guardTokenMismatch($applicationToken);
-        $this->guardStatusIsActive();
+        $this->guardApplicationIsActive();
         $this->status = Bitrix24AccountStatus::deleted;
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24AccountApplicationUninstalledEvent(

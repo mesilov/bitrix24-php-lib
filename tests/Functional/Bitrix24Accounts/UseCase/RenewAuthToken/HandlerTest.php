@@ -78,7 +78,8 @@ class HandlerTest extends TestCase
                     'https://server-endpoint.com',
                     ApplicationStatus::subscription(),
                     $bitrix24Account->getDomainUrl()
-                )
+                ),
+                $bitrix24Account->getBitrix24UserId()
             )
         );
         $updated = $this->repository->getById($bitrix24Account->getId());

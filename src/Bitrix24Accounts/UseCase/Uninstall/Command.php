@@ -20,8 +20,8 @@ readonly class Command
 
     private function validate(): void
     {
-        if (empty($this->applicationToken) || !Uuid::isValid($this->applicationToken)) {
-            throw new InvalidArgumentException('Empty application token or invalid application token.');
+        if (empty($this->applicationToken)) {
+            throw new InvalidArgumentException('Empty application token application token.');
         }
     }
 }

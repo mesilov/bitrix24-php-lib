@@ -27,8 +27,8 @@ readonly class Command
 
     private function validate(): void
     {
-        if (empty($this->uuid) || !Uuid::isValid($this->uuid->toString())) {
-            throw new InvalidArgumentException('Empty uuid or invalid UUID provided.');
+        if (empty($this->uuid)) {
+            throw new InvalidArgumentException('Empty UUID provided.');
         }
 
         if ($this->bitrix24UserId <= 0) {

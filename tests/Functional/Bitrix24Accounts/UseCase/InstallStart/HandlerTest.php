@@ -210,4 +210,12 @@ class HandlerTest extends TestCase
             )
         );
     }
+
+    #[Test]
+    public function testUpdateAppVersion(): void
+    {
+
+    }
+
+
 }

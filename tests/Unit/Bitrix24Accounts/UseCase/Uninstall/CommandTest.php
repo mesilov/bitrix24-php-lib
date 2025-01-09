@@ -17,8 +17,8 @@ class CommandTest extends TestCase
     {
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Empty application token or invalid application token.');
+        $this->expectExceptionMessage('Empty application token application token.');
 
-        new Command('123_test_string');
+        new Command('');
     }
 }
