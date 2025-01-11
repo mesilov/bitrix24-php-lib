@@ -36,21 +36,20 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
     private ?string $comment = null;
 
     public function __construct(
-        private readonly Uuid            $id,
-        private readonly int             $bitrix24UserId,
-        private readonly bool            $isBitrix24UserAdmin,
+        private readonly Uuid $id,
+        private readonly int $bitrix24UserId,
+        private readonly bool $isBitrix24UserAdmin,
         /** bitrix24 portal unique id */
-        private readonly string          $memberId,
-        private string                   $domainUrl,
-        private Bitrix24AccountStatus    $status,
-        private AuthToken                $authToken,
+        private readonly string $memberId,
+        private string $domainUrl,
+        private Bitrix24AccountStatus $status,
+        private AuthToken $authToken,
         private readonly CarbonImmutable $createdAt,
-        private CarbonImmutable          $updatedAt,
-        private int                      $applicationVersion,
-        private Scope                    $applicationScope,
-        bool                             $isEmitBitrix24AccountCreatedEvent = false,
-    )
-    {
+        private CarbonImmutable $updatedAt,
+        private int $applicationVersion,
+        private Scope $applicationScope,
+        bool $isEmitBitrix24AccountCreatedEvent = false,
+    ) {
         $this->addAccountCreatedEventIfNeeded($isEmitBitrix24AccountCreatedEvent);
     }
 
@@ -195,47 +194,12 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         );
     }
 
-    private function guardEmptyToken($applicationToken)
-    {
-        if ('' === $applicationToken) {
-            throw new InvalidArgumentException('application token cannot be empty');
-        }
-    }
-
-    private function guardTokenMismatch($applicationToken): void
-    {
-        if ($this->applicationToken !== $applicationToken) {
-            throw new InvalidArgumentException(
-                sprintf(
-                    'application token «%s» mismatch with application token «%s» for bitrix24 account %s for domain %s',
-                    $applicationToken,
-                    $this->applicationToken,
-                    $this->id->toRfc4122(),
-                    $this->domainUrl
-                )
-            );
-        }
-    }
-
-    private function guardApplicationIsActive(): void
-    {
-        if (Bitrix24AccountStatus::active !== $this->status) {
-            throw new InvalidArgumentException(
-                sprintf(
-                    'for uninstall account must be in status «active», current status - «%s»',
-                    $this->status->name
-                )
-            );
-        }
-    }
-
     /**
      * @throws InvalidArgumentException
      */
     #[\Override]
     public function applicationUninstalled(string $applicationToken): void
     {
-
         $this->guardEmptyToken($applicationToken);
         $this->guardTokenMismatch($applicationToken);
         $this->guardApplicationIsActive();
@@ -343,6 +307,40 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
     public function getComment(): ?string
     {
         return $this->comment;
+    }
+
+    private function guardEmptyToken($applicationToken)
+    {
+        if ('' === $applicationToken) {
+            throw new InvalidArgumentException('application token cannot be empty');
+        }
+    }
+
+    private function guardTokenMismatch($applicationToken): void
+    {
+        if ($this->applicationToken !== $applicationToken) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'application token «%s» mismatch with application token «%s» for bitrix24 account %s for domain %s',
+                    $applicationToken,
+                    $this->applicationToken,
+                    $this->id->toRfc4122(),
+                    $this->domainUrl
+                )
+            );
+        }
+    }
+
+    private function guardApplicationIsActive(): void
+    {
+        if (Bitrix24AccountStatus::active !== $this->status) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'for uninstall account must be in status «active», current status - «%s»',
+                    $this->status->name
+                )
+            );
+        }
     }
 
     private function addAccountCreatedEventIfNeeded(bool $isEmitCreatedEvent): void

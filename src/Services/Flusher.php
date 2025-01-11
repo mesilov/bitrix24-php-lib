@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Services;
 
-
-use Bitrix24\Lib\AggregateRoot;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+
 class Flusher
 {
     private $em;
     private $eventDispatcher;
-    public function __construct(EntityManagerInterface $em, EventDispatcherInterface $eventDispatcher) {
+
+    public function __construct(EntityManagerInterface $em, EventDispatcherInterface $eventDispatcher)
+    {
         $this->em = $em;
         $this->eventDispatcher = $eventDispatcher;
     }

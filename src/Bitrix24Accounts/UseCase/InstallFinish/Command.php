@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallFinish;
-use InvalidArgumentException;
 
 readonly class Command
 {
@@ -19,14 +18,13 @@ readonly class Command
     private function validate(): void
     {
         if (empty($this->applicationToken)) {
-            throw new InvalidArgumentException('Application token cannot be empty.');
+            throw new \InvalidArgumentException('Application token cannot be empty.');
         }
-
         if (empty($this->memberId)) {
-            throw new InvalidArgumentException('Member ID cannot be empty.');
+            throw new \InvalidArgumentException('Member ID cannot be empty.');
         }
         if (!filter_var($this->domainUrl, FILTER_VALIDATE_URL)) {
-            throw new InvalidArgumentException('Domain URL is not valid.');
+            throw new \InvalidArgumentException('Domain URL is not valid.');
         }
     }
 }
