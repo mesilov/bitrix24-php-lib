@@ -9,39 +9,37 @@ use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuild
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
-use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
-use Generator;
 
+/**
+ * @internal
+ */
 #[CoversClass(Command::class)]
 class CommandTest extends TestCase
 {
-
     #[Test]
     #[DataProvider('dataForCommand')]
     public function testValidCommand(
         Uuid $uuid,
         int $bitrix24UserId,
-        bool      $isBitrix24UserAdmin,
-        string    $memberId,
-        string    $domainUrl,
+        bool $isBitrix24UserAdmin,
+        string $memberId,
+        string $domainUrl,
         AuthToken $authToken,
-        int       $applicationVersion,
-        Scope     $applicationScope,
+        int $applicationVersion,
+        Scope $applicationScope,
         ?string $expectedException,
         ?string $expectedExceptionMessage,
-    )
-    {
-
-        if ($expectedException !== null) {
+    ) {
+        if (null !== $expectedException) {
             $this->expectException($expectedException);
         }
 
-        if ($expectedExceptionMessage !== null) {
+        if (null !== $expectedExceptionMessage) {
             $this->expectExceptionMessage($expectedExceptionMessage);
         }
 
@@ -55,10 +53,9 @@ class CommandTest extends TestCase
             $applicationVersion,
             $applicationScope
         );
-
     }
 
-    public static function dataForCommand(): Generator
+    public static function dataForCommand(): \Generator
     {
         $applicationToken = Uuid::v7()->toRfc4122();
         $bitrix24Account = (new Bitrix24AccountBuilder())
@@ -74,7 +71,7 @@ class CommandTest extends TestCase
             $bitrix24Account->getAuthToken(),
             $bitrix24Account->getApplicationVersion(),
             $bitrix24Account->getApplicationScope(),
-            InvalidArgumentException::class,
+            \InvalidArgumentException::class,
             'Member ID must be a non-empty string.'
         ];
 
@@ -87,7 +84,7 @@ class CommandTest extends TestCase
             $bitrix24Account->getAuthToken(),
             $bitrix24Account->getApplicationVersion(),
             $bitrix24Account->getApplicationScope(),
-            InvalidArgumentException::class,
+            \InvalidArgumentException::class,
             'Domain URL is not valid.'
         ];
 
@@ -100,7 +97,7 @@ class CommandTest extends TestCase
             $bitrix24Account->getAuthToken(),
             $bitrix24Account->getApplicationVersion(),
             $bitrix24Account->getApplicationScope(),
-            InvalidArgumentException::class,
+            \InvalidArgumentException::class,
             'Bitrix24 User ID must be a positive integer.'
         ];
 
@@ -113,9 +110,8 @@ class CommandTest extends TestCase
             $bitrix24Account->getAuthToken(),
             0,
             $bitrix24Account->getApplicationScope(),
-            InvalidArgumentException::class,
+            \InvalidArgumentException::class,
             'Application version must be a positive integer.'
         ];
-
     }
 }

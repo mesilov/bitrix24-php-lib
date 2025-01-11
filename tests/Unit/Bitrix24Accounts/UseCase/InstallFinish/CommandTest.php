@@ -7,18 +7,18 @@ namespace Bitrix24\Lib\Tests\Unit\Bitrix24Accounts\UseCase\InstallFinish;
 use Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallFinish\Command;
 use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
-use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
-use Generator;
 
+/**
+ * @internal
+ */
 #[CoversClass(Command::class)]
 class CommandTest extends TestCase
 {
-
     #[Test]
     #[DataProvider('dataForCommand')]
     public function testValidCommand(
@@ -28,14 +28,12 @@ class CommandTest extends TestCase
         int $bitrix24UserId,
         ?string $expectedException,
         ?string $expectedExceptionMessage,
-    )
-    {
-
-        if ($expectedException !== null) {
+    ) {
+        if (null !== $expectedException) {
             $this->expectException($expectedException);
         }
 
-        if ($expectedExceptionMessage !== null) {
+        if (null !== $expectedExceptionMessage) {
             $this->expectExceptionMessage($expectedExceptionMessage);
         }
 
@@ -45,10 +43,9 @@ class CommandTest extends TestCase
             $domainUrl,
             $bitrix24UserId
         );
-
     }
 
-    public static function dataForCommand(): Generator
+    public static function dataForCommand(): \Generator
     {
         $applicationToken = Uuid::v7()->toRfc4122();
         $bitrix24Account = (new Bitrix24AccountBuilder())
@@ -60,7 +57,7 @@ class CommandTest extends TestCase
             $bitrix24Account->getMemberId(),
             $bitrix24Account->getDomainUrl(),
             $bitrix24Account->getBitrix24UserId(),
-            InvalidArgumentException::class,
+            \InvalidArgumentException::class,
             'Application token cannot be empty.'
         ];
 
@@ -69,7 +66,7 @@ class CommandTest extends TestCase
             '',
             $bitrix24Account->getDomainUrl(),
             $bitrix24Account->getBitrix24UserId(),
-            InvalidArgumentException::class,
+            \InvalidArgumentException::class,
             'Member ID cannot be empty.'
         ];
 
@@ -78,9 +75,8 @@ class CommandTest extends TestCase
             $bitrix24Account->getMemberId(),
             '',
             $bitrix24Account->getBitrix24UserId(),
-            InvalidArgumentException::class,
+            \InvalidArgumentException::class,
             'Domain URL is not valid.'
         ];
-
     }
 }

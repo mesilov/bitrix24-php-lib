@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Tests\Unit\Bitrix24Accounts\UseCase\Uninstall;
 
 use Bitrix24\Lib\Bitrix24Accounts\UseCase\Uninstall\Command;
-use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Generator;
+
+/**
+ * @internal
+ */
 #[CoversClass(Command::class)]
 class CommandTest extends TestCase
 {
@@ -20,27 +22,24 @@ class CommandTest extends TestCase
         string $applicationToken,
         ?string $expectedException,
         ?string $expectedExceptionMessage,
-    )
-    {
-
-        if ($expectedException !== null) {
+    ) {
+        if (null !== $expectedException) {
             $this->expectException($expectedException);
         }
 
-        if ($expectedExceptionMessage !== null) {
+        if (null !== $expectedExceptionMessage) {
             $this->expectExceptionMessage($expectedExceptionMessage);
         }
 
-       new Command($applicationToken);
-
+        new Command($applicationToken);
     }
 
-    public static function dataForCommand(): Generator
+    public static function dataForCommand(): \Generator
     {
         yield 'validApplicationToken' => [
             '',
-            InvalidArgumentException::class,
-            'Empty application token application token.'
+            \InvalidArgumentException::class,
+            'Empty application token application token.',
         ];
     }
 }

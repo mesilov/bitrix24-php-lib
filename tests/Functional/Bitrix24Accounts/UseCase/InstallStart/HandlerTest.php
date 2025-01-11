@@ -22,7 +22,6 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountSt
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
-use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Bitrix24\SDK\Core\Exceptions\UnknownScopeCodeException;
@@ -34,8 +33,7 @@ use Random\RandomException;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
-use Symfony\Component\Uid\Uuid;
-use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
+
 /**
  * @internal
  */
@@ -56,7 +54,7 @@ class HandlerTest extends TestCase
         $entityManager = EntityManagerFactory::get();
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $this->repository = new Bitrix24AccountRepository($entityManager);
-        $this->flusher = new Flusher($entityManager,$this->eventDispatcher);
+        $this->flusher = new Flusher($entityManager, $this->eventDispatcher);
         $this->handler = new Bitrix24Accounts\UseCase\InstallStart\Handler(
             $this->repository,
             $this->flusher,
@@ -153,7 +151,7 @@ class HandlerTest extends TestCase
             'Object not equals'
         );
 
-        $this->assertEquals(Bitrix24AccountStatus::new,$bitrix24Account->getStatus());
+        $this->assertEquals(Bitrix24AccountStatus::new, $bitrix24Account->getStatus());
 
         $this->assertContains(
             Bitrix24AccountCreatedEvent::class,
@@ -177,7 +175,6 @@ class HandlerTest extends TestCase
             ->withApplicationScope(new Scope(['crm']))
             ->build();
 
-
         $this->handler->handle(
             new Bitrix24Accounts\UseCase\InstallStart\Command(
                 $bitrix24Account->getId(),
@@ -190,7 +187,6 @@ class HandlerTest extends TestCase
                 $bitrix24Account->getApplicationScope()
             )
         );
-
 
         $this->expectException(Bitrix24AccountNotFoundException::class);
         $this->expectExceptionMessage(
@@ -212,10 +208,5 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    public function testUpdateAppVersion(): void
-    {
-
-    }
-
-
+    public function testUpdateAppVersion(): void {}
 }
