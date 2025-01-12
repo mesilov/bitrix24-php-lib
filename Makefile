@@ -16,6 +16,10 @@ include $(ENV)
 -include $(ENV_LOCAL)
 
 
+
+coding-standards: vendor
+	vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --diff --verbose
+
 default:
 	@echo "make needs target:"
 	@egrep -e '^\S+' ./Makefile | grep -v default | sed -r 's/://' | sed -r 's/^/ - /'
@@ -106,7 +110,7 @@ test-run-functional: debug-print-env
 
 # Запустить один функциональный тест с дебагером
 run-one-functional-test: debug-print-env
-	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testUninstallWithHappyPath' tests/Functional/Bitrix24Accounts/UseCase/Uninstall/HandlerTest.php
+	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testCreateExistingAccount' tests/Functional/Bitrix24Accounts/UseCase/InstallStart/HandlerTest.php
 
 schema-drop:
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force

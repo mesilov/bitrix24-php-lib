@@ -11,7 +11,6 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24Accou
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
-use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Component\Uid\Uuid;
@@ -20,8 +19,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
 {
     public function __construct(
         EntityManagerInterface $entityManager
-    )
-    {
+    ) {
         parent::__construct($entityManager, $entityManager->getClassMetadata(Bitrix24Account::class));
     }
 
@@ -33,7 +31,6 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     #[\Override]
     public function getById(Uuid $uuid): Bitrix24AccountInterface
     {
-
         $account = $this->getEntityManager()->getRepository(Bitrix24Account::class)
             ->createQueryBuilder('b24')
             ->where('b24.id = :id')
@@ -41,8 +38,8 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
             ->setParameter('id', $uuid)
             ->setParameter('status', Bitrix24AccountStatus::deleted)
             ->getQuery()
-           ->getOneOrNullResult();
-        // $account = $this->getEntityManager()->getRepository(Bitrix24Account::class)->find($uuid);
+            ->getOneOrNullResult();
+
         if (null === $account) {
             throw new Bitrix24AccountNotFoundException(
                 sprintf('bitrix24 account not found by id %s', $uuid->toRfc4122())
@@ -83,10 +80,10 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
      */
     #[\Override]
     public function findByMemberId(
-        string                 $memberId,
+        string $memberId,
         ?Bitrix24AccountStatus $bitrix24AccountStatus = null,
-        ?int                   $bitrix24UserId = null,
-        ?bool                  $isAdmin = null
+        ?int $bitrix24UserId = null,
+        ?bool $isAdmin = null
     ): array
     {
         if ('' === trim($memberId)) {
@@ -198,9 +195,9 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
      */
     #[\Override]
     public function findByDomain(
-        string                 $domainUrl,
+        string $domainUrl,
         ?Bitrix24AccountStatus $bitrix24AccountStatus = null,
-        ?bool                  $isAdmin = null
+        ?bool $isAdmin = null
     ): array
     {
         if ('' === trim($domainUrl)) {

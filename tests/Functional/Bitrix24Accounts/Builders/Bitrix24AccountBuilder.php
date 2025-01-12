@@ -55,7 +55,7 @@ class Bitrix24AccountBuilder
         $this->bitrix24UserId = random_int(1, 1_000_000);
         $this->isBitrix24UserAdmin = true;
         $this->memberId = Uuid::v4()->toRfc4122();
-        $this->domainUrl = 'https://'.Uuid::v7()->toRfc4122() . '-test.bitrix24.com';
+        $this->domainUrl = 'https://'.Uuid::v7()->toRfc4122().'-test.bitrix24.com';
         $this->authToken = new AuthToken('old_1', 'old_2', 3600);
         $this->createdAt = CarbonImmutable::now();
         $this->updatedAt = CarbonImmutable::now();
@@ -66,30 +66,35 @@ class Bitrix24AccountBuilder
     public function withMemberId(string $memberId): self
     {
         $this->memberId = $memberId;
+
         return $this;
     }
 
     public function withDomainUrl(string $domainUrl): self
     {
         $this->domainUrl = $domainUrl;
+
         return $this;
     }
 
     public function withApplicationScope(Scope $applicationScope): self
     {
         $this->applicationScope = $applicationScope;
+
         return $this;
     }
 
     public function withApplicationToken(string $applicationToken): self
     {
         $this->applicationToken = $applicationToken;
+
         return $this;
     }
 
     public function withStatus(Bitrix24AccountStatus $bitrix24AccountStatus): self
     {
         $this->status = $bitrix24AccountStatus;
+
         return $this;
     }
 
@@ -109,7 +114,7 @@ class Bitrix24AccountBuilder
             $this->applicationScope
         );
 
-        if (isset($this->applicationToken) && $this->status == Bitrix24AccountStatus::new) {
+        if (isset($this->applicationToken) && Bitrix24AccountStatus::new == $this->status) {
             $account->applicationInstalled($this->applicationToken);
         }
 

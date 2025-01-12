@@ -9,7 +9,6 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountIn
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class Handler
 {
@@ -26,20 +25,22 @@ readonly class Handler
             'b24_domain_url_new' => $command->newDomainUrlHost,
         ]);
 
-        /** @var Bitrix24AccountInterface[]|AggregateRootEventsEmitterInterface[] $accounts */
+        /** @var AggregateRootEventsEmitterInterface[]|Bitrix24AccountInterface[] $accounts */
         $accounts = $this->bitrix24AccountRepository->findByDomain($command->oldDomainUrlHost);
         foreach ($accounts as $account) {
             $account->changeDomainUrl($command->newDomainUrlHost);
             $this->bitrix24AccountRepository->save($account);
         }
 
-        //используется как оператор распаковки (splat operator) для передачи массива как отдельных аргументов:
+        // используется как оператор распаковки (splat operator) для передачи массива как отдельных аргументов:
         $this->flusher->flush(...$accounts);
 
-        $this->logger->info('Bitrix24Accounts.ChangeDomainUrl.Finish',
-        [
-            'b24_domain_url_old' => $command->oldDomainUrlHost,
-            'b24_domain_url_new' => $command->newDomainUrlHost,
-        ]);
+        $this->logger->info(
+            'Bitrix24Accounts.ChangeDomainUrl.Finish',
+            [
+                'b24_domain_url_old' => $command->oldDomainUrlHost,
+                'b24_domain_url_new' => $command->newDomainUrlHost,
+            ]
+        );
     }
 }

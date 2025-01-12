@@ -6,19 +6,16 @@ namespace Bitrix24\Lib\Tests;
 
 use Bitrix24\SDK\Core\Exceptions\WrongConfigurationException;
 use Carbon\Doctrine\CarbonImmutableType;
-
+use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Exception;
+use Doctrine\DBAL\Types\Type;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Exception\ORMException;
 use Doctrine\ORM\OptimisticLockException;
-use Monolog\Logger;
-use Symfony\Bridge\Doctrine\Types\UuidType;
-use Doctrine\DBAL\DriverManager;
-use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\ORMSetup;
-use Doctrine\DBAL\Types\Type;
-use Monolog\Handler\StreamHandler;
-use Monolog\Level;
+use Symfony\Bridge\Doctrine\Types\UuidType;
+
 class EntityManagerFactory
 {
     /**
@@ -27,14 +24,13 @@ class EntityManagerFactory
      * @throws ORMException
      * @throws Exception
      */
-
     private static ?EntityManager $entityManager = null;
 
     public static function get(): EntityManagerInterface
     {
-        if (!self::$entityManager instanceof \Doctrine\ORM\EntityManager) {
+        if (!self::$entityManager instanceof EntityManager) {
             $paths = [
-                dirname(__DIR__) . '/config/xml'
+                dirname(__DIR__).'/config/xml',
             ];
             $isDevMode = true;
 

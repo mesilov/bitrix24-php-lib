@@ -26,9 +26,10 @@ use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+
 /**
  * @internal
  */
@@ -50,7 +51,7 @@ class HandlerTest extends TestCase
         $eventDispatcher = new EventDispatcher();
         $this->repository = new Bitrix24AccountRepository($entityManager);
         $this->eventDispatcher = new TraceableEventDispatcher($eventDispatcher, new Stopwatch());
-        $this->flusher = new Flusher($entityManager,$this->eventDispatcher);
+        $this->flusher = new Flusher($entityManager, $this->eventDispatcher);
         $this->handler = new Bitrix24Accounts\UseCase\ChangeDomainUrl\Handler(
             $this->repository,
             $this->flusher,
@@ -62,8 +63,8 @@ class HandlerTest extends TestCase
     #[TestDox('Test change domain url with happy path - one account')]
     public function testChangeDomainUrlWithHappyPath(): void
     {
-        $oldDomainUrl = Uuid::v7()->toRfc4122() . '-test.bitrix24.com';
-        $newDomainUrl = 'new-' . $oldDomainUrl;
+        $oldDomainUrl = Uuid::v7()->toRfc4122().'-test.bitrix24.com';
+        $newDomainUrl = 'new-'.$oldDomainUrl;
 
         $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withDomainUrl($oldDomainUrl)
@@ -89,10 +90,11 @@ class HandlerTest extends TestCase
             )
         );
 
-        $this->assertTrue(in_array(
-            Bitrix24AccountDomainUrlChangedEvent::class,
-            $this->eventDispatcher->getOrphanedEvents(),
-        ),
+        $this->assertTrue(
+            in_array(
+                Bitrix24AccountDomainUrlChangedEvent::class,
+                $this->eventDispatcher->getOrphanedEvents(),
+            ),
             sprintf(
                 'Event %s was expected to be in the list of orphan events, but it is missing',
                 Bitrix24AccountDomainUrlChangedEvent::class
@@ -104,8 +106,8 @@ class HandlerTest extends TestCase
     #[TestDox('Test change domain url with happy path - many accounts')]
     public function testChangeDomainUrlWithHappyPathForManyAccounts(): void
     {
-        $oldDomainUrl = Uuid::v7()->toRfc4122() . '-test.bitrix24.com';
-        $newDomainUrl = 'new-' . $oldDomainUrl;
+        $oldDomainUrl = Uuid::v7()->toRfc4122().'-test.bitrix24.com';
+        $newDomainUrl = 'new-'.$oldDomainUrl;
         $b24MemberId = Uuid::v7()->toRfc4122();
 
         $bitrix24AccountA = (new Bitrix24AccountBuilder())
@@ -143,10 +145,11 @@ class HandlerTest extends TestCase
             );
         }
 
-        $this->assertTrue(in_array(
-            Bitrix24AccountDomainUrlChangedEvent::class,
-            $this->eventDispatcher->getOrphanedEvents()
-        ),
+        $this->assertTrue(
+            in_array(
+                Bitrix24AccountDomainUrlChangedEvent::class,
+                $this->eventDispatcher->getOrphanedEvents()
+            ),
             sprintf(
                 'Event %s was expected to be in the list of orphan events, but it is missing',
                 Bitrix24AccountDomainUrlChangedEvent::class

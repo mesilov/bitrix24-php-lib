@@ -13,15 +13,14 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\UseCase\InstallFinish;
 
+use Bitrix24\Lib\Bitrix24Accounts;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
-use Bitrix24\Lib\Bitrix24Accounts;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationInstalledEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
-use Override;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestDox;
@@ -32,6 +31,9 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * @internal
+ */
 #[CoversClass(Bitrix24Accounts\UseCase\InstallFinish\Handler::class)]
 class HandlerTest extends TestCase
 {
@@ -42,6 +44,22 @@ class HandlerTest extends TestCase
     private Bitrix24AccountRepositoryInterface $repository;
 
     private TraceableEventDispatcher $eventDispatcher;
+
+    #[\Override]
+    protected function setUp(): void
+    {
+        $entityManager = EntityManagerFactory::get();
+        $eventDispatcher = new EventDispatcher();
+        $this->eventDispatcher = new TraceableEventDispatcher($eventDispatcher, new Stopwatch());
+        $this->repository = new Bitrix24AccountRepository($entityManager);
+        $this->flusher = new Flusher($entityManager, $this->eventDispatcher);
+
+        $this->handler = new Bitrix24Accounts\UseCase\InstallFinish\Handler(
+            $this->repository,
+            $this->flusher,
+            new NullLogger()
+        );
+    }
 
     #[Test]
     #[TestDox('test finish installation with happy path')]
@@ -65,35 +83,22 @@ class HandlerTest extends TestCase
         );
 
         $updated = $this->repository->getById($bitrix24Account->getId());
-        $this->assertEquals(Bitrix24AccountStatus::active, $updated->getStatus(),'expected status is active');
+        $this->assertEquals(Bitrix24AccountStatus::active, $updated->getStatus(), 'expected status is active');
         $this->assertTrue(
             $updated->isApplicationTokenValid($applicationToken),
-            sprintf('failed application token «%s» validation for bitrix24 account with id «%s»',
+            sprintf(
+                'failed application token «%s» validation for bitrix24 account with id «%s»',
                 $applicationToken,
-                $bitrix24Account->getId()->toString()
-            ));
-        $this->assertTrue(
-            in_array(Bitrix24AccountApplicationInstalledEvent::class, $this->eventDispatcher->getOrphanedEvents(), true),
-            sprintf('emited event «%s» for bitrix24 account wiht id «%s» not found',
-                Bitrix24AccountApplicationInstalledEvent::class,
                 $bitrix24Account->getId()->toString()
             )
         );
-    }
-
-    #[Override]
-    protected function setUp(): void
-    {
-        $entityManager = EntityManagerFactory::get();
-        $eventDispatcher = new EventDispatcher();
-        $this->eventDispatcher = new TraceableEventDispatcher($eventDispatcher, new Stopwatch());
-        $this->repository = new Bitrix24AccountRepository($entityManager);
-        $this->flusher = new Flusher($entityManager,$this->eventDispatcher);
-
-        $this->handler = new Bitrix24Accounts\UseCase\InstallFinish\Handler(
-            $this->repository,
-            $this->flusher,
-            new NullLogger()
+        $this->assertTrue(
+            in_array(Bitrix24AccountApplicationInstalledEvent::class, $this->eventDispatcher->getOrphanedEvents(), true),
+            sprintf(
+                'emited event «%s» for bitrix24 account wiht id «%s» not found',
+                Bitrix24AccountApplicationInstalledEvent::class,
+                $bitrix24Account->getId()->toString()
+            )
         );
     }
 }

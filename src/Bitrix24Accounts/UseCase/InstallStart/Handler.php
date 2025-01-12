@@ -11,17 +11,14 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24Accou
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Carbon\CarbonImmutable;
 use Psr\Log\LoggerInterface;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class Handler
 {
     public function __construct(
         private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
-        private Flusher                            $flusher,
-        private LoggerInterface                    $logger
-    )
-    {
-    }
+        private Flusher $flusher,
+        private LoggerInterface $logger
+    ) {}
 
     public function handle(Command $command): void
     {
@@ -52,14 +49,17 @@ readonly class Handler
             $this->bitrix24AccountRepository->save($bitrix24Account);
             $this->flusher->flush($bitrix24Account);
 
-            $this->logger->info('Bitrix24Accounts.InstallStart.Finish',
+            $this->logger->info(
+                'Bitrix24Accounts.InstallStart.Finish',
                 [
                     'id' => $command->uuid->toRfc4122(),
                     'domain_url' => $command->domainUrl,
                     'member_id' => $command->memberId,
-                ]);
-        }else{
-            $this->logger->info('Bitrix24Accounts.InstallStart.AlreadyExists',
+                ]
+            );
+        } else {
+            $this->logger->info(
+                'Bitrix24Accounts.InstallStart.AlreadyExists',
                 [
                     'id' => $command->uuid->toRfc4122(),
                     'domain_url' => $command->domainUrl,

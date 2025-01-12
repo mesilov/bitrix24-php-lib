@@ -16,11 +16,9 @@ readonly class Handler
 {
     public function __construct(
         private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
-        private Flusher                            $flusher,
-        private LoggerInterface                    $logger
-    )
-    {
-    }
+        private Flusher $flusher,
+        private LoggerInterface $logger
+    ) {}
 
     /**
      * @throws MultipleBitrix24AccountsFoundException
@@ -33,13 +31,12 @@ readonly class Handler
             'bitrix24_user_id' => $command->bitrix24UserId,
         ]);
 
-        /** @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $bitrix24Account */
+        /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account */
         $bitrix24Account = $this->getSingleAccountByMemberId(
             $command->renewedAuthToken->domain,
             $command->renewedAuthToken->memberId,
             $command->bitrix24UserId
         );
-
 
         $bitrix24Account->renewAuthToken($command->renewedAuthToken);
 
@@ -47,12 +44,14 @@ readonly class Handler
 
         $this->flusher->flush($bitrix24Account);
 
-        $this->logger->info('Bitrix24Accounts.RenewAuthToken.finish',
+        $this->logger->info(
+            'Bitrix24Accounts.RenewAuthToken.finish',
             [
                 'domain_url' => $command->renewedAuthToken->domain,
                 'member_id' => $command->renewedAuthToken->memberId,
                 'bitrix24_user_id' => $command->bitrix24UserId,
-            ]);
+            ]
+        );
     }
 
     /**

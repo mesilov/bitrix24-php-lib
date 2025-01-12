@@ -13,7 +13,6 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24Accou
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Psr\Log\LoggerInterface;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class Handler
 {
@@ -37,7 +36,7 @@ readonly class Handler
             'b24_user_id' => $command->bitrix24UserId,
         ]);
 
-        /** @var Bitrix24AccountInterface|AggregateRootEventsEmitterInterface $bitrix24Account */
+        /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account */
         $bitrix24Account = $this->getSingleAccountByMemberId($command->domainUrl, $command->memberId, $command->bitrix24UserId);
 
         $bitrix24Account->applicationInstalled($command->applicationToken);
@@ -45,14 +44,15 @@ readonly class Handler
         $this->bitrix24AccountRepository->save($bitrix24Account);
         $this->flusher->flush($bitrix24Account);
 
-
-        $this->logger->info('Bitrix24Accounts.InstallFinish.Finish',
-        [
-            'b24_domain_url' => $command->domainUrl,
-            'b24_member_id' => $command->memberId,
-            'b24_application_id' => $command->applicationToken,
-            'b24_user_id' => $command->bitrix24UserId,
-        ]);
+        $this->logger->info(
+            'Bitrix24Accounts.InstallFinish.Finish',
+            [
+                'b24_domain_url' => $command->domainUrl,
+                'b24_member_id' => $command->memberId,
+                'b24_application_id' => $command->applicationToken,
+                'b24_user_id' => $command->bitrix24UserId,
+            ]
+        );
     }
 
     private function getSingleAccountByMemberId(string $domainUrl, string $memberId, ?int $bitrix24UserId): Bitrix24AccountInterface

@@ -26,29 +26,30 @@ use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Tests\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterfaceTest;
 use Bitrix24\SDK\Tests\Application\Contracts\TestRepositoryFlusherInterface;
 use Carbon\CarbonImmutable;
-use Override;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * @internal
+ */
 #[CoversClass(Bitrix24AccountRepository::class)]
 class Bitrix24AccountRepositoryTest extends Bitrix24AccountRepositoryInterfaceTest
 {
-    #[Override]
+    #[\Override]
     protected function createBitrix24AccountImplementation(
-        Uuid                  $uuid,
-        int                   $bitrix24UserId,
-        bool                  $isBitrix24UserAdmin,
-        string                $memberId,
-        string                $domainUrl,
+        Uuid $uuid,
+        int $bitrix24UserId,
+        bool $isBitrix24UserAdmin,
+        string $memberId,
+        string $domainUrl,
         Bitrix24AccountStatus $bitrix24AccountStatus,
-        AuthToken             $authToken,
-        CarbonImmutable       $createdAt,
-        CarbonImmutable       $updatedAt,
-        int                   $applicationVersion,
-        Scope                 $applicationScope
-    ): Bitrix24AccountInterface
-    {
+        AuthToken $authToken,
+        CarbonImmutable $createdAt,
+        CarbonImmutable $updatedAt,
+        int $applicationVersion,
+        Scope $applicationScope
+    ): Bitrix24AccountInterface {
         return new Bitrix24Account(
             $uuid,
             $bitrix24UserId,
@@ -64,18 +65,20 @@ class Bitrix24AccountRepositoryTest extends Bitrix24AccountRepositoryInterfaceTe
         );
     }
 
-    #[Override]
+    #[\Override]
     protected function createBitrix24AccountRepositoryImplementation(): Bitrix24AccountRepositoryInterface
     {
         $entityManager = EntityManagerFactory::get();
+
         return new Bitrix24AccountRepository($entityManager);
     }
 
-    #[Override]
+    #[\Override]
     protected function createRepositoryFlusherImplementation(): TestRepositoryFlusherInterface
     {
         $entityManager = EntityManagerFactory::get();
         $eventDispatcher = new EventDispatcher();
+
         return new FlusherDecorator(new Flusher($entityManager, $eventDispatcher));
     }
 }
