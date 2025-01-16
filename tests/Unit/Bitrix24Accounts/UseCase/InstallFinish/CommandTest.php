@@ -70,7 +70,7 @@ class CommandTest extends TestCase
             'Member ID cannot be empty.'
         ];
 
-        yield 'validDomainUrl' => [
+        yield 'validDomain' => [
             $applicationToken,
             $bitrix24Account->getMemberId(),
             '',

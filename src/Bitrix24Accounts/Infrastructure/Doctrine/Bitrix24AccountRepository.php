@@ -204,9 +204,8 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
             throw new InvalidArgumentException('domainUrl cannot be an empty string');
         }
 
-        $criteria = [
-            'domainUrl' => $domainUrl,
-        ];
+        $criteria = ['domainUrl' => $domainUrl];
+
         if ($bitrix24AccountStatus instanceof Bitrix24AccountStatus) {
             $criteria['status'] = $bitrix24AccountStatus->name;
         }
