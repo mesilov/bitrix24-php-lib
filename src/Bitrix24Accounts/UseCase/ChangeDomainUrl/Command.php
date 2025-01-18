@@ -31,9 +31,9 @@ readonly class Command
         // Проверка длины каждой метки (1-63 символа, включая кириллицу)
         $patternLengthEachLabel = "/^[A-Za-zА-Яа-яЁё0-9-]{1,63}(\.[A-Za-zА-Яа-яЁё0-9-]{1,63})*$/u";
         if (
-            !preg_match($patternValidChars, $domain) ||
-            !preg_match($patternLengthCheck, $domain) ||
-            !preg_match($patternLengthEachLabel, $domain)) {
+            in_array(preg_match($patternValidChars, $domain), [0, false], true) ||
+            in_array(preg_match($patternLengthCheck, $domain), [0, false], true) ||
+            in_array(preg_match($patternLengthEachLabel, $domain), [0, false], true)) {
 
             throw new \InvalidArgumentException(sprintf('Invalid value for %s: %s', $parameterName, $domain));
         }

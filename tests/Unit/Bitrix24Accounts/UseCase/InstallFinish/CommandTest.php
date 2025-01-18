@@ -28,7 +28,7 @@ class CommandTest extends TestCase
         int $bitrix24UserId,
         ?string $expectedException,
         ?string $expectedExceptionMessage,
-    ) {
+    ): void {
         if (null !== $expectedException) {
             $this->expectException($expectedException);
         }

@@ -23,7 +23,7 @@ class CommandTest extends TestCase
         string $applicationToken,
         ?string $expectedException,
         ?string $expectedExceptionMessage,
-    ) {
+    ): void {
         if (null !== $expectedException) {
             $this->expectException($expectedException);
         }

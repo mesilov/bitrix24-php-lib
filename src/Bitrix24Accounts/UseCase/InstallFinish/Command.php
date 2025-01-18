@@ -18,10 +18,11 @@ readonly class Command
 
     private function validate(): void
     {
-        if (empty($this->applicationToken)) {
+        if ($this->applicationToken === '' || $this->applicationToken === '0') {
             throw new \InvalidArgumentException('Application token cannot be empty.');
         }
-        if (empty($this->memberId)) {
+
+        if ($this->memberId === '' || $this->memberId === '0') {
             throw new \InvalidArgumentException('Member ID cannot be empty.');
         }
 
@@ -43,9 +44,9 @@ readonly class Command
         // Проверка длины каждой метки (1-63 символа, включая кириллицу)
         $patternLengthEachLabel = "/^[A-Za-zА-Яа-яЁё0-9-]{1,63}(\.[A-Za-zА-Яа-яЁё0-9-]{1,63})*$/u";
         if (
-            !preg_match($patternValidChars, $domain) ||
-            !preg_match($patternLengthCheck, $domain) ||
-            !preg_match($patternLengthEachLabel, $domain)) {
+            in_array(preg_match($patternValidChars, $domain), [0, false], true) ||
+            in_array(preg_match($patternLengthCheck, $domain), [0, false], true) ||
+            in_array(preg_match($patternLengthEachLabel, $domain), [0, false], true)) {
 
             throw new \InvalidArgumentException('Domain URL is not valid.');
         }

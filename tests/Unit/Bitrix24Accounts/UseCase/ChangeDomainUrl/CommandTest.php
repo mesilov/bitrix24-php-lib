@@ -23,7 +23,7 @@ class CommandTest extends TestCase
         string $oldDomain,
         string $newDomain,
         ?string $expectedException
-    )
+    ): void
     {
 
         if ($expectedException !== null) {

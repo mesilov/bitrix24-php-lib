@@ -100,7 +100,7 @@ class Bitrix24AccountBuilder
 
     public function build(): AggregateRootEventsEmitterInterface&Bitrix24AccountInterface
     {
-        $account = new Bitrix24Account(
+        $bitrix24Account = new Bitrix24Account(
             $this->id,
             $this->bitrix24UserId,
             $this->isBitrix24UserAdmin,
@@ -114,10 +114,10 @@ class Bitrix24AccountBuilder
             $this->applicationScope
         );
 
-        if (isset($this->applicationToken) && Bitrix24AccountStatus::new == $this->status) {
-            $account->applicationInstalled($this->applicationToken);
+        if ($this->applicationToken !== null && Bitrix24AccountStatus::new == $this->status) {
+            $bitrix24Account->applicationInstalled($this->applicationToken);
         }
 
-        return $account;
+        return $bitrix24Account;
     }
 }

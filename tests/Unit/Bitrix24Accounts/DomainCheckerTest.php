@@ -22,15 +22,15 @@ class DomainCheckerTest extends TestCase
     public function testValidateDomain(
         array $arr,
         ?string $expectedException
-    ) {
+    ): void {
 
         $exceptionCount = 0;
 
         foreach ($arr as $arrDomains) {
-            foreach ($arrDomains as $domainPair) {
+            foreach ($arrDomains as $arrDomain) {
                 try {
-                    new Command($domainPair['oldDomain'], $domainPair['newDomain']);
-                } catch (\InvalidArgumentException $e) {
+                    new Command($arrDomain['oldDomain'], $arrDomain['newDomain']);
+                } catch (\InvalidArgumentException) {
                     // Увеличиваем счетчик при каждом выбросе исключения
                     $exceptionCount++;
                 }
@@ -39,10 +39,10 @@ class DomainCheckerTest extends TestCase
 
         // Проверяем, сколько исключений было выброшено
         if ($expectedException !== null) {
-            $this->assertEquals(6, $exceptionCount, "Expected 6 invalid exception and received {$exceptionCount}");
+            $this->assertEquals(6, $exceptionCount, 'Expected 6 invalid exception and received ' . $exceptionCount);
         } else {
             // Если ожидается отсутствие исключений, проверяем что их не было
-            $this->assertEquals(0, $exceptionCount, "No exceptions were expected but {$exceptionCount} were thrown.");
+            $this->assertEquals(0, $exceptionCount, sprintf('No exceptions were expected but %d were thrown.', $exceptionCount));
         }
 
     }

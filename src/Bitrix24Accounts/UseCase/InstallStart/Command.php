@@ -33,7 +33,7 @@ readonly class Command
             throw new \InvalidArgumentException('Bitrix24 User ID must be a positive integer.');
         }
 
-        if (!is_string($this->memberId) || empty($this->memberId)) {
+        if (!is_string($this->memberId) || ($this->memberId === '' || $this->memberId === '0')) {
             throw new \InvalidArgumentException('Member ID must be a non-empty string.');
         }
 
@@ -55,9 +55,9 @@ readonly class Command
         // Проверка длины каждой метки (1-63 символа, включая кириллицу)
         $patternLengthEachLabel = "/^[A-Za-zА-Яа-яЁё0-9-]{1,63}(\.[A-Za-zА-Яа-яЁё0-9-]{1,63})*$/u";
         if (
-            !preg_match($patternValidChars, $domain) ||
-            !preg_match($patternLengthCheck, $domain) ||
-            !preg_match($patternLengthEachLabel, $domain)) {
+            in_array(preg_match($patternValidChars, $domain), [0, false], true) ||
+            in_array(preg_match($patternLengthCheck, $domain), [0, false], true) ||
+            in_array(preg_match($patternLengthEachLabel, $domain), [0, false], true)) {
 
             throw new \InvalidArgumentException('Domain URL is not valid.');
         }

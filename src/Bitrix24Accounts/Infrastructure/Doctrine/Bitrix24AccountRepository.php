@@ -59,12 +59,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
             ->setParameter('status', Bitrix24AccountStatus::deleted)
             ->getQuery()
             ->getOneOrNullResult();
-
-        if ($account) {
-            return true;
-        }
-
-        return false;
+        return (bool) $account;
     }
 
     #[\Override]
