@@ -6,7 +6,7 @@ on:
 
 env:
   COMPOSER_FLAGS: "--ansi --no-interaction --no-progress"
-  DATABASE_HOST: localhost
+  DATABASE_HOST: bitrix24-php-lib-test-database
   DATABASE_USER: b24phpLibTest
   DATABASE_PASSWORD: b24phpLibTest
   DATABASE_NAME: b24phpLibTest
@@ -38,7 +38,7 @@ jobs:
           POSTGRES_USER: b24phpLibTest
           POSTGRES_PASSWORD: b24phpLibTest
           POSTGRES_DB: b24phpLibTest
-          DATABASE_HOST: localhost
+          DATABASE_HOST: bitrix24-php-lib-test-database
 
     steps:
       - name: "Checkout code"
