@@ -55,7 +55,7 @@ class Bitrix24AccountBuilder
         $this->bitrix24UserId = random_int(1, 1_000_000);
         $this->isBitrix24UserAdmin = true;
         $this->memberId = Uuid::v4()->toRfc4122();
-        $this->domainUrl = 'https://'.Uuid::v7()->toRfc4122().'-test.bitrix24.com';
+        $this->domainUrl = Uuid::v4()->toRfc4122().'-example.com';
         $this->authToken = new AuthToken('old_1', 'old_2', 3600);
         $this->createdAt = CarbonImmutable::now();
         $this->updatedAt = CarbonImmutable::now();
