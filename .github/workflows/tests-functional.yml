@@ -68,7 +68,6 @@ jobs:
             php bin/doctrine orm:schema-tool:create --dump-sql
             php bin/doctrine orm:schema-tool:update --dump-sql
             php bin/doctrine orm:info
-            php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
             # Запуск тестов с очисткой состояния между тестами
             php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox --process-isolation
 
