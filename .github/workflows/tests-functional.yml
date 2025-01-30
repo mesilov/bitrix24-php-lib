@@ -61,7 +61,7 @@ jobs:
 
       - name: "Wait for PostgreSQL to be ready"
         run: |
-          until pg_isready -h localhost -p 5438 -U b24phpLibTest; do
+          until pg_isready -h localhost -p 5432 -U b24phpLibTest; do
             echo "Waiting for PostgreSQL to start..."
             sleep 2
           done
