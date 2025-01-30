@@ -23,7 +23,7 @@ jobs:
         php-version:
           - "8.3"
         dependencies: [ highest ]
-        operating-system: [ ubuntu-latest]
+        operating-system: [ ubuntu-latest ]
     services:
       bitrix24-php-lib-test-database:
         image: postgres:16-alpine
@@ -54,20 +54,26 @@ jobs:
         run: |
           composer update ${{ env.COMPOSER_FLAGS }}
 
+     # - name: "Install PostgreSQL client"
+     #   run: |
+     #     sudo apt-get update
+     #     sudo apt-get install -y postgresql-client
+
       - name: "Wait for PostgreSQL to be ready"
         run: |
-            until pg_isready -h localhost -p 5432 -U user; do
-              echo "Waiting for PostgreSQL to start..."
-              sleep 2
-            done
+          until pg_isready -h localhost -p 5438 -U b24phpLibTest; do
+            echo "Waiting for PostgreSQL to start..."
+            sleep 2
+          done
 
       - name: "Run functional tests"
         run: |
-            php bin/doctrine orm:schema-tool:drop --force
-            php bin/doctrine orm:schema-tool:create --dump-sql
-            php bin/doctrine orm:info
-            # Запуск тестов с очисткой состояния между тестами
-            php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox --process-isolation
+          php bin/doctrine orm:schema-tool:drop --force
+          php bin/doctrine orm:schema-tool:create --dump-sql
+          php bin/doctrine orm:schema-tool:update --force
+          php bin/doctrine orm:info
+          # Запуск тестов с очисткой состояния между тестами
+          php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox --process-isolation
 
       - name: "is functional tests succeeded"
         if: ${{ success() }}
