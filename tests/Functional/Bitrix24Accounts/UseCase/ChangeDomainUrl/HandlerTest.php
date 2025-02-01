@@ -60,8 +60,8 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    #[TestDox('Test change domain url with happy path - one account')]
-    public function testChangeDomainUrlWithHappyPath(): void
+    #[TestDox('Test change domain url for one account')]
+    public function testChangeDomainUrlForAccount(): void
     {
         $oldDomainUrl = Uuid::v7()->toRfc4122().'-test.bitrix24.com';
         $newDomainUrl = 'new-'.$oldDomainUrl;
@@ -103,8 +103,8 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    #[TestDox('Test change domain url with happy path - many accounts')]
-    public function testChangeDomainUrlWithHappyPathForManyAccounts(): void
+    #[TestDox('Test change domain url for many accounts')]
+    public function testChangeDomainUrlForManyAccounts(): void
     {
         $oldDomainUrl = Uuid::v7()->toRfc4122().'-test.bitrix24.com';
         $newDomainUrl = 'new-'.$oldDomainUrl;

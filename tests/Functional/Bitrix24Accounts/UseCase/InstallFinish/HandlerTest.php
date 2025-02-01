@@ -63,8 +63,8 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    #[TestDox('test finish installation with happy path')]
-    public function testFinishInstallationWithHappyPath(): void
+    #[TestDox('test finish installation application')]
+    public function testFinishInstallationApplication(): void
     {
         $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withStatus(Bitrix24AccountStatus::new)

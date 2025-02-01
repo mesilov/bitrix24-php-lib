@@ -38,7 +38,8 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
             ->setParameter('id', $uuid)
             ->setParameter('status', Bitrix24AccountStatus::deleted)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
 
         if (null === $account) {
             throw new Bitrix24AccountNotFoundException(
@@ -58,7 +59,9 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
             ->setParameter('id', $uuid)
             ->setParameter('status', Bitrix24AccountStatus::deleted)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
+
         return (bool) $account;
     }
 
@@ -79,8 +82,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         ?Bitrix24AccountStatus $bitrix24AccountStatus = null,
         ?int $bitrix24UserId = null,
         ?bool $isAdmin = null
-    ): array
-    {
+    ): array {
         if ('' === trim($memberId)) {
             throw new InvalidArgumentException('memberId cannot be empty');
         }
@@ -193,8 +195,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         string $domainUrl,
         ?Bitrix24AccountStatus $bitrix24AccountStatus = null,
         ?bool $isAdmin = null
-    ): array
-    {
+    ): array {
         if ('' === trim($domainUrl)) {
             throw new InvalidArgumentException('domainUrl cannot be an empty string');
         }

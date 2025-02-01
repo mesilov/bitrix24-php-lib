@@ -10,9 +10,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class Flusher
 {
-    public function __construct(private readonly EntityManagerInterface $em, private readonly EventDispatcherInterface $eventDispatcher)
-    {
-    }
+    public function __construct(private readonly EntityManagerInterface $em, private readonly EventDispatcherInterface $eventDispatcher) {}
 
     public function flush(AggregateRootEventsEmitterInterface ...$aggregateRootEventsEmitter): void
     {

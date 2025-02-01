@@ -68,7 +68,7 @@ class HandlerTest extends TestCase
      * @throws Bitrix24AccountNotFoundException
      */
     #[Test]
-    public function testUninstallWithHappyPath(): void
+    public function testUninstallApplication(): void
     {
         $applicationToken = Uuid::v7()->toRfc4122();
 
