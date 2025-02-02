@@ -34,7 +34,7 @@ class CommandTest extends TestCase
         Scope $applicationScope,
         ?string $expectedException,
         ?string $expectedExceptionMessage,
-    ) {
+    ): void {
         if (null !== $expectedException) {
             $this->expectException($expectedException);
         }
@@ -57,7 +57,6 @@ class CommandTest extends TestCase
 
     public static function dataForCommand(): \Generator
     {
-        $applicationToken = Uuid::v7()->toRfc4122();
         $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withStatus(Bitrix24AccountStatus::new)
             ->build();

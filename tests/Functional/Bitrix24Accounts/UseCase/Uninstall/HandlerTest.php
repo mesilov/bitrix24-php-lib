@@ -52,6 +52,7 @@ class HandlerTest extends TestCase
         $entityManager = EntityManagerFactory::get();
         $eventDispatcher = new EventDispatcher();
         $this->eventDispatcher = new TraceableEventDispatcher($eventDispatcher, new Stopwatch());
+
         $this->repository = new Bitrix24AccountRepository($entityManager);
         $this->flusher = new Flusher($entityManager, $this->eventDispatcher);
 
@@ -67,7 +68,7 @@ class HandlerTest extends TestCase
      * @throws Bitrix24AccountNotFoundException
      */
     #[Test]
-    public function testUninstallWithHappyPath(): void
+    public function testUninstallApplication(): void
     {
         $applicationToken = Uuid::v7()->toRfc4122();
 
@@ -82,7 +83,7 @@ class HandlerTest extends TestCase
         $this->handler->handle(new Bitrix24Accounts\UseCase\Uninstall\Command($applicationToken));
 
         $this->expectException(Bitrix24AccountNotFoundException::class);
-        $updated = $this->repository->getById($bitrix24Account->getId());
+        $this->repository->getById($bitrix24Account->getId());
 
         $this->assertTrue(
             in_array(

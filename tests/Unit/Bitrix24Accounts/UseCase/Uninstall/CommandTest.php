@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * @internal
@@ -22,7 +23,7 @@ class CommandTest extends TestCase
         string $applicationToken,
         ?string $expectedException,
         ?string $expectedExceptionMessage,
-    ) {
+    ): void {
         if (null !== $expectedException) {
             $this->expectException($expectedException);
         }
@@ -31,12 +32,25 @@ class CommandTest extends TestCase
             $this->expectExceptionMessage($expectedExceptionMessage);
         }
 
-        new Command($applicationToken);
+        $command = new Command($applicationToken);
+
+        if ($expectedException == null) {
+            $this->assertInstanceOf(Command::class, $command);
+        }
     }
 
     public static function dataForCommand(): \Generator
     {
+
+        $applicationToken = Uuid::v7()->toRfc4122();
+
         yield 'validApplicationToken' => [
+            $applicationToken,
+            null,
+            null,
+        ];
+
+        yield 'emptyApplicationToken' => [
             '',
             \InvalidArgumentException::class,
             'Empty application token application token.',

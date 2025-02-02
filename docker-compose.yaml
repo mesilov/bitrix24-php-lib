@@ -22,7 +22,7 @@ services:
       PGDATA: "/var/lib/postgresql/data/pgdata"
     container_name: bitrix24-php-lib-test-database
     ports:
-      - '5432:5432'
+      - '5438:5432'
     volumes:
       - ./docker/init_database/:/docker-entrypoint-initdb.d
       - ./docker/db:/var/lib/postgresql/data

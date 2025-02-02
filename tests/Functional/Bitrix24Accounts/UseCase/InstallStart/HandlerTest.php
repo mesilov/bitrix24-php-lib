@@ -69,7 +69,7 @@ class HandlerTest extends TestCase
      * @throws UnknownScopeCodeException
      */
     #[Test]
-    public function testInstallStartHappyPath(): void
+    public function testInstallNewApplication(): void
     {
         $bitrix24AccountBuilder = (new Bitrix24AccountBuilder())
             ->withApplicationScope(new Scope(['crm']))
@@ -169,7 +169,7 @@ class HandlerTest extends TestCase
      * @throws UnknownScopeCodeException
      */
     #[Test]
-    public function testCreateExistingAccount(): void
+    public function testInstallExistingAccount(): void
     {
         $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withApplicationScope(new Scope(['crm']))
@@ -206,6 +206,8 @@ class HandlerTest extends TestCase
             )
         );
     }
+
+
 
     #[Test]
     public function testUpdateAppVersion(): void {}

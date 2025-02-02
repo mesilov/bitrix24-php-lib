@@ -33,16 +33,32 @@ readonly class Command
             throw new \InvalidArgumentException('Bitrix24 User ID must be a positive integer.');
         }
 
-        if (!is_string($this->memberId) || empty($this->memberId)) {
+        if (!is_string($this->memberId) || ('' === $this->memberId || '0' === $this->memberId)) {
             throw new \InvalidArgumentException('Member ID must be a non-empty string.');
         }
 
-        if (!filter_var($this->domainUrl, FILTER_VALIDATE_URL)) {
-            throw new \InvalidArgumentException('Domain URL is not valid.');
-        }
+        $this->validateDomain($this->domainUrl);
 
         if ($this->applicationVersion <= 0) {
             throw new \InvalidArgumentException('Application version must be a positive integer.');
+        }
+    }
+
+    private function validateDomain(string $domain): void
+    {
+        // Регулярное выражение для проверки допустимых символов (латиница и кириллица)
+        $patternValidChars = '/^((?!-)[A-Za-zА-Яа-яЁё0-9-]{1,63}(?<!-)\.)+[A-Za-zА-Яа-яЁё]{2,6}$/u';
+
+        // Проверка общей длины (1-253 символа)
+        $patternLengthCheck = '/^.{1,253}$/';
+
+        // Проверка длины каждой метки (1-63 символа, включая кириллицу)
+        $patternLengthEachLabel = '/^[A-Za-zА-Яа-яЁё0-9-]{1,63}(\.[A-Za-zА-Яа-яЁё0-9-]{1,63})*$/u';
+        if (
+            in_array(preg_match($patternValidChars, $domain), [0, false], true)
+            || in_array(preg_match($patternLengthCheck, $domain), [0, false], true)
+            || in_array(preg_match($patternLengthEachLabel, $domain), [0, false], true)) {
+            throw new \InvalidArgumentException('Domain URL is not valid.');
         }
     }
 }

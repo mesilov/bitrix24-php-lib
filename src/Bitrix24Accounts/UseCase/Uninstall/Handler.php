@@ -35,6 +35,7 @@ readonly class Handler
             $account->applicationUninstalled($command->applicationToken);
             $this->bitrix24AccountRepository->save($account);
         }
+
         $this->flusher->flush(...$accounts);
 
         $this->logger->info(

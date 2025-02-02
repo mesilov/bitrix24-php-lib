@@ -9,7 +9,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Uid\Uuid;
+
 
 /**
  * @internal
@@ -20,26 +20,42 @@ class CommandTest extends TestCase
     #[Test]
     #[DataProvider('dataForCommand')]
     public function testValidCommand(
-        string $oldDomainUrl,
-        string $newDomainUrl,
+        string $oldDomain,
+        string $newDomain,
         ?string $expectedException
-    ) {
-        if (null !== $expectedException) {
-            $this->expectException($expectedException);
+    ): void
+    {
+
+        if ($expectedException !== null) {
+            $this->expectException(\InvalidArgumentException::class);
         }
 
-        new Command($oldDomainUrl, $newDomainUrl);
+        $command = new Command($oldDomain, $newDomain);
+
+        if ($expectedException == null) {
+            $this->assertInstanceOf(Command::class, $command);
+        }
+
     }
 
     public static function dataForCommand(): \Generator
     {
-        $oldDomainUrl = 'https://'.Uuid::v7()->toRfc4122().'-test.bitrix24.com';
-        $newDomainUrl = Uuid::v7()->toRfc4122().'-test.bitrix24.com';
+        $invalidOldDomain = 'invalid_domain.com';
+        $invalidNewDomain = 'valid.com';
 
-        yield 'validDomainUrl' => [
-            $oldDomainUrl,
-            $newDomainUrl,
+        $validOldDomain = 'example.com';
+        $validNewDomain = 'example.org';
+
+        yield 'invalidDomain' => [
+            $invalidOldDomain,
+            $invalidNewDomain,
             \InvalidArgumentException::class
+        ];
+
+        yield 'validDomain' => [
+            $validOldDomain,
+            $validNewDomain,
+            null // Здесь исключение не ожидается
         ];
     }
 }

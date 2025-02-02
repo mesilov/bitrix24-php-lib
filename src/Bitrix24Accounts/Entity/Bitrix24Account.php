@@ -309,14 +309,14 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         return $this->comment;
     }
 
-    private function guardEmptyToken($applicationToken)
+    private function guardEmptyToken(string $applicationToken): void
     {
         if ('' === $applicationToken) {
             throw new InvalidArgumentException('application token cannot be empty');
         }
     }
 
-    private function guardTokenMismatch($applicationToken): void
+    private function guardTokenMismatch(string $applicationToken): void
     {
         if ($this->applicationToken !== $applicationToken) {
             throw new InvalidArgumentException(

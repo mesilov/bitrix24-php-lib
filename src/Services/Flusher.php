@@ -10,20 +10,13 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class Flusher
 {
-    private $em;
-    private $eventDispatcher;
+    public function __construct(private readonly EntityManagerInterface $em, private readonly EventDispatcherInterface $eventDispatcher) {}
 
-    public function __construct(EntityManagerInterface $em, EventDispatcherInterface $eventDispatcher)
-    {
-        $this->em = $em;
-        $this->eventDispatcher = $eventDispatcher;
-    }
-
-    public function flush(AggregateRootEventsEmitterInterface ...$roots): void
+    public function flush(AggregateRootEventsEmitterInterface ...$aggregateRootEventsEmitter): void
     {
         $this->em->flush();
-        foreach ($roots as $root) {
-            $events = $root->emitEvents();
+        foreach ($aggregateRootEventsEmitter as $aggregateRootEventEmitter) {
+            $events = $aggregateRootEventEmitter->emitEvents();
             foreach ($events as $event) {
                 $this->eventDispatcher->dispatch($event);
             }

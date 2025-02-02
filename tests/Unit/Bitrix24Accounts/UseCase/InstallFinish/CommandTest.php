@@ -28,7 +28,7 @@ class CommandTest extends TestCase
         int $bitrix24UserId,
         ?string $expectedException,
         ?string $expectedExceptionMessage,
-    ) {
+    ): void {
         if (null !== $expectedException) {
             $this->expectException($expectedException);
         }
@@ -70,7 +70,7 @@ class CommandTest extends TestCase
             'Member ID cannot be empty.'
         ];
 
-        yield 'validDomainUrl' => [
+        yield 'validDomain' => [
             $applicationToken,
             $bitrix24Account->getMemberId(),
             '',

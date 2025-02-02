@@ -51,6 +51,7 @@ class HandlerTest extends TestCase
         $entityManager = EntityManagerFactory::get();
         $eventDispatcher = new EventDispatcher();
         $this->eventDispatcher = new TraceableEventDispatcher($eventDispatcher, new Stopwatch());
+
         $this->repository = new Bitrix24AccountRepository($entityManager);
         $this->flusher = new Flusher($entityManager, $this->eventDispatcher);
 
@@ -62,8 +63,8 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    #[TestDox('test finish installation with happy path')]
-    public function testFinishInstallationWithHappyPath(): void
+    #[TestDox('test finish installation application')]
+    public function testFinishInstallationApplication(): void
     {
         $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withStatus(Bitrix24AccountStatus::new)
