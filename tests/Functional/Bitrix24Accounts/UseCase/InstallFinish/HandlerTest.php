@@ -30,6 +30,7 @@ use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
+use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
 
 /**
  * @internal
@@ -78,7 +79,7 @@ class HandlerTest extends TestCase
             new Bitrix24Accounts\UseCase\InstallFinish\Command(
                 $applicationToken,
                 $bitrix24Account->getMemberId(),
-                $bitrix24Account->getDomainUrl(),
+                new Domain($bitrix24Account->getDomainUrl()),
                 $bitrix24Account->getBitrix24UserId()
             )
         );

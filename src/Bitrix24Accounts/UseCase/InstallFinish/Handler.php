@@ -30,14 +30,14 @@ readonly class Handler
     public function handle(Command $command): void
     {
         $this->logger->info('Bitrix24Accounts.InstallFinish.start', [
-            'b24_domain_url' => $command->domainUrl,
+            'b24_domain_url' => $command->domain,
             'b24_member_id' => $command->memberId,
             'b24_application_id' => $command->applicationToken,
             'b24_user_id' => $command->bitrix24UserId,
         ]);
 
         /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account */
-        $bitrix24Account = $this->getSingleAccountByMemberId($command->domainUrl, $command->memberId, $command->bitrix24UserId);
+        $bitrix24Account = $this->getSingleAccountByMemberId($command->domain, $command->memberId, $command->bitrix24UserId);
 
         $bitrix24Account->applicationInstalled($command->applicationToken);
 
@@ -47,7 +47,7 @@ readonly class Handler
         $this->logger->info(
             'Bitrix24Accounts.InstallFinish.Finish',
             [
-                'b24_domain_url' => $command->domainUrl,
+                'b24_domain_url' => $command->domain,
                 'b24_member_id' => $command->memberId,
                 'b24_application_id' => $command->applicationToken,
                 'b24_user_id' => $command->bitrix24UserId,

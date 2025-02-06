@@ -12,6 +12,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+
 
 /**
  * @internal
@@ -22,13 +24,14 @@ class CommandTest extends TestCase
     #[Test]
     #[DataProvider('dataForCommand')]
     public function testValidCommand(
-        string $applicationToken,
-        string $memberId,
-        string $domainUrl,
-        int $bitrix24UserId,
+        string  $applicationToken,
+        string  $memberId,
+        string  $domainUrl,
+        int     $bitrix24UserId,
         ?string $expectedException,
         ?string $expectedExceptionMessage,
-    ): void {
+    ): void
+    {
         if (null !== $expectedException) {
             $this->expectException($expectedException);
         }
@@ -37,12 +40,15 @@ class CommandTest extends TestCase
             $this->expectExceptionMessage($expectedExceptionMessage);
         }
 
-        new Command(
+        $domainObject = new Domain($domainUrl);
+
+       $command = new Command(
             $applicationToken,
             $memberId,
-            $domainUrl,
+            $domainObject,
             $bitrix24UserId
         );
+
     }
 
     public static function dataForCommand(): \Generator
@@ -76,7 +82,7 @@ class CommandTest extends TestCase
             '',
             $bitrix24Account->getBitrix24UserId(),
             \InvalidArgumentException::class,
-            'Domain URL is not valid.'
+            sprintf('Invalid domain: %s', '')
         ];
     }
 }

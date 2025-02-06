@@ -33,6 +33,7 @@ use Random\RandomException;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
+use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
 
 /**
  * @internal
@@ -65,7 +66,6 @@ class HandlerTest extends TestCase
     /**
      * @throws InvalidArgumentException
      * @throws Bitrix24AccountNotFoundException
-     * @throws RandomException
      * @throws UnknownScopeCodeException
      */
     #[Test]
@@ -81,7 +81,7 @@ class HandlerTest extends TestCase
                 $bitrix24AccountBuilder->getBitrix24UserId(),
                 $bitrix24AccountBuilder->isBitrix24UserAdmin(),
                 $bitrix24AccountBuilder->getMemberId(),
-                $bitrix24AccountBuilder->getDomainUrl(),
+                new Domain($bitrix24AccountBuilder->getDomainUrl()),
                 $bitrix24AccountBuilder->getAuthToken(),
                 $bitrix24AccountBuilder->getApplicationVersion(),
                 $bitrix24AccountBuilder->getApplicationScope()
@@ -181,7 +181,7 @@ class HandlerTest extends TestCase
                 $bitrix24Account->getBitrix24UserId(),
                 $bitrix24Account->isBitrix24UserAdmin(),
                 $bitrix24Account->getMemberId(),
-                $bitrix24Account->getDomainUrl(),
+                new Domain($bitrix24Account->getDomainUrl()),
                 $bitrix24Account->getAuthToken(),
                 $bitrix24Account->getApplicationVersion(),
                 $bitrix24Account->getApplicationScope()
@@ -199,7 +199,7 @@ class HandlerTest extends TestCase
                 $bitrix24Account->getBitrix24UserId(),
                 $bitrix24Account->isBitrix24UserAdmin(),
                 $bitrix24Account->getMemberId(),
-                $bitrix24Account->getDomainUrl(),
+                new Domain($bitrix24Account->getDomainUrl()),
                 $bitrix24Account->getAuthToken(),
                 $bitrix24Account->getApplicationVersion(),
                 $bitrix24Account->getApplicationScope()

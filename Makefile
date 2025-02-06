@@ -16,6 +16,8 @@ include $(ENV)
 -include $(ENV_LOCAL)
 
 
+start-rector: vendor
+	vendor/bin/rector process tests --config=rector.php
 
 coding-standards: vendor
 	vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --diff --verbose
@@ -45,6 +47,10 @@ init:
     docker-compose run --rm php-cli chown -R www-data:www-data /var/www/html/var/
 	@echo "run application…"
 	docker-compose up -d
+
+
+clear:
+	docker-compose run --rm php-cli composer clear-cache
 
 up:
 	@echo "run application…"
@@ -110,7 +116,7 @@ test-run-functional: debug-print-env
 
 # Запустить один функциональный тест с дебагером
 run-one-functional-test: debug-print-env
-	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testCreateExistingAccount' tests/Functional/Bitrix24Accounts/UseCase/InstallStart/HandlerTest.php
+	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testChangeDomainUrlWithHappyPath' tests/Functional/Bitrix24Accounts/UseCase/ChangeDomainUrl/HandlerTest.php
 
 schema-drop:
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force

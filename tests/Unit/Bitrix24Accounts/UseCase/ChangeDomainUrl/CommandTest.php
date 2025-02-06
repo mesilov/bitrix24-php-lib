@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Tests\Unit\Bitrix24Accounts\UseCase\ChangeDomainUrl;
 
 use Bitrix24\Lib\Bitrix24Accounts\UseCase\ChangeDomainUrl\Command;
+use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -18,43 +19,64 @@ use PHPUnit\Framework\TestCase;
 class CommandTest extends TestCase
 {
     #[Test]
-    #[DataProvider('dataForCommand')]
-    public function testValidCommand(
-        string $oldDomain,
-        string $newDomain,
+    #[DataProvider('dataForValidateDomain')]
+    public function testValidateDomain(
+        array $arrDomains,
         ?string $expectedException
-    ): void
-    {
+    ): void {
 
-        if ($expectedException !== null) {
-            $this->expectException(\InvalidArgumentException::class);
+        $exceptionCount = 0;
+        foreach ($arrDomains as $arrDomain) {
+            try {
+                $oldDomain = new Domain($arrDomain['oldDomain']);
+                $newDomain = new Domain($arrDomain['newDomain']);
+                new Command($oldDomain, $newDomain);
+            } catch (\InvalidArgumentException) {
+                // Увеличиваем счетчик при каждом выбросе исключения
+                $exceptionCount++;
+            }
         }
 
-        $command = new Command($oldDomain, $newDomain);
-
-        if ($expectedException == null) {
-            $this->assertInstanceOf(Command::class, $command);
+        // Проверяем, сколько исключений было выброшено
+        if ($expectedException !== null) {
+            $this->assertEquals(6, $exceptionCount, 'Expected 6 invalid exception and received ' . $exceptionCount);
+        } else {
+            // Если ожидается отсутствие исключений, проверяем что их не было
+            $this->assertEquals(0, $exceptionCount, sprintf('No exceptions were expected but %d were thrown.', $exceptionCount));
         }
 
     }
 
-    public static function dataForCommand(): \Generator
+    public static function dataForValidateDomain(): \Generator
     {
-        $invalidOldDomain = 'invalid_domain.com';
-        $invalidNewDomain = 'valid.com';
 
-        $validOldDomain = 'example.com';
-        $validNewDomain = 'example.org';
+        // Примеры недопустимых доменов
+        $arrInvalidDomains = [
+            ['oldDomain' => 'invalid_domain.com', 'newDomain' => 'valid.com'], // Неправильный формат (подчеркивание)
+            ['oldDomain' => '-invalid.com', 'newDomain' => 'valid.com'], // Домен не может начинаться с дефиса
+            ['oldDomain' => 'invalid-.com', 'newDomain' => 'valid.com'], // Домен не может заканчиваться на дефис
+            ['oldDomain' => '123.456.789.0', 'newDomain' => 'valid.com'], // Неправильный формат (IP-адрес)
+            ['oldDomain' => 'example..com', 'newDomain' => 'valid.com'], // Два подряд идущих точки
+            ['oldDomain' => 'example.c', 'newDomain' => 'valid.com'] // Слишком короткая доменная зона
+        ];
+
+        // Примеры допустимых доменов
+        $arrValidDomains = [
+            ['oldDomain' => 'example.com', 'newDomain' => 'example.org'],
+            ['oldDomain' => 'пример.рф', 'newDomain' => 'пример.рус'],
+            ['oldDomain' => 'test-site.org', 'newDomain' => 'test-site.ru'],
+            ['oldDomain' => 'valid-domain.co.uk', 'newDomain' => 'valid-domain.net'],
+            ['oldDomain' => 'subdomain.example.com', 'newDomain' => 'subdomain2.example.com'],
+            ['oldDomain' => 'тест.рус', 'newDomain' => 'тест2.рус'], // Пример с кириллицей
+        ];
 
         yield 'invalidDomain' => [
-            $invalidOldDomain,
-            $invalidNewDomain,
+            $arrInvalidDomains, // Оборачиваем в массив для передачи в testValidCommand
             \InvalidArgumentException::class
         ];
 
         yield 'validDomain' => [
-            $validOldDomain,
-            $validNewDomain,
+            $arrValidDomains, // Оборачиваем в массив для передачи в testValidCommand
             null // Здесь исключение не ожидается
         ];
     }

@@ -29,6 +29,7 @@ use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
+use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
 
 /**
  * @internal
@@ -74,8 +75,8 @@ class HandlerTest extends TestCase
 
         $this->handler->handle(
             new Bitrix24Accounts\UseCase\ChangeDomainUrl\Command(
-                $oldDomainUrl,
-                $newDomainUrl
+                new Domain($oldDomainUrl),
+                new Domain($newDomainUrl)
             )
         );
 
@@ -126,8 +127,8 @@ class HandlerTest extends TestCase
 
         $this->handler->handle(
             new Bitrix24Accounts\UseCase\ChangeDomainUrl\Command(
-                $oldDomainUrl,
-                $newDomainUrl
+                new Domain($oldDomainUrl),
+                new Domain($newDomainUrl)
             )
         );
 

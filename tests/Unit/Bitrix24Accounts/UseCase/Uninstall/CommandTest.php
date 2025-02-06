@@ -41,11 +41,8 @@ class CommandTest extends TestCase
 
     public static function dataForCommand(): \Generator
     {
-
-        $applicationToken = Uuid::v7()->toRfc4122();
-
         yield 'validApplicationToken' => [
-            $applicationToken,
+            Uuid::v7()->toRfc4122(),
             null,
             null,
         ];
