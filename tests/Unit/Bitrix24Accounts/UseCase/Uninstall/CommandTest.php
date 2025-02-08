@@ -18,8 +18,17 @@ use Symfony\Component\Uid\Uuid;
 class CommandTest extends TestCase
 {
     #[Test]
-    #[DataProvider('dataForCommand')]
-    public function testValidCommand(
+    #[DataProvider('dataForCommandValidToken')]
+    public function testValidTokenForCommand(
+        string $applicationToken,
+    ): void {
+        $command = new Command($applicationToken);
+        $this->assertInstanceOf(Command::class, $command);
+    }
+
+    #[Test]
+    #[DataProvider('dataForCommandEmptyToken')]
+    public function testEmptyTokenForCommand(
         string $applicationToken,
         ?string $expectedException,
         ?string $expectedExceptionMessage,
@@ -32,25 +41,22 @@ class CommandTest extends TestCase
             $this->expectExceptionMessage($expectedExceptionMessage);
         }
 
-        $command = new Command($applicationToken);
-
-        if ($expectedException == null) {
-            $this->assertInstanceOf(Command::class, $command);
-        }
+        new Command($applicationToken);
     }
 
-    public static function dataForCommand(): \Generator
+    public static function dataForCommandValidToken(): \Generator
     {
         yield 'validApplicationToken' => [
-            Uuid::v7()->toRfc4122(),
-            null,
-            null,
+            Uuid::v7()->toRfc4122()
         ];
+    }
 
+    public static function dataForCommandEmptyToken(): \Generator
+    {
         yield 'emptyApplicationToken' => [
             '',
             \InvalidArgumentException::class,
-            'Empty application token application token.',
+            'Application token must be a non-empty string.',
         ];
     }
 }

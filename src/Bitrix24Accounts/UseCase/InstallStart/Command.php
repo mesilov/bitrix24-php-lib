@@ -28,15 +28,12 @@ readonly class Command
 
     private function validate(): void
     {
-        if (empty($this->uuid)) {
-            throw new \InvalidArgumentException('Empty UUID provided.');
-        }
 
         if ($this->bitrix24UserId <= 0) {
             throw new \InvalidArgumentException('Bitrix24 User ID must be a positive integer.');
         }
 
-        if (!is_string($this->memberId) || ('' === $this->memberId || '0' === $this->memberId)) {
+        if ('' === $this->memberId) {
             throw new \InvalidArgumentException('Member ID must be a non-empty string.');
         }
 

@@ -19,7 +19,7 @@ use PHPUnit\Framework\TestCase;
 class CommandTest extends TestCase
 {
     #[Test]
-    #[DataProvider('dataForValidateDomain')]
+    #[DataProvider('dataForValidateInvalidDomain')]
     public function testValidateDomain(
         array $arrDomains,
         ?string $expectedException
@@ -47,7 +47,55 @@ class CommandTest extends TestCase
 
     }
 
-    public static function dataForValidateDomain(): \Generator
+    #[Test]
+    #[DataProvider('dataForValidateValidDomain')]
+    public function testValidateInvalidDomain(
+        array $arrDomains,
+        ?string $expectedException
+    ): void {
+
+        $exceptionCount = 0;
+        foreach ($arrDomains as $arrDomain) {
+            try {
+                $oldDomain = new Domain($arrDomain['oldDomain']);
+                $newDomain = new Domain($arrDomain['newDomain']);
+                new Command($oldDomain, $newDomain);
+            } catch (\InvalidArgumentException) {
+                // Увеличиваем счетчик при каждом выбросе исключения
+                $exceptionCount++;
+            }
+        }
+
+        // Проверяем, сколько исключений было выброшено
+        if ($expectedException !== null) {
+            $this->assertEquals(6, $exceptionCount, 'Expected 6 invalid exception and received ' . $exceptionCount);
+        } else {
+            // Если ожидается отсутствие исключений, проверяем что их не было
+            $this->assertEquals(0, $exceptionCount, sprintf('No exceptions were expected but %d were thrown.', $exceptionCount));
+        }
+
+    }
+
+    public static function dataForValidateValidDomain(): \Generator
+    {
+
+        // Примеры допустимых доменов
+        $arrValidDomains = [
+            ['oldDomain' => 'example.com', 'newDomain' => 'example.org'],
+            ['oldDomain' => 'пример.рф', 'newDomain' => 'пример.рус'],
+            ['oldDomain' => 'test-site.org', 'newDomain' => 'test-site.ru'],
+            ['oldDomain' => 'valid-domain.co.uk', 'newDomain' => 'valid-domain.net'],
+            ['oldDomain' => 'subdomain.example.com', 'newDomain' => 'subdomain2.example.com'],
+            ['oldDomain' => 'тест.рус', 'newDomain' => 'тест2.рус'], // Пример с кириллицей
+        ];
+
+        yield 'validDomain' => [
+            $arrValidDomains, // Оборачиваем в массив для передачи в testValidCommand
+            null // Здесь исключение не ожидается
+        ];
+    }
+
+    public static function dataForValidateInvalidDomain(): \Generator
     {
 
         // Примеры недопустимых доменов
@@ -60,24 +108,9 @@ class CommandTest extends TestCase
             ['oldDomain' => 'example.c', 'newDomain' => 'valid.com'] // Слишком короткая доменная зона
         ];
 
-        // Примеры допустимых доменов
-        $arrValidDomains = [
-            ['oldDomain' => 'example.com', 'newDomain' => 'example.org'],
-            ['oldDomain' => 'пример.рф', 'newDomain' => 'пример.рус'],
-            ['oldDomain' => 'test-site.org', 'newDomain' => 'test-site.ru'],
-            ['oldDomain' => 'valid-domain.co.uk', 'newDomain' => 'valid-domain.net'],
-            ['oldDomain' => 'subdomain.example.com', 'newDomain' => 'subdomain2.example.com'],
-            ['oldDomain' => 'тест.рус', 'newDomain' => 'тест2.рус'], // Пример с кириллицей
-        ];
-
         yield 'invalidDomain' => [
             $arrInvalidDomains, // Оборачиваем в массив для передачи в testValidCommand
             \InvalidArgumentException::class
-        ];
-
-        yield 'validDomain' => [
-            $arrValidDomains, // Оборачиваем в массив для передачи в testValidCommand
-            null // Здесь исключение не ожидается
         ];
     }
 }
