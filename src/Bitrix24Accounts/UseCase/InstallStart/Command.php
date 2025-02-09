@@ -4,31 +4,31 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallStart;
 
+use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Symfony\Component\Uid\Uuid;
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
 
 readonly class Command
 {
     public string $domain;
+
     public function __construct(
         public Uuid $uuid,
         public int $bitrix24UserId,
         public bool $isBitrix24UserAdmin,
         public string $memberId,
-        Domain $domainUrl,
+        Domain $domain,
         public AuthToken $authToken,
         public int $applicationVersion,
         public Scope $applicationScope
     ) {
         $this->validate();
-        $this->domain = $domainUrl->getValue();
+        $this->domain = $domain->getValue();
     }
 
     private function validate(): void
     {
-
         if ($this->bitrix24UserId <= 0) {
             throw new \InvalidArgumentException('Bitrix24 User ID must be a positive integer.');
         }

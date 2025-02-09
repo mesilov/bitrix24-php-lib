@@ -40,12 +40,12 @@ class CommandTest extends TestCase
             $this->expectExceptionMessage($expectedExceptionMessage);
         }
 
-        $domainObject = new Domain($domainUrl);
+        $domain = new Domain($domainUrl);
 
-       $command = new Command(
+       new Command(
             $applicationToken,
             $memberId,
-            $domainObject,
+            $domain,
             $bitrix24UserId
         );
 

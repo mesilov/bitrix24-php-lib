@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallFinish;
 
 use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+
 readonly class Command
 {
     public string $domain;
@@ -12,11 +13,11 @@ readonly class Command
     public function __construct(
         public string $applicationToken,
         public string $memberId,
-        Domain $domainUrl,
+        Domain $domain,
         public int $bitrix24UserId,
     ) {
         $this->validate();
-        $this->domain = $domainUrl->getValue();
+        $this->domain = $domain->getValue();
     }
 
     private function validate(): void

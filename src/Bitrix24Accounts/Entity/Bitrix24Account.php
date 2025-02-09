@@ -233,7 +233,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
      * @throws InvalidArgumentException
      */
     #[\Override]
-    public function updateApplicationVersion(int $version, ?Scope $newScope): void
+    public function updateApplicationVersion(AuthToken $authToken, int $b24UserId, int $version, ?Scope $newScope): void
     {
         if (Bitrix24AccountStatus::active !== $this->status) {
             throw new InvalidArgumentException(
