@@ -17,8 +17,8 @@ readonly class Command
 
     private function validate(): void
     {
-        if ('' === $this->applicationToken || '0' === $this->applicationToken) {
-            throw new \InvalidArgumentException('Empty application token application token.');
+        if ('' === $this->applicationToken) {
+            throw new \InvalidArgumentException('Application token must be a non-empty string.');
         }
     }
 }

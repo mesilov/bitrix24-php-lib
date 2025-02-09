@@ -14,6 +14,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+
 
 /**
  * @internal
@@ -24,17 +26,18 @@ class CommandTest extends TestCase
     #[Test]
     #[DataProvider('dataForCommand')]
     public function testValidCommand(
-        Uuid $uuid,
-        int $bitrix24UserId,
-        bool $isBitrix24UserAdmin,
-        string $memberId,
-        string $domainUrl,
+        Uuid      $uuid,
+        int       $bitrix24UserId,
+        bool      $isBitrix24UserAdmin,
+        string    $memberId,
+        string    $domainUrl,
         AuthToken $authToken,
-        int $applicationVersion,
-        Scope $applicationScope,
-        ?string $expectedException,
-        ?string $expectedExceptionMessage,
-    ): void {
+        int       $applicationVersion,
+        Scope     $applicationScope,
+        ?string   $expectedException,
+        ?string   $expectedExceptionMessage,
+    ): void
+    {
         if (null !== $expectedException) {
             $this->expectException($expectedException);
         }
@@ -43,16 +46,19 @@ class CommandTest extends TestCase
             $this->expectExceptionMessage($expectedExceptionMessage);
         }
 
+        $domain = new Domain($domainUrl);
+
         new Command(
             $uuid,
             $bitrix24UserId,
             $isBitrix24UserAdmin,
             $memberId,
-            $domainUrl,
+            $domain,
             $authToken,
             $applicationVersion,
             $applicationScope
         );
+
     }
 
     public static function dataForCommand(): \Generator
@@ -84,7 +90,7 @@ class CommandTest extends TestCase
             $bitrix24Account->getApplicationVersion(),
             $bitrix24Account->getApplicationScope(),
             \InvalidArgumentException::class,
-            'Domain URL is not valid.'
+            sprintf('Invalid domain: %s', '')
         ];
 
         yield 'validBitrix24UserId' => [

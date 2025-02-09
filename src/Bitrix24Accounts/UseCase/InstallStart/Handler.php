@@ -24,7 +24,7 @@ readonly class Handler
     {
         $this->logger->info('Bitrix24Accounts.InstallStart.start', [
             'id' => $command->uuid->toRfc4122(),
-            'domain_url' => $command->domainUrl,
+            'domain' => $command->domain,
             'member_id' => $command->memberId,
         ]);
 
@@ -33,7 +33,7 @@ readonly class Handler
             $command->bitrix24UserId,
             $command->isBitrix24UserAdmin,
             $command->memberId,
-            $command->domainUrl,
+            $command->domain,
             Bitrix24AccountStatus::new,
             $command->authToken,
             new CarbonImmutable(),
@@ -53,7 +53,7 @@ readonly class Handler
                 'Bitrix24Accounts.InstallStart.Finish',
                 [
                     'id' => $command->uuid->toRfc4122(),
-                    'domain_url' => $command->domainUrl,
+                    'domain_url' => $command->domain,
                     'member_id' => $command->memberId,
                 ]
             );
@@ -62,7 +62,7 @@ readonly class Handler
                 'Bitrix24Accounts.InstallStart.AlreadyExists',
                 [
                     'id' => $command->uuid->toRfc4122(),
-                    'domain_url' => $command->domainUrl,
+                    'domain' => $command->domain,
                     'member_id' => $command->memberId,
                 ]
             );

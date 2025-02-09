@@ -98,7 +98,7 @@ class Bitrix24AccountBuilder
         return $this;
     }
 
-    public function build(): AggregateRootEventsEmitterInterface&Bitrix24AccountInterface
+    public function build(): Bitrix24Account
     {
         $bitrix24Account = new Bitrix24Account(
             $this->id,
