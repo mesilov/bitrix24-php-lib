@@ -11,7 +11,7 @@ use Symfony\Component\Uid\Uuid;
 
 readonly class Command
 {
-    public string $domain;
+    public Domain $domain;
 
     public function __construct(
         public Uuid $uuid,
@@ -24,7 +24,7 @@ readonly class Command
         public Scope $applicationScope
     ) {
         $this->validate();
-        $this->domain = $domain->getValue();
+        $this->domain = $domain;
     }
 
     private function validate(): void

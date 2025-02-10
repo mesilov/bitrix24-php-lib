@@ -23,7 +23,7 @@ class CommandTest extends TestCase
         string $applicationToken,
     ): void {
         $command = new Command($applicationToken);
-        $this->assertInstanceOf(Command::class, $command);
+        $this->assertEquals($applicationToken,$command->applicationToken);
     }
 
     #[Test]

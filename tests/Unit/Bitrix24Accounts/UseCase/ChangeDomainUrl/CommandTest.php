@@ -19,60 +19,35 @@ use PHPUnit\Framework\TestCase;
 class CommandTest extends TestCase
 {
     #[Test]
-    #[DataProvider('dataForValidateInvalidDomain')]
+    #[DataProvider('dataForValidateValidDomain')]
     public function testValidateDomain(
-        array $arrDomains,
-        ?string $expectedException
+        string $oldDomain,
+        string $newDomain,
     ): void {
-
-        $exceptionCount = 0;
-        foreach ($arrDomains as $arrDomain) {
-            try {
-                $oldDomain = new Domain($arrDomain['oldDomain']);
-                $newDomain = new Domain($arrDomain['newDomain']);
-                new Command($oldDomain, $newDomain);
-            } catch (\InvalidArgumentException) {
-                // Увеличиваем счетчик при каждом выбросе исключения
-                $exceptionCount++;
-            }
-        }
-
-        // Проверяем, сколько исключений было выброшено
-        if ($expectedException !== null) {
-            $this->assertEquals(6, $exceptionCount, 'Expected 6 invalid exception and received ' . $exceptionCount);
-        } else {
-            // Если ожидается отсутствие исключений, проверяем что их не было
-            $this->assertEquals(0, $exceptionCount, sprintf('No exceptions were expected but %d were thrown.', $exceptionCount));
-        }
-
+        new Domain($oldDomain);
+        new Domain($newDomain);
+        $this->assertTrue(true);
     }
 
     #[Test]
-    #[DataProvider('dataForValidateValidDomain')]
+    #[DataProvider('dataForValidateInvalidDomain')]
     public function testValidateInvalidDomain(
-        array $arrDomains,
-        ?string $expectedException
+        string $oldDomain,
+        string $newDomain,
+        ?string $expectedException,
+        ?string $expectedExceptionMessage
     ): void {
 
-        $exceptionCount = 0;
-        foreach ($arrDomains as $arrDomain) {
-            try {
-                $oldDomain = new Domain($arrDomain['oldDomain']);
-                $newDomain = new Domain($arrDomain['newDomain']);
-                new Command($oldDomain, $newDomain);
-            } catch (\InvalidArgumentException) {
-                // Увеличиваем счетчик при каждом выбросе исключения
-                $exceptionCount++;
-            }
+        if ($expectedException !== null) {
+            $this->expectException($expectedException);
         }
 
-        // Проверяем, сколько исключений было выброшено
-        if ($expectedException !== null) {
-            $this->assertEquals(6, $exceptionCount, 'Expected 6 invalid exception and received ' . $exceptionCount);
-        } else {
-            // Если ожидается отсутствие исключений, проверяем что их не было
-            $this->assertEquals(0, $exceptionCount, sprintf('No exceptions were expected but %d were thrown.', $exceptionCount));
+        if ($expectedExceptionMessage !== null) {
+            $this->expectExceptionMessage($expectedExceptionMessage);
         }
+
+        new Domain($oldDomain);
+        new Domain($newDomain);
 
     }
 
@@ -80,37 +55,88 @@ class CommandTest extends TestCase
     {
 
         // Примеры допустимых доменов
-        $arrValidDomains = [
+        /*$arrValidDomains = [
             ['oldDomain' => 'example.com', 'newDomain' => 'example.org'],
             ['oldDomain' => 'пример.рф', 'newDomain' => 'пример.рус'],
             ['oldDomain' => 'test-site.org', 'newDomain' => 'test-site.ru'],
             ['oldDomain' => 'valid-domain.co.uk', 'newDomain' => 'valid-domain.net'],
             ['oldDomain' => 'subdomain.example.com', 'newDomain' => 'subdomain2.example.com'],
             ['oldDomain' => 'тест.рус', 'newDomain' => 'тест2.рус'], // Пример с кириллицей
+        ];*/
+
+        yield 'validDomain1' => [
+            'example.com',
+            'example.org',
         ];
 
-        yield 'validDomain' => [
-            $arrValidDomains, // Оборачиваем в массив для передачи в testValidCommand
-            null // Здесь исключение не ожидается
+        yield 'validDomain2' => [
+            'пример.рф',
+            'пример.рус',
+        ];
+
+        yield 'validDomain3' => [
+            'test-site.org',
+            'test-site.ru',
+        ];
+
+        yield 'validDomain4' => [
+            'valid-domain.co.uk',
+            'valid-domain.net',
+        ];
+
+        yield 'validDomain5' => [
+            'subdomain.example.com',
+            'subdomain2.example.com',
+        ];
+
+        yield 'validDomain6' => [
+            'тест.рус',
+            'тест2.рус',
         ];
     }
 
     public static function dataForValidateInvalidDomain(): \Generator
     {
-
-        // Примеры недопустимых доменов
-        $arrInvalidDomains = [
-            ['oldDomain' => 'invalid_domain.com', 'newDomain' => 'valid.com'], // Неправильный формат (подчеркивание)
-            ['oldDomain' => '-invalid.com', 'newDomain' => 'valid.com'], // Домен не может начинаться с дефиса
-            ['oldDomain' => 'invalid-.com', 'newDomain' => 'valid.com'], // Домен не может заканчиваться на дефис
-            ['oldDomain' => '123.456.789.0', 'newDomain' => 'valid.com'], // Неправильный формат (IP-адрес)
-            ['oldDomain' => 'example..com', 'newDomain' => 'valid.com'], // Два подряд идущих точки
-            ['oldDomain' => 'example.c', 'newDomain' => 'valid.com'] // Слишком короткая доменная зона
+        yield 'invalidDomain1' => [
+            'invalid_domain.com', // Неправильный формат (подчеркивание)
+            'valid.com',
+            \InvalidArgumentException::class,
+            sprintf('Invalid domain: %s', 'invalid_domain.com')
         ];
 
-        yield 'invalidDomain' => [
-            $arrInvalidDomains, // Оборачиваем в массив для передачи в testValidCommand
-            \InvalidArgumentException::class
+        yield 'invalidDomain2' => [
+            '-invalid.com', // Домен не может начинаться с дефиса
+            'valid.com',
+            \InvalidArgumentException::class,
+            sprintf('Invalid domain: %s', '-invalid.com')
+        ];
+
+        yield 'invalidDomain3' => [
+            'invalid-.com', // Домен не может заканчиваться на дефис
+            'valid.com',
+            \InvalidArgumentException::class,
+            sprintf('Invalid domain: %s', 'invalid-.com')
+        ];
+
+        yield 'invalidDomain4' => [
+            '123.456.789.0', // Неправильный формат (IP-адрес)
+            'valid.com',
+            \InvalidArgumentException::class,
+              sprintf('Invalid domain: %s', '123.456.789.0')
+        ];
+
+        yield 'invalidDomain5' => [
+            'example..com', // Два подряд идущих точки
+            'valid.com',
+            \InvalidArgumentException::class,
+            sprintf('Invalid domain: %s', 'example..com')
+        ];
+
+        yield 'invalidDomain6' => [
+            'example.c', // Слишком короткая доменная зона
+            'valid.com',
+            \InvalidArgumentException::class,
+            sprintf('Invalid domain: %s', 'example.c')
         ];
     }
 }

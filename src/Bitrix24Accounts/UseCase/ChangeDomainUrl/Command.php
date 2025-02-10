@@ -8,15 +8,15 @@ use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
 
 readonly class Command
 {
-    public string $oldDomain;
+   public Domain $oldDomain;
 
-    public string $newDomain;
+   public Domain $newDomain;
 
     public function __construct(
         Domain $oldDomain,
         Domain $newDomain
     ) {
-        $this->oldDomain = $oldDomain->getValue();
-        $this->newDomain = $newDomain->getValue();
+        $this->oldDomain = $oldDomain;
+        $this->newDomain = $newDomain;
     }
 }
