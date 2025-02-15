@@ -33,7 +33,7 @@ readonly class Handler
             $command->bitrix24UserId,
             $command->isBitrix24UserAdmin,
             $command->memberId,
-            $command->domain,
+            $command->domain->value,
             Bitrix24AccountStatus::new,
             $command->authToken,
             new CarbonImmutable(),

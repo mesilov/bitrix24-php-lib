@@ -8,17 +8,13 @@ use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
 
 readonly class Command
 {
-    public Domain $domain;
-
     public function __construct(
         public string $applicationToken,
         public string $memberId,
-        Domain $domain,
+        public Domain $domain,
         public int $bitrix24UserId,
     ) {
-        $this->domain = $domain;
         $this->validate();
-
     }
 
     private function validate(): void

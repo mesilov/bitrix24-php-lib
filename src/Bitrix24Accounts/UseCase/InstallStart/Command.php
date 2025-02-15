@@ -11,20 +11,17 @@ use Symfony\Component\Uid\Uuid;
 
 readonly class Command
 {
-    public Domain $domain;
-
     public function __construct(
         public Uuid $uuid,
         public int $bitrix24UserId,
         public bool $isBitrix24UserAdmin,
         public string $memberId,
-        Domain $domain,
+        public Domain $domain,
         public AuthToken $authToken,
         public int $applicationVersion,
         public Scope $applicationScope
     ) {
         $this->validate();
-        $this->domain = $domain;
     }
 
     private function validate(): void
