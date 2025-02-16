@@ -1,0 +1,28 @@
+services:
+  php-cli:
+    build:
+      context: ./docker/php-cli
+    depends_on:
+      - database
+    volumes:
+      - .:/var/www/html
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PHP_IDE_CONFIG: "serverName=docker-cli"
+    working_dir: /var/www/html
+  database:
+    image: postgres:${POSTGRES_VERSION:-16}-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-b24phpLibTest}
+      # You should definitely change the password in production
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-b24phpLibTest}
+      POSTGRES_USER: ${POSTGRES_USER:-b24phpLibTest}
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    container_name: bitrix24-php-lib-test-database
+    ports:
+      - '5438:5432'
+    volumes:
+      - ./docker/init_database/:/docker-entrypoint-initdb.d
+      - ./docker/db:/var/lib/postgresql/data

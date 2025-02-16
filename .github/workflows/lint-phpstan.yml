@@ -2,11 +2,11 @@ on:
   push:
   pull_request:
 
-name: Rector lint checks
+name: PHPStan lint checks
 
 jobs:
   static-analysis:
-    name: "Rector"
+    name: "PHPStan"
     runs-on: ${{ matrix.operating-system }}
 
     strategy:
@@ -37,15 +37,15 @@ jobs:
         if: ${{ matrix.dependencies == 'highest' }}
         run: "composer update --no-interaction --no-progress --no-suggest"
 
-      - name: "Rector"
-        run: "make lint-rector"
+      - name: "PHPStan"
+        run: "vendor/bin/phpstan --memory-limit=2G analyse"
 
-      - name: "is Rector check succeeded"
+      - name: "is PHPStan check succeeded"
         if: ${{ success() }}
         run: |
-          echo '✅ Rector check pass, congratulations!'
+          echo '✅ PHPStan check pass, congratulations!'
 
       - name: "is PHPStan check failed"
         if: ${{ failure() }}
         run: |
-          echo '::error:: ❗️ Rector check failed (╯°益°)╯彡┻━┻'
+          echo '::error:: ❗️ PHPStan check failed (╯°益°)╯彡┻━┻'

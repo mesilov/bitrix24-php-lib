@@ -1,11 +1,11 @@
-name: "PHPUnit tests"
+name: "Unit tests"
 
 on:
   push:
   pull_request:
 
 env:
-  COMPOSER_FLAGS: "--ansi --no-interaction --no-progress --prefer-dist"
+  COMPOSER_FLAGS: "--ansi --no-interaction --no-progress"
 
 jobs:
   tests:
@@ -37,7 +37,7 @@ jobs:
           composer update ${{ env.COMPOSER_FLAGS }}
 
       - name: "run unit tests"
-        run: "make test-unit"
+        run: "php vendor/bin/phpunit --testsuite=unit_tests --display-warnings --testdox"
 
       - name: "is unit tests tests succeeded"
         if: ${{ success() }}
