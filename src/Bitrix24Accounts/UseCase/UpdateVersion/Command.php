@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallStart;
+namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\UpdateVersion;
 
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Symfony\Component\Uid\Uuid;
@@ -16,10 +15,9 @@ readonly class Command
         public int $bitrix24UserId,
         public bool $isBitrix24UserAdmin,
         public string $memberId,
-        public Domain $domain,
         public AuthToken $authToken,
-        public int $applicationVersion,
-        public Scope $applicationScope
+        public int $newApplicationVersion,
+        public Scope $newApplicationScope
     ) {
         $this->validate();
     }
@@ -34,7 +32,7 @@ readonly class Command
             throw new \InvalidArgumentException('Member ID must be a non-empty string.');
         }
 
-        if ($this->applicationVersion <= 0) {
+        if ($this->newApplicationVersion <= 0) {
             throw new \InvalidArgumentException('Application version must be a positive integer.');
         }
     }

@@ -32,6 +32,7 @@ class CommandTest extends TestCase
         ?string $expectedExceptionMessage,
     ): void
     {
+
         if (null !== $expectedException) {
             $this->expectException($expectedException);
         }
@@ -41,14 +42,12 @@ class CommandTest extends TestCase
         }
 
         $domain = new Domain($domainUrl);
-
-       new Command(
+        new Command(
             $applicationToken,
             $memberId,
             $domain,
             $bitrix24UserId
         );
-
     }
 
     public static function dataForCommand(): \Generator
@@ -76,7 +75,7 @@ class CommandTest extends TestCase
             'Member ID cannot be empty.'
         ];
 
-        yield 'validDomain' => [
+        yield 'invalidDomain' => [
             $applicationToken,
             $bitrix24Account->getMemberId(),
             '',

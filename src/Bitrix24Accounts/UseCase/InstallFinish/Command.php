@@ -8,16 +8,13 @@ use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
 
 readonly class Command
 {
-    public string $domain;
-
     public function __construct(
         public string $applicationToken,
         public string $memberId,
-        Domain $domain,
+        public Domain $domain,
         public int $bitrix24UserId,
     ) {
         $this->validate();
-        $this->domain = $domain->getValue();
     }
 
     private function validate(): void
@@ -26,7 +23,7 @@ readonly class Command
             throw new \InvalidArgumentException('Application token cannot be empty.');
         }
 
-        if ('' === $this->memberId || '0' === $this->memberId) {
+        if ('' === $this->memberId) {
             throw new \InvalidArgumentException('Member ID cannot be empty.');
         }
 

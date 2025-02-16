@@ -6,17 +6,12 @@ namespace Bitrix24\Lib\Bitrix24Accounts\ValueObjects;
 
 readonly class Domain
 {
-    private string $value;
+    public string $value;
 
     public function __construct(string $domain)
     {
         $this->validate($domain);
         $this->value = $domain;
-    }
-
-    public function getValue(): string
-    {
-        return $this->value;
     }
 
     private function validate(string $domain): void

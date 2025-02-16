@@ -21,14 +21,14 @@ readonly class Handler
     public function handle(Command $command): void
     {
         $this->logger->info('Bitrix24Accounts.ChangeDomainUrl.start', [
-            'b24_domain_url_old' => $command->oldDomain,
-            'b24_domain_url_new' => $command->newDomain,
+            'b24_domain_url_old' => $command->oldDomain->value,
+            'b24_domain_url_new' => $command->newDomain->value,
         ]);
 
         /** @var AggregateRootEventsEmitterInterface[]|Bitrix24AccountInterface[] $accounts */
-        $accounts = $this->bitrix24AccountRepository->findByDomain($command->oldDomain);
+        $accounts = $this->bitrix24AccountRepository->findByDomain($command->oldDomain->value);
         foreach ($accounts as $account) {
-            $account->changeDomainUrl($command->newDomain);
+            $account->changeDomainUrl($command->newDomain->value);
             $this->bitrix24AccountRepository->save($account);
         }
 
