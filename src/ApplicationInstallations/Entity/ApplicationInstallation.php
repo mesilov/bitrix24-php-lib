@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\ApplicationInstallations\Entity;;
 
+use Bitrix24\Lib\AggregateRoot;
 use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events;
 
-class ApplicationInstallation implements ApplicationInstallationInterface
+
+class ApplicationInstallation extends AggregateRoot implements ApplicationInstallationInterface
 {
 
     private ?string $comment = null;
@@ -22,13 +25,15 @@ class ApplicationInstallation implements ApplicationInstallationInterface
         private CarbonImmutable $updatedAt,
         // Он должен быть readonly? Я думаю да т.к это связано с установкой и мы не должны менять это свойство.
         private readonly Uuid $bitrix24AccountId,
-        // Думаю это тоже readonly т.к связано с установкой
-        private readonly Uuid $contactPersonId,
+        // Думаю это тоже readonly т.к связано с установкой, хотя если у нас есть метод changeContactPerson значит мы должны иметь возможность изменить это свойство
+        private Uuid $contactPersonId,
         private Uuid $bitrix24PartnerContactPersonId,
         private ?Uuid $bitrix24PartnerId,
         private string $externalId,
         private ApplicationInstallationStatus $status,
         private ApplicationStatus $applicationStatus,
+        private PortalLicenseFamily $portalLicenseFamily,
+        private int $portalUsersCount
     ) {
 
     }
@@ -66,7 +71,26 @@ class ApplicationInstallation implements ApplicationInstallationInterface
     #[\Override]
     public function changeContactPerson(?Uuid $uuid): void
     {
-        // TODO: Implement changeContactPerson() method.
+        //Параметр необязательный, то есть мы можем пустоту занести ?
+
+        if ($uuid === $this->contactPersonId) {
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'new contactPersonId %s must not match the old contactPersonId  %s.',
+                    $uuid,
+                    $this->contactPersonId
+                )
+            );
+        }
+
+        $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new Events\ApplicationInstallationContactPersonChangedEvent(
+           $this->id,
+           $this->updatedAt,
+           $this->contactPersonId,
+           $uuid
+        );
+
     }
 
     #[\Override]
@@ -78,7 +102,25 @@ class ApplicationInstallation implements ApplicationInstallationInterface
     #[\Override]
     public function changeBitrix24PartnerContactPerson(?Uuid $uuid): void
     {
-        // TODO: Implement changeBitrix24PartnerContactPerson() method.
+        //Параметр необязательный, то есть мы можем пустоту занести ?
+
+        if ($uuid === $this->bitrix24PartnerContactPersonId) {
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'new bitrix24PartnerContactPersonId %s must not match the old bitrix24PartnerContactPersonId  %s.',
+                    $uuid,
+                    $this->bitrix24PartnerContactPersonId
+                )
+            );
+        }
+
+        $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new Events\ApplicationInstallationBitrix24PartnerContactPersonChangedEvent(
+            $this->id,
+            $this->updatedAt,
+            $this->bitrix24PartnerContactPersonId,
+            $uuid
+        );
     }
 
     #[\Override]
@@ -90,7 +132,25 @@ class ApplicationInstallation implements ApplicationInstallationInterface
     #[\Override]
     public function changeBitrix24Partner(?Uuid $uuid): void
     {
-        // TODO: Implement changeBitrix24Partner() method.
+        //Параметр необязательный, то есть мы можем пустоту занести ?
+
+        if ($uuid === $this->bitrix24PartnerId) {
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'new bitrix24PartnerId %s must not match the old bitrix24PartnerId  %s.',
+                    $uuid,
+                    $this->bitrix24PartnerId
+                )
+            );
+        }
+
+        $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new Events\ApplicationInstallationBitrix24PartnerChangedEvent(
+            $this->id,
+            $this->updatedAt,
+            $this->bitrix24PartnerId,
+            $uuid
+        );
     }
 
     #[\Override]
@@ -144,31 +204,69 @@ class ApplicationInstallation implements ApplicationInstallationInterface
     #[\Override]
     public function changeApplicationStatus(ApplicationStatus $applicationStatus): void
     {
-        // TODO: Implement changeApplicationStatus() method.
+        if ($this->applicationStatus === $applicationStatus) {
+            throw new \InvalidArgumentException(
+                sprintf('new applicationStatus identical with old applicationStatus')
+            );
+        }
+
+        $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new  Events\ApplicationInstallationApplicationStatusChangedEvent(
+            $this->id,
+            $this->updatedAt,
+            $applicationStatus
+        );
     }
 
     #[\Override]
     public function getPortalLicenseFamily(): PortalLicenseFamily
     {
-        // TODO: Implement getPortalLicenseFamily() method.
+        return $this->portalLicenseFamily;
     }
 
     #[\Override]
     public function changePortalLicenseFamily(PortalLicenseFamily $portalLicenseFamily): void
     {
-        // TODO: Implement changePortalLicenseFamily() method.
+        if ($this->portalLicenseFamily === $portalLicenseFamily) {
+            throw new \InvalidArgumentException(
+                sprintf('new portalLicenseFamily identical with old portalLicenseFamily')
+            );
+        }
+
+        $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new  Events\ApplicationInstallationPortalLicenseFamilyChangedEvent(
+            $this->id,
+            $this->updatedAt,
+            $this->portalLicenseFamily,
+            $portalLicenseFamily
+        );
     }
 
     #[\Override]
     public function getPortalUsersCount(): ?int
     {
-        // TODO: Implement getPortalUsersCount() method.
+         return $this->portalUsersCount;
     }
 
     #[\Override]
     public function changePortalUsersCount(int $usersCount): void
     {
-        // TODO: Implement changePortalUsersCount() method.
+        if ($this->portalUsersCount === $usersCount) {
+            throw new \InvalidArgumentException(
+                sprintf('new usersCount %s identical with old portalUsersCount %s',
+                $usersCount,
+                $this->portalUsersCount
+                )
+            );
+        }
+
+        $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new  Events\ApplicationInstallationPortalUsersCountChangedEvent(
+            $this->id,
+            $this->updatedAt,
+            $this->portalUsersCount,
+            $usersCount
+        );
     }
 
     #[\Override]
