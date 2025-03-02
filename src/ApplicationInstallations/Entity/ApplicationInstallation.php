@@ -8,11 +8,13 @@ use Bitrix24\Lib\AggregateRoot;
 use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationBlockedEvent;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationUninstalledEvent;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events;
-
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 
 class ApplicationInstallation extends AggregateRoot implements ApplicationInstallationInterface
 {
@@ -174,25 +176,72 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function applicationInstalled(): void
     {
-        // TODO: Implement applicationInstalled() method.
+        if (ApplicationInstallationStatus::new !== $this->status) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'for finish application installation must be in status «new», current status - «%s»',
+                    $this->status->name
+                )
+            );
+        }
+
+        $this->status = ApplicationInstallationStatus::active;
+        $this->updatedAt = new CarbonImmutable();
+        // Тут событие должно быть ?
+
     }
 
     #[\Override]
     public function applicationUninstalled(): void
     {
-        // TODO: Implement applicationUninstalled() method.
+
+        $this->status = ApplicationInstallationStatus::deleted;
+        $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new ApplicationInstallationUninstalledEvent(
+            $this->id,
+            new CarbonImmutable(),
+            $this->bitrix24AccountId,
+            $this->contactPersonId,
+            $this->bitrix24PartnerId,
+            $this->bitrix24PartnerId,
+            $this->externalId
+        );
+
     }
 
     #[\Override]
     public function markAsActive(?string $comment): void
     {
-        // TODO: Implement markAsActive() method.
+        if (ApplicationInstallationStatus::blocked !== $this->status) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'you can activate application install only in status «blocked», now status «%s»',
+                    $this->status->name
+                )
+            );
+        }
+
+        $this->status = ApplicationInstallationStatus::active;
+        $this->comment = $comment;
+        $this->updatedAt = new CarbonImmutable();
     }
 
     #[\Override]
     public function markAsBlocked(?string $comment): void
     {
-        // TODO: Implement markAsBlocked() method.
+        if (ApplicationInstallationStatus::deleted === $this->status) {
+            throw new InvalidArgumentException('you cannot block application install in status «deleted»');
+        }
+        // Когда происходит блокировка ? И как из нее выйти ?
+
+        $this->status = ApplicationInstallationStatus::blocked;
+        $this->comment = $comment;
+        $this->updatedAt = new CarbonImmutable();
+        $this->events[] = new ApplicationInstallationBlockedEvent(
+            $this->id,
+            new CarbonImmutable(),
+            $this->comment
+        );
     }
 
     #[\Override]

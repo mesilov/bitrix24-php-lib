@@ -12,7 +12,7 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\Appli
 use Doctrine\ORM\EntityManagerInterface;
 use  Doctrine\ORM\EntityRepository;
 use Symfony\Component\Uid\Uuid;
-
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 class ApplicationInstallationsRepository extends EntityRepository implements ApplicationInstallationRepositoryInterface
 {
     public function __construct(EntityManagerInterface $entityManager)
@@ -87,6 +87,9 @@ class ApplicationInstallationsRepository extends EntityRepository implements App
 
     public function findByExternalId(string $externalId): array
     {
+        if ('' == $externalId) {
+            throw new InvalidArgumentException('external id cannot be empty');
+        }
         $applicationInstallations = $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('appInstallation')
             ->where('appInstallation.externalId = :externalId')

@@ -23,7 +23,7 @@ readonly class Domain
         $patternLengthCheck = '/^.{1,253}$/';
 
         // Проверка длины каждой метки (1-63 символа, включая кириллицу)
-        $patternLengthEachLabel = '/^[A-Za-zА-Яа-яЁё0-9-]{1,63}(\.[A-Za-zА-Яа-яЁё0-9-]{1,63})*$/u';
+        $patternLengthEachLabel = '/^[A-Za-zА-Яа-яЁё0-9-]{1,63}(\.[A-Za-zА-Яа-яЁё0-9-]{1,63}){0,2}$/u';
         if (
             in_array(preg_match($patternValidChars, $domain), [0, false], true)
             || in_array(preg_match($patternLengthCheck, $domain), [0, false], true)
