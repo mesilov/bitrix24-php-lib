@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\ApplicationInstallations\Entity;;
+namespace Bitrix24\Lib\ApplicationInstallations\Entity;
+;
 
 use Bitrix24\Lib\AggregateRoot;
 use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationBlockedEvent;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationFinishedEvent;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationUnblockedEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationUninstalledEvent;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Carbon\CarbonImmutable;
@@ -19,24 +22,24 @@ use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 class ApplicationInstallation extends AggregateRoot implements ApplicationInstallationInterface
 {
 
-    private ?string $comment = null;
-
     public function __construct(
-        private readonly Uuid $id,
-        private readonly CarbonImmutable $createdAt,
-        private CarbonImmutable $updatedAt,
+        private readonly Uuid                 $id,
+        private readonly CarbonImmutable      $createdAt,
+        private CarbonImmutable               $updatedAt,
         // Он должен быть readonly? Я думаю да т.к это связано с установкой и мы не должны менять это свойство.
-        private readonly Uuid $bitrix24AccountId,
+        private readonly Uuid                 $bitrix24AccountId,
         // Думаю это тоже readonly т.к связано с установкой, хотя если у нас есть метод changeContactPerson значит мы должны иметь возможность изменить это свойство
-        private Uuid $contactPersonId,
-        private Uuid $bitrix24PartnerContactPersonId,
-        private ?Uuid $bitrix24PartnerId,
-        private string $externalId,
+        private Uuid                          $contactPersonId,
+        private Uuid                          $bitrix24PartnerContactPersonId,
+        private ?Uuid                         $bitrix24PartnerId,
+        private string                        $externalId,
         private ApplicationInstallationStatus $status,
-        private ApplicationStatus $applicationStatus,
-        private PortalLicenseFamily $portalLicenseFamily,
-        private int $portalUsersCount
-    ) {
+        private ApplicationStatus             $applicationStatus,
+        private PortalLicenseFamily           $portalLicenseFamily,
+        private int                           $portalUsersCount,
+        private ?string                       $comment = null
+    )
+    {
 
     }
 
@@ -73,24 +76,13 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function changeContactPerson(?Uuid $uuid): void
     {
-        //Параметр необязательный, то есть мы можем пустоту занести ?
-
-        if ($uuid === $this->contactPersonId) {
-            throw new \InvalidArgumentException(
-                sprintf(
-                    'new contactPersonId %s must not match the old contactPersonId  %s.',
-                    $uuid,
-                    $this->contactPersonId
-                )
-            );
-        }
-
         $this->updatedAt = new CarbonImmutable();
+
         $this->events[] = new Events\ApplicationInstallationContactPersonChangedEvent(
-           $this->id,
-           $this->updatedAt,
-           $this->contactPersonId,
-           $uuid
+            $this->id,
+            $this->updatedAt,
+            $this->contactPersonId,
+            $uuid
         );
 
     }
@@ -104,19 +96,8 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function changeBitrix24PartnerContactPerson(?Uuid $uuid): void
     {
-        //Параметр необязательный, то есть мы можем пустоту занести ?
-
-        if ($uuid === $this->bitrix24PartnerContactPersonId) {
-            throw new \InvalidArgumentException(
-                sprintf(
-                    'new bitrix24PartnerContactPersonId %s must not match the old bitrix24PartnerContactPersonId  %s.',
-                    $uuid,
-                    $this->bitrix24PartnerContactPersonId
-                )
-            );
-        }
-
         $this->updatedAt = new CarbonImmutable();
+
         $this->events[] = new Events\ApplicationInstallationBitrix24PartnerContactPersonChangedEvent(
             $this->id,
             $this->updatedAt,
@@ -128,25 +109,14 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function getBitrix24PartnerId(): ?Uuid
     {
-        return  $this->bitrix24PartnerId;
+        return $this->bitrix24PartnerId;
     }
 
     #[\Override]
     public function changeBitrix24Partner(?Uuid $uuid): void
     {
-        //Параметр необязательный, то есть мы можем пустоту занести ?
-
-        if ($uuid === $this->bitrix24PartnerId) {
-            throw new \InvalidArgumentException(
-                sprintf(
-                    'new bitrix24PartnerId %s must not match the old bitrix24PartnerId  %s.',
-                    $uuid,
-                    $this->bitrix24PartnerId
-                )
-            );
-        }
-
         $this->updatedAt = new CarbonImmutable();
+
         $this->events[] = new Events\ApplicationInstallationBitrix24PartnerChangedEvent(
             $this->id,
             $this->updatedAt,
@@ -176,30 +146,42 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function applicationInstalled(): void
     {
-        if (ApplicationInstallationStatus::new !== $this->status) {
-            throw new InvalidArgumentException(
+        if (
+            ApplicationInstallationStatus::new !== $this->status
+            && ApplicationInstallationStatus::blocked !== $this->status
+        ) {
+            throw new \LogicException(
                 sprintf(
-                    'for finish application installation must be in status «new», current status - «%s»',
-                    $this->status->name
+                    'installation was interrupted because status must be in new or blocked,but your status is %s',
+                    $this->status->value
                 )
             );
         }
 
         $this->status = ApplicationInstallationStatus::active;
         $this->updatedAt = new CarbonImmutable();
-        // Тут событие должно быть ?
+
+        $this->events[] = new ApplicationInstallationFinishedEvent(
+            $this->id,
+            $this->updatedAt,
+            $this->bitrix24PartnerId,
+            $this->portalLicenseFamily,
+            $this->contactPersonId,
+            $this->bitrix24PartnerContactPersonId,
+            $this->bitrix24PartnerId
+        );
 
     }
 
     #[\Override]
     public function applicationUninstalled(): void
     {
-
         $this->status = ApplicationInstallationStatus::deleted;
         $this->updatedAt = new CarbonImmutable();
+
         $this->events[] = new ApplicationInstallationUninstalledEvent(
             $this->id,
-            new CarbonImmutable(),
+            $this->updatedAt,
             $this->bitrix24AccountId,
             $this->contactPersonId,
             $this->bitrix24PartnerId,
@@ -213,10 +195,10 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     public function markAsActive(?string $comment): void
     {
         if (ApplicationInstallationStatus::blocked !== $this->status) {
-            throw new InvalidArgumentException(
+            throw new \LogicException(
                 sprintf(
-                    'you can activate application install only in status «blocked», now status «%s»',
-                    $this->status->name
+                    'you must be in status blocked to complete the installation, now status is «%s»',
+                    $this->status->value
                 )
             );
         }
@@ -224,19 +206,30 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         $this->status = ApplicationInstallationStatus::active;
         $this->comment = $comment;
         $this->updatedAt = new CarbonImmutable();
+
+        $this->events[] = new ApplicationInstallationUnblockedEvent(
+            $this->id,
+            $this->updatedAt,
+            $this->comment
+        );
     }
 
     #[\Override]
     public function markAsBlocked(?string $comment): void
     {
-        if (ApplicationInstallationStatus::deleted === $this->status) {
-            throw new InvalidArgumentException('you cannot block application install in status «deleted»');
+        if (
+            ApplicationInstallationStatus::new !== $this->status
+            && ApplicationInstallationStatus::active !== $this->status
+        ) {
+            throw new \LogicException(sprintf('You can block application installation only in status new or active,but your status is «%s»',
+                $this->status->value
+            ));
         }
-        // Когда происходит блокировка ? И как из нее выйти ?
 
         $this->status = ApplicationInstallationStatus::blocked;
         $this->comment = $comment;
         $this->updatedAt = new CarbonImmutable();
+
         $this->events[] = new ApplicationInstallationBlockedEvent(
             $this->id,
             new CarbonImmutable(),
@@ -247,24 +240,21 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function getApplicationStatus(): ApplicationStatus
     {
-         return $this->applicationStatus;
+        return $this->applicationStatus;
     }
 
     #[\Override]
     public function changeApplicationStatus(ApplicationStatus $applicationStatus): void
     {
-        if ($this->applicationStatus === $applicationStatus) {
-            throw new \InvalidArgumentException(
-                sprintf('new applicationStatus identical with old applicationStatus')
+        if ($this->applicationStatus !== $applicationStatus) {
+            $this->updatedAt = new CarbonImmutable();
+
+            $this->events[] = new  Events\ApplicationInstallationApplicationStatusChangedEvent(
+                $this->id,
+                $this->updatedAt,
+                $applicationStatus
             );
         }
-
-        $this->updatedAt = new CarbonImmutable();
-        $this->events[] = new  Events\ApplicationInstallationApplicationStatusChangedEvent(
-            $this->id,
-            $this->updatedAt,
-            $applicationStatus
-        );
     }
 
     #[\Override]
@@ -276,46 +266,37 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function changePortalLicenseFamily(PortalLicenseFamily $portalLicenseFamily): void
     {
-        if ($this->portalLicenseFamily === $portalLicenseFamily) {
-            throw new \InvalidArgumentException(
-                sprintf('new portalLicenseFamily identical with old portalLicenseFamily')
+        if ($this->portalLicenseFamily !== $portalLicenseFamily) {
+            $this->updatedAt = new CarbonImmutable();
+
+            $this->events[] = new  Events\ApplicationInstallationPortalLicenseFamilyChangedEvent(
+                $this->id,
+                $this->updatedAt,
+                $this->portalLicenseFamily,
+                $portalLicenseFamily
             );
         }
-
-        $this->updatedAt = new CarbonImmutable();
-        $this->events[] = new  Events\ApplicationInstallationPortalLicenseFamilyChangedEvent(
-            $this->id,
-            $this->updatedAt,
-            $this->portalLicenseFamily,
-            $portalLicenseFamily
-        );
     }
 
     #[\Override]
     public function getPortalUsersCount(): ?int
     {
-         return $this->portalUsersCount;
+        return $this->portalUsersCount;
     }
 
     #[\Override]
     public function changePortalUsersCount(int $usersCount): void
     {
-        if ($this->portalUsersCount === $usersCount) {
-            throw new \InvalidArgumentException(
-                sprintf('new usersCount %s identical with old portalUsersCount %s',
-                $usersCount,
-                $this->portalUsersCount
-                )
+        if ($this->portalUsersCount !== $usersCount) {
+            $this->updatedAt = new CarbonImmutable();
+
+            $this->events[] = new  Events\ApplicationInstallationPortalUsersCountChangedEvent(
+                $this->id,
+                $this->updatedAt,
+                $this->portalUsersCount,
+                $usersCount
             );
         }
-
-        $this->updatedAt = new CarbonImmutable();
-        $this->events[] = new  Events\ApplicationInstallationPortalUsersCountChangedEvent(
-            $this->id,
-            $this->updatedAt,
-            $this->portalUsersCount,
-            $usersCount
-        );
     }
 
     #[\Override]

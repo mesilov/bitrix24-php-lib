@@ -33,8 +33,6 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
 {
     private ?string $applicationToken = null;
 
-    private ?string $comment = null;
-
     public function __construct(
         private readonly Uuid $id,
         private readonly int $bitrix24UserId,
@@ -49,6 +47,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         private int $applicationVersion,
         private Scope $applicationScope,
         bool $isEmitBitrix24AccountCreatedEvent = false,
+        private ?string $comment = null
     ) {
         $this->addAccountCreatedEventIfNeeded($isEmitBitrix24AccountCreatedEvent);
     }

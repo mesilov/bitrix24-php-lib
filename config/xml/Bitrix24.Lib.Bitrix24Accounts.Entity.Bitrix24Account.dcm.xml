@@ -24,6 +24,8 @@
 
         <field name="applicationVersion" type="integer" column="application_version" nullable="false"/>
 
+        <field name="comment" type="text" column="comment" nullable="true"/>
+
         <embedded name="authToken" class="Bitrix24\SDK\Core\Credentials\AuthToken"/>
 
         <embedded name="applicationScope" class="Bitrix24\SDK\Core\Credentials\Scope"/>

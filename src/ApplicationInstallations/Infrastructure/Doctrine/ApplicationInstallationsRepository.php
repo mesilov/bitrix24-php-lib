@@ -28,8 +28,6 @@ class ApplicationInstallationsRepository extends EntityRepository implements App
     public function getById(Uuid $uuid): ApplicationInstallationInterface
     {
 
-        // $applicationInstallation = $this->find($uuid);
-
         $applicationInstallation = $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('appInstallation')
             ->where('appInstallation.UUID = :uuid')
