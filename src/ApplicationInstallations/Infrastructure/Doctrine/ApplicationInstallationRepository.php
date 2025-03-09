@@ -13,7 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use  Doctrine\ORM\EntityRepository;
 use Symfony\Component\Uid\Uuid;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
-class ApplicationInstallationsRepository extends EntityRepository implements ApplicationInstallationRepositoryInterface
+class ApplicationInstallationRepository extends EntityRepository implements ApplicationInstallationRepositoryInterface
 {
     public function __construct(EntityManagerInterface $entityManager)
     {

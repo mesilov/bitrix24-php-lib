@@ -14,9 +14,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders;
 
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
-use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
-use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Carbon\CarbonImmutable;

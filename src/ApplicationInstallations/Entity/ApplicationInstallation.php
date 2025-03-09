@@ -24,19 +24,17 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
 
     public function __construct(
         private readonly Uuid                 $id,
+        private ApplicationInstallationStatus $status,
         private readonly CarbonImmutable      $createdAt,
         private CarbonImmutable               $updatedAt,
-        // Он должен быть readonly? Я думаю да т.к это связано с установкой и мы не должны менять это свойство.
         private readonly Uuid                 $bitrix24AccountId,
-        // Думаю это тоже readonly т.к связано с установкой, хотя если у нас есть метод changeContactPerson значит мы должны иметь возможность изменить это свойство
-        private Uuid                          $contactPersonId,
-        private Uuid                          $bitrix24PartnerContactPersonId,
-        private ?Uuid                         $bitrix24PartnerId,
-        private string                        $externalId,
-        private ApplicationInstallationStatus $status,
         private ApplicationStatus             $applicationStatus,
         private PortalLicenseFamily           $portalLicenseFamily,
-        private int                           $portalUsersCount,
+        private ?int                           $portalUsersCount,
+        private ?Uuid                          $contactPersonId,
+        private ?Uuid                          $bitrix24PartnerContactPersonId,
+        private ?Uuid                         $bitrix24PartnerId,
+        private ?string                        $externalId,
         private ?string                       $comment = null
     )
     {
