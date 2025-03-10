@@ -162,7 +162,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         $this->events[] = new ApplicationInstallationFinishedEvent(
             $this->id,
             $this->updatedAt,
-            $this->bitrix24PartnerId,
+            $this->bitrix24AccountId,
             $this->portalLicenseFamily,
             $this->contactPersonId,
             $this->bitrix24PartnerContactPersonId,

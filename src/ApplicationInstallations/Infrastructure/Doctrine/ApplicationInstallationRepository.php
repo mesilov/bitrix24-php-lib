@@ -30,7 +30,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
 
         $applicationInstallation = $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('appInstallation')
-            ->where('appInstallation.UUID = :uuid')
+            ->where('appInstallation.id = :uuid')
             ->andWhere('appInstallation.status != :status')
             ->setParameter('uuid', $uuid)
             ->setParameter('status', ApplicationInstallationStatus::deleted)

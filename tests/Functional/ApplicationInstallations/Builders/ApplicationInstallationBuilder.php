@@ -1,0 +1,99 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Bitrix24\Lib\Tests\Functional\ApplicationInstallations\Builders;
+
+use Bitrix24\Lib\ApplicationInstallations\Entity\ApplicationInstallation;
+use Bitrix24\SDK\Application\ApplicationStatus;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
+use Bitrix24\SDK\Application\PortalLicenseFamily;
+use Carbon\CarbonImmutable;
+use Symfony\Component\Uid\Uuid;
+
+class ApplicationInstallationBuilder
+{
+    private readonly Uuid $id;
+    private readonly CarbonImmutable $createdAt;
+    private CarbonImmutable $updatedAt;
+    private readonly Uuid $bitrix24AccountId;
+    private ?Uuid $contactPersonId;
+    private ?Uuid $bitrix24PartnerContactPersonId;
+    private ?Uuid $bitrix24PartnerId;
+    private ?string $externalId;
+    private ApplicationInstallationStatus $status;
+    private ApplicationStatus $applicationStatus;
+    private PortalLicenseFamily $portalLicenseFamily;
+    private ?int $portalUsersCount;
+    private ?string $comment = null;
+
+
+    public function __construct()
+    {
+        $this->id = Uuid::v7();
+        $this->createdAt = CarbonImmutable::now();
+        $this->updatedAt = CarbonImmutable::now();
+        $this->bitrix24AccountId = Uuid::v7();
+        $this->bitrix24PartnerContactPersonId = Uuid::v7();
+        $this->contactPersonId = Uuid::v7();
+        $this->bitrix24PartnerId = Uuid::v7();
+        $this->portalUsersCount = random_int(1, 1_000_000);
+    }
+
+    public function withExternalId(string $externalId): self
+    {
+        $this->externalId = $externalId;
+
+        return $this;
+    }
+
+    public function withApplicationStatusInstallation(ApplicationInstallationStatus $status): self
+    {
+        $this->status = $status;
+
+        return $this;
+    }
+
+    public function withApplicationStatus(ApplicationStatus $applicationStatus): self
+    {
+        $this->applicationStatus = $applicationStatus;
+
+        return $this;
+    }
+
+    public function withPortalLicenseFamily(PortalLicenseFamily $portalLicenseFamily): self
+    {
+        $this->portalLicenseFamily = $portalLicenseFamily;
+
+        return $this;
+    }
+
+    public function build(): ApplicationInstallation
+    {
+        $applicationInstallation = new ApplicationInstallation(
+            $this->id,
+            $this->status,
+            $this->createdAt,
+            $this->updatedAt,
+            $this->bitrix24AccountId,
+            $this->applicationStatus,
+            $this->portalLicenseFamily,
+            $this->portalUsersCount,
+            $this->contactPersonId,
+            $this->bitrix24PartnerContactPersonId,
+            $this->bitrix24PartnerId,
+            $this->externalId,
+            $this->comment
+        );
+
+        return $applicationInstallation;
+    }
+
+
+
+
+
+
+
+
+}
