@@ -19,11 +19,11 @@ readonly class Domain
         // Регулярное выражение для проверки допустимых символов (латиница и кириллица)
         $patternValidChars = '/^((?!-)[A-Za-zА-Яа-яЁё0-9-]{1,63}(?<!-)\.)+[A-Za-zА-Яа-яЁё]{2,6}$/u';
 
-        // Проверка общей длины (1-253 символа)
-        $patternLengthCheck = '/^.{1,253}$/';
+        // Проверка общей длины (1-255 символа)
+        $patternLengthCheck = '/^.{1,255}$/';
 
         // Проверка длины каждой метки (1-63 символа, включая кириллицу)
-        $patternLengthEachLabel = '/^[A-Za-zА-Яа-яЁё0-9-]{1,63}(\.[A-Za-zА-Яа-яЁё0-9-]{1,63}){0,2}$/u';
+        $patternLengthEachLabel = '/^[A-Za-zА-Яа-яЁё0-9-]{1,63}(\.[A-Za-zА-Яа-яЁё0-9-]{1,63}){0,4}$/u';
         if (
             in_array(preg_match($patternValidChars, $domain), [0, false], true)
             || in_array(preg_match($patternLengthCheck, $domain), [0, false], true)

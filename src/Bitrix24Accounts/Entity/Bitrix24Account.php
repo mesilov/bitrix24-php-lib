@@ -46,10 +46,10 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         private CarbonImmutable $updatedAt,
         private int $applicationVersion,
         private Scope $applicationScope,
-        bool $isEmitBitrix24AccountCreatedEvent = false,
+        private $isEmitBitrix24AccountCreatedEvent = false,
         private ?string $comment = null
     ) {
-        $this->addAccountCreatedEventIfNeeded($isEmitBitrix24AccountCreatedEvent);
+        $this->addAccountCreatedEventIfNeeded($this->isEmitBitrix24AccountCreatedEvent);
     }
 
     #[\Override]

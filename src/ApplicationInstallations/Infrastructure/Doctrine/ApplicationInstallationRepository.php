@@ -74,18 +74,12 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->getQuery()
             ->getOneOrNullResult();
 
-        if (null === $applicationInstallations) {
-            throw new ApplicationInstallationNotFoundException(
-                sprintf('application installed not found by bitrix24AccountId %s', $uuid->toRfc4122())
-            );
-        }
-
         return $applicationInstallations;
     }
 
     public function findByExternalId(string $externalId): array
     {
-        if ('' == $externalId) {
+        if ('' === trim($externalId)) {
             throw new InvalidArgumentException('external id cannot be empty');
         }
         $applicationInstallations = $this->getEntityManager()->getRepository(ApplicationInstallation::class)
@@ -94,12 +88,6 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->setParameter('externalId', $externalId)
             ->getQuery()
             ->getOneOrNullResult();
-
-        if (null === $applicationInstallations) {
-            throw new ApplicationInstallationNotFoundException(
-                sprintf('application installed not found by externalId %s', $externalId)
-            );
-        }
 
         return $applicationInstallations;
     }
