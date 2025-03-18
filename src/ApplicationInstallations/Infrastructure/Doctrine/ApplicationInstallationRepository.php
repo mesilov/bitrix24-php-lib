@@ -57,7 +57,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
         }
 
         if ($applicationInstallation->getStatus() !== ApplicationInstallationStatus::deleted) {
-            throw new ApplicationInstallationNotFoundException(
+            throw new InvalidArgumentException(
                 sprintf('you cannot delete application installed because you status must be deleted your status %s', $applicationInstallation->getStatus()->name)
             );
         }
@@ -72,7 +72,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->where('appInstallation.bitrix24AccountId = :bitrix24AccountId')
             ->setParameter('bitrix24AccountId', $uuid)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getResult();
 
         return $applicationInstallations;
     }
@@ -87,7 +87,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->where('appInstallation.externalId = :externalId')
             ->setParameter('externalId', $externalId)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getResult();
 
         return $applicationInstallations;
     }

@@ -68,14 +68,14 @@ class ApplicationInstallationRepositoryTest extends ApplicationInstallationRepos
         return new ApplicationInstallationRepository($entityManager);
     }
 
-   /* #[\Override]
+    #[\Override]
     protected function createRepositoryFlusherImplementation(): TestRepositoryFlusherInterface
     {
         $entityManager = EntityManagerFactory::get();
         $eventDispatcher = new EventDispatcher();
 
         return new FlusherDecorator(new Flusher($entityManager, $eventDispatcher));
-    }*/
+    }
 
 }
 
