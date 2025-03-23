@@ -9,10 +9,11 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\Applicati
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Exceptions\ApplicationInstallationNotFoundException;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\ApplicationInstallationRepositoryInterface;
-use Doctrine\ORM\EntityManagerInterface;
-use  Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\EntityRepository;
+use Symfony\Component\Uid\Uuid;
+
 class ApplicationInstallationRepository extends EntityRepository implements ApplicationInstallationRepositoryInterface
 {
     public function __construct(EntityManagerInterface $entityManager)
@@ -20,14 +21,15 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
         parent::__construct($entityManager, $entityManager->getClassMetadata(ApplicationInstallation::class));
     }
 
+    #[\Override]
     public function save(ApplicationInstallationInterface $applicationInstallation): void
     {
         $this->getEntityManager()->persist($applicationInstallation);
     }
 
+    #[\Override]
     public function getById(Uuid $uuid): ApplicationInstallationInterface
     {
-
         $applicationInstallation = $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('appInstallation')
             ->where('appInstallation.id = :uuid')
@@ -35,7 +37,8 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->setParameter('uuid', $uuid)
             ->setParameter('status', ApplicationInstallationStatus::deleted)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
 
         if (null === $applicationInstallation) {
             throw new ApplicationInstallationNotFoundException(
@@ -46,6 +49,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
         return $applicationInstallation;
     }
 
+    #[\Override]
     public function delete(Uuid $uuid): void
     {
         $applicationInstallation = $this->getEntityManager()->getRepository(ApplicationInstallation::class)->find($uuid);
@@ -56,7 +60,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             );
         }
 
-        if ($applicationInstallation->getStatus() !== ApplicationInstallationStatus::deleted) {
+        if (ApplicationInstallationStatus::deleted !== $applicationInstallation->getStatus()) {
             throw new InvalidArgumentException(
                 sprintf('you cannot delete application installed because you status must be deleted your status %s', $applicationInstallation->getStatus()->name)
             );
@@ -65,30 +69,31 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
         $this->save($applicationInstallation);
     }
 
+    #[\Override]
     public function findByBitrix24AccountId(Uuid $uuid): array
     {
-        $applicationInstallations = $this->getEntityManager()->getRepository(ApplicationInstallation::class)
+        return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('appInstallation')
             ->where('appInstallation.bitrix24AccountId = :bitrix24AccountId')
             ->setParameter('bitrix24AccountId', $uuid)
             ->getQuery()
-            ->getResult();
-
-        return $applicationInstallations;
+            ->getResult()
+        ;
     }
 
+    #[\Override]
     public function findByExternalId(string $externalId): array
     {
         if ('' === trim($externalId)) {
             throw new InvalidArgumentException('external id cannot be empty');
         }
-        $applicationInstallations = $this->getEntityManager()->getRepository(ApplicationInstallation::class)
+
+        return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('appInstallation')
             ->where('appInstallation.externalId = :externalId')
             ->setParameter('externalId', $externalId)
             ->getQuery()
-            ->getResult();
-
-        return $applicationInstallations;
+            ->getResult()
+        ;
     }
 }

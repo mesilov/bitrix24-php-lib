@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 namespace Bitrix24\Lib\ApplicationInstallations\Entity;
-;
 
 use Bitrix24\Lib\AggregateRoot;
 use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationBlockedEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationFinishedEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationUnblockedEvent;
@@ -16,30 +16,24 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\Applicati
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
-use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events;
-use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 
 class ApplicationInstallation extends AggregateRoot implements ApplicationInstallationInterface
 {
-
     public function __construct(
-        private readonly Uuid                 $id,
+        private readonly Uuid $id,
         private ApplicationInstallationStatus $status,
-        private readonly CarbonImmutable      $createdAt,
-        private CarbonImmutable               $updatedAt,
-        private readonly Uuid                 $bitrix24AccountId,
-        private ApplicationStatus             $applicationStatus,
-        private PortalLicenseFamily           $portalLicenseFamily,
-        private ?int                           $portalUsersCount,
-        private ?Uuid                          $contactPersonId,
-        private ?Uuid                          $bitrix24PartnerContactPersonId,
-        private ?Uuid                         $bitrix24PartnerId,
-        private ?string                        $externalId,
-        private ?string                       $comment = null
-    )
-    {
-
-    }
+        private readonly CarbonImmutable $createdAt,
+        private CarbonImmutable $updatedAt,
+        private readonly Uuid $bitrix24AccountId,
+        private readonly ApplicationStatus $applicationStatus,
+        private readonly PortalLicenseFamily $portalLicenseFamily,
+        private readonly ?int $portalUsersCount,
+        private readonly ?Uuid $contactPersonId,
+        private readonly ?Uuid $bitrix24PartnerContactPersonId,
+        private readonly ?Uuid $bitrix24PartnerId,
+        private ?string $externalId,
+        private ?string $comment = null
+    ) {}
 
     #[\Override]
     public function getId(): Uuid
@@ -82,7 +76,6 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
             $this->contactPersonId,
             $uuid
         );
-
     }
 
     #[\Override]
@@ -168,7 +161,6 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
             $this->bitrix24PartnerContactPersonId,
             $this->bitrix24PartnerId
         );
-
     }
 
     #[\Override]
@@ -186,7 +178,6 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
             $this->bitrix24PartnerId,
             $this->externalId
         );
-
     }
 
     #[\Override]
@@ -219,7 +210,8 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
             ApplicationInstallationStatus::new !== $this->status
             && ApplicationInstallationStatus::active !== $this->status
         ) {
-            throw new \LogicException(sprintf('You can block application installation only in status new or active,but your status is «%s»',
+            throw new \LogicException(sprintf(
+                'You can block application installation only in status new or active,but your status is «%s»',
                 $this->status->value
             ));
         }
@@ -247,7 +239,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         if ($this->applicationStatus !== $applicationStatus) {
             $this->updatedAt = new CarbonImmutable();
 
-            $this->events[] = new  Events\ApplicationInstallationApplicationStatusChangedEvent(
+            $this->events[] = new Events\ApplicationInstallationApplicationStatusChangedEvent(
                 $this->id,
                 $this->updatedAt,
                 $applicationStatus
@@ -267,7 +259,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         if ($this->portalLicenseFamily !== $portalLicenseFamily) {
             $this->updatedAt = new CarbonImmutable();
 
-            $this->events[] = new  Events\ApplicationInstallationPortalLicenseFamilyChangedEvent(
+            $this->events[] = new Events\ApplicationInstallationPortalLicenseFamilyChangedEvent(
                 $this->id,
                 $this->updatedAt,
                 $this->portalLicenseFamily,
@@ -288,7 +280,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         if ($this->portalUsersCount !== $usersCount) {
             $this->updatedAt = new CarbonImmutable();
 
-            $this->events[] = new  Events\ApplicationInstallationPortalUsersCountChangedEvent(
+            $this->events[] = new Events\ApplicationInstallationPortalUsersCountChangedEvent(
                 $this->id,
                 $this->updatedAt,
                 $this->portalUsersCount,

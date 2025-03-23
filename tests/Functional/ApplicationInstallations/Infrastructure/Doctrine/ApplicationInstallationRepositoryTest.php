@@ -11,7 +11,6 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\Applicati
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\ApplicationInstallationRepositoryInterface;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
-use Bitrix24\SDK\Tests\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterfaceTest;
 use Bitrix24\SDK\Tests\Application\Contracts\ApplicationInstallations\Repository\ApplicationInstallationRepositoryInterfaceTest;
 use Bitrix24\SDK\Tests\Application\Contracts\TestRepositoryFlusherInterface;
 use Carbon\CarbonImmutable;
@@ -29,6 +28,7 @@ use Bitrix24\Lib\Tests\Functional\FlusherDecorator;
 class ApplicationInstallationRepositoryTest extends ApplicationInstallationRepositoryInterfaceTest
 {
 
+    #[\Override]
     protected function createApplicationInstallationImplementation(
         Uuid                          $uuid,
         ApplicationInstallationStatus $applicationInstallationStatus,

@@ -14,17 +14,29 @@ use Symfony\Component\Uid\Uuid;
 class ApplicationInstallationBuilder
 {
     private readonly Uuid $id;
+
     private readonly CarbonImmutable $createdAt;
-    private CarbonImmutable $updatedAt;
+
+    private readonly CarbonImmutable $updatedAt;
+
     private readonly Uuid $bitrix24AccountId;
-    private ?Uuid $contactPersonId;
-    private ?Uuid $bitrix24PartnerContactPersonId;
-    private ?Uuid $bitrix24PartnerId;
-    private ?string $externalId;
+
+    private readonly ?Uuid $contactPersonId;
+
+    private readonly ?Uuid $bitrix24PartnerContactPersonId;
+
+    private readonly ?Uuid $bitrix24PartnerId;
+
+    private ?string $externalId = null;
+
     private ApplicationInstallationStatus $status;
+
     private ApplicationStatus $applicationStatus;
+
     private PortalLicenseFamily $portalLicenseFamily;
-    private ?int $portalUsersCount;
+
+    private readonly ?int $portalUsersCount;
+
     private ?string $comment = null;
 
 
@@ -47,9 +59,9 @@ class ApplicationInstallationBuilder
         return $this;
     }
 
-    public function withApplicationStatusInstallation(ApplicationInstallationStatus $status): self
+    public function withApplicationStatusInstallation(ApplicationInstallationStatus $applicationInstallationStatus): self
     {
-        $this->status = $status;
+        $this->status = $applicationInstallationStatus;
 
         return $this;
     }
@@ -70,7 +82,7 @@ class ApplicationInstallationBuilder
 
     public function build(): ApplicationInstallation
     {
-        $applicationInstallation = new ApplicationInstallation(
+        return new ApplicationInstallation(
             $this->id,
             $this->status,
             $this->createdAt,
@@ -85,8 +97,6 @@ class ApplicationInstallationBuilder
             $this->externalId,
             $this->comment
         );
-
-        return $applicationInstallation;
     }
 
 
