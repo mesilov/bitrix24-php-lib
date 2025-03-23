@@ -16,6 +16,7 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\Applicati
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 
 class ApplicationInstallation extends AggregateRoot implements ApplicationInstallationInterface
 {
@@ -25,12 +26,12 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         private readonly CarbonImmutable $createdAt,
         private CarbonImmutable $updatedAt,
         private readonly Uuid $bitrix24AccountId,
-        private readonly ApplicationStatus $applicationStatus,
-        private readonly PortalLicenseFamily $portalLicenseFamily,
-        private readonly ?int $portalUsersCount,
-        private readonly ?Uuid $contactPersonId,
-        private readonly ?Uuid $bitrix24PartnerContactPersonId,
-        private readonly ?Uuid $bitrix24PartnerId,
+        private ApplicationStatus $applicationStatus,
+        private PortalLicenseFamily $portalLicenseFamily,
+        private ?int $portalUsersCount,
+        private ?Uuid $contactPersonId,
+        private ?Uuid $bitrix24PartnerContactPersonId,
+        private ?Uuid $bitrix24PartnerId,
         private ?string $externalId,
         private ?string $comment = null
     ) {}
@@ -70,6 +71,8 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     {
         $this->updatedAt = new CarbonImmutable();
 
+        $this->contactPersonId = $uuid;
+
         $this->events[] = new Events\ApplicationInstallationContactPersonChangedEvent(
             $this->id,
             $this->updatedAt,
@@ -88,6 +91,8 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     public function changeBitrix24PartnerContactPerson(?Uuid $uuid): void
     {
         $this->updatedAt = new CarbonImmutable();
+
+        $this->bitrix24PartnerContactPersonId = $uuid;
 
         $this->events[] = new Events\ApplicationInstallationBitrix24PartnerContactPersonChangedEvent(
             $this->id,
@@ -108,6 +113,8 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     {
         $this->updatedAt = new CarbonImmutable();
 
+        $this->bitrix24PartnerId = $uuid;
+
         $this->events[] = new Events\ApplicationInstallationBitrix24PartnerChangedEvent(
             $this->id,
             $this->updatedAt,
@@ -125,6 +132,9 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function setExternalId(?string $externalId): void
     {
+        if ($externalId === '') {
+            throw new InvalidArgumentException('ExternalId cannot be empty string');
+        }
         $this->externalId = $externalId;
     }
 
@@ -166,6 +176,19 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function applicationUninstalled(): void
     {
+
+        if (
+            ApplicationInstallationStatus::active !== $this->status
+            && ApplicationInstallationStatus::blocked !== $this->status
+        ) {
+            throw new \LogicException(
+                sprintf(
+                    'installation was interrupted because status must be in active or blocked, but your status is %s',
+                    $this->status->value
+                )
+            );
+        }
+
         $this->status = ApplicationInstallationStatus::deleted;
         $this->updatedAt = new CarbonImmutable();
 
@@ -237,6 +260,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     public function changeApplicationStatus(ApplicationStatus $applicationStatus): void
     {
         if ($this->applicationStatus !== $applicationStatus) {
+            $this->applicationStatus = $applicationStatus;
             $this->updatedAt = new CarbonImmutable();
 
             $this->events[] = new Events\ApplicationInstallationApplicationStatusChangedEvent(
@@ -258,6 +282,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     {
         if ($this->portalLicenseFamily !== $portalLicenseFamily) {
             $this->updatedAt = new CarbonImmutable();
+            $this->portalLicenseFamily = $portalLicenseFamily;
 
             $this->events[] = new Events\ApplicationInstallationPortalLicenseFamilyChangedEvent(
                 $this->id,
@@ -277,7 +302,13 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function changePortalUsersCount(int $usersCount): void
     {
+        if ($usersCount < 0) {
+            throw new \InvalidArgumentException('Users count can not be negative');
+        }
+
         if ($this->portalUsersCount !== $usersCount) {
+
+            $this->portalUsersCount = $usersCount;
             $this->updatedAt = new CarbonImmutable();
 
             $this->events[] = new Events\ApplicationInstallationPortalUsersCountChangedEvent(
