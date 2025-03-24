@@ -44,13 +44,13 @@ readonly class Domain
      */
     private function validate(string $domain): void
     {
-        // Регулярное выражение для проверки допустимых символов (латиница и кириллица)
+        // Regular expression for checking available symbol (Latin and Cyrillic)
         $patternValidChars = '/^((?!-)[A-Za-zА-Яа-яЁё0-9-]{1,63}(?<!-)\.)+[A-Za-zА-Яа-яЁё]{2,6}$/u';
 
-        // Проверка общей длины (1-255 символа)
+        // Checking summary length (1-255 symbols)
         $patternLengthCheck = '/^.{1,255}$/';
 
-        // Проверка длины каждой метки (1-63 символа, включая кириллицу)
+        // Checking length each one label (1-63 symbol, include cyrillic)
         $patternLengthEachLabel = '/^[A-Za-zА-Яа-яЁё0-9-]{1,63}(\.[A-Za-zА-Яа-яЁё0-9-]{1,63}){0,126}$/u';
         if (
             in_array(preg_match($patternValidChars, $domain), [0, false], true)
