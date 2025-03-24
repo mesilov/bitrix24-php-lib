@@ -14,9 +14,9 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\Applicati
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationUnblockedEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationUninstalledEvent;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
-use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 
 class ApplicationInstallation extends AggregateRoot implements ApplicationInstallationInterface
 {
@@ -132,9 +132,10 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function setExternalId(?string $externalId): void
     {
-        if ($externalId === '') {
+        if ('' === $externalId) {
             throw new InvalidArgumentException('ExternalId cannot be empty string');
         }
+
         $this->externalId = $externalId;
     }
 
@@ -176,7 +177,6 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function applicationUninstalled(): void
     {
-
         if (
             ApplicationInstallationStatus::active !== $this->status
             && ApplicationInstallationStatus::blocked !== $this->status
@@ -307,7 +307,6 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         }
 
         if ($this->portalUsersCount !== $usersCount) {
-
             $this->portalUsersCount = $usersCount;
             $this->updatedAt = new CarbonImmutable();
 
