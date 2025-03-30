@@ -29,7 +29,7 @@ class ApplicationInstallationBuilder
 
     private ?string $externalId = null;
 
-    private ApplicationInstallationStatus $status;
+    private ApplicationInstallationStatus $status = ApplicationInstallationStatus::active;
 
     private ApplicationStatus $applicationStatus;
 
