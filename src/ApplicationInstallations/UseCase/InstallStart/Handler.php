@@ -38,11 +38,12 @@ readonly class Handler
             $command->bitrix24PartnerContactPersonId,
             $command->bitrix24PartnerId,
             $command->externalId,
-            $command->comment
+            $command->comment,
+            true
         );
 
         $this->applicationInstallationRepository->save($applicationInstallation);
-        $this->flusher->flush();
+        $this->flusher->flush($applicationInstallation);
 
         $this->logger->info(
             'Bitrix24Accounts.InstallStart.Finish',

@@ -16,14 +16,19 @@ namespace Bitrix24\Lib\Tests\Functional\ApplicationInstallations\UseCase\Install
 
 use Bitrix24\Lib\Bitrix24Accounts;
 
+use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\ApplicationInstallations;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 
 use Bitrix24\Lib\Tests\Functional\ApplicationInstallations\Builders\ApplicationInstallationBuilder;
+use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
+use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -38,17 +43,21 @@ use Symfony\Component\Stopwatch\Stopwatch;
 use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationInstallationRepository;
 use Bitrix24\Lib\ApplicationInstallations\UseCase\InstallStart\Handler;
 
+use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 /**
  * @internal
  */
 #[CoversClass(ApplicationInstallations\UseCase\InstallStart\Handler::class)]
 class HandlerTest extends TestCase
 {
-    private Handler $handler;
+    private Handler $handlerApplicationInstallation;
+    private Bitrix24Accounts\UseCase\InstallStart\Handler $handlerBitrix24Account;
 
     private Flusher $flusher;
 
-    private ApplicationInstallationRepository $repository;
+    private ApplicationInstallationRepository $applicationInstallationRepository;
+
+    private Bitrix24AccountRepository $bitrix24AccountRepository;
 
     private TraceableEventDispatcher $eventDispatcher;
 
@@ -57,31 +66,63 @@ class HandlerTest extends TestCase
     {
         $entityManager = EntityManagerFactory::get();
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
-        $this->repository = new ApplicationInstallationRepository($entityManager);
+        $this->applicationInstallationRepository = new ApplicationInstallationRepository($entityManager);
+        $this->bitrix24AccountRepository = new Bitrix24AccountRepository($entityManager);
         $this->flusher = new Flusher($entityManager, $this->eventDispatcher);
-        $this->handler = new Handler(
-            $this->repository,
+
+        $this->handlerApplicationInstallation = new Handler(
+            $this->applicationInstallationRepository,
             $this->flusher,
             new NullLogger()
         );
+
+        $this->handlerBitrix24Account = new Bitrix24Accounts\UseCase\InstallStart\Handler(
+            $this->bitrix24AccountRepository,
+            $this->flusher,
+            new NullLogger()
+        );
+
     }
 
     /**
      * @throws InvalidArgumentException
-     * @throws  ApplicationInstallationNotFoundException
+     * @throws  Bitrix24AccountNotFoundException|ApplicationInstallationNotFoundException
      */
     #[Test]
     public function testInstallNewApplicationInstallation(): void
     {
+
+        $bitrix24AccountBuilder = (new Bitrix24AccountBuilder())
+            ->withApplicationScope(new Scope(['crm']))
+            ->build();
+
+        $this->handlerBitrix24Account->handle(
+            new Bitrix24Accounts\UseCase\InstallStart\Command(
+                $bitrix24AccountBuilder->getId(),
+                $bitrix24AccountBuilder->getBitrix24UserId(),
+                $bitrix24AccountBuilder->isBitrix24UserAdmin(),
+                $bitrix24AccountBuilder->getMemberId(),
+                new Domain($bitrix24AccountBuilder->getDomainUrl()),
+                $bitrix24AccountBuilder->getAuthToken(),
+                $bitrix24AccountBuilder->getApplicationVersion(),
+                $bitrix24AccountBuilder->getApplicationScope()
+            )
+        );
+
+        $bitrix24Account = $this->bitrix24AccountRepository->getById($bitrix24AccountBuilder->getId());
+
+        $this->assertEquals($bitrix24Account->getId(), $bitrix24AccountBuilder->getId());
+
+
         $applicationInstallationBuilder = (new ApplicationInstallationBuilder())
             ->withApplicationStatus(new ApplicationStatus('F'))
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
             ->build();
 
-        $this->handler->handle(
+        $this->handlerApplicationInstallation->handle(
             new ApplicationInstallations\UseCase\InstallStart\Command(
                 $applicationInstallationBuilder->getId(),
-                $applicationInstallationBuilder->getBitrix24AccountId(),
+                $bitrix24AccountBuilder->getId(),
                 $applicationInstallationBuilder->getApplicationStatus(),
                 $applicationInstallationBuilder->getPortalLicenseFamily(),
                 $applicationInstallationBuilder->getPortalUsersCount(),
@@ -93,8 +134,13 @@ class HandlerTest extends TestCase
             )
         );
 
-        $applicationInstallation = $this->repository->getById($applicationInstallationBuilder->getId());
+        $applicationInstallation = $this->applicationInstallationRepository->getById($applicationInstallationBuilder->getId());
 
+        $dispatchedEvents = $this->eventDispatcher->getOrphanedEvents();
+        print_r($dispatchedEvents); // Выводит список событий
+
+        $this->assertContains('Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent', $dispatchedEvents);
+        $this->assertContains('Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationCreatedEvent', $dispatchedEvents);
         $this->assertEquals(ApplicationInstallationStatus::new, $applicationInstallation->getStatus());
     }
 }

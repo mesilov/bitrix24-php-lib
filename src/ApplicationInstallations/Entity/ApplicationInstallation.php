@@ -10,6 +10,7 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\Applicati
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationBlockedEvent;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationFinishedEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationUnblockedEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationUninstalledEvent;
@@ -33,8 +34,11 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         private ?Uuid $bitrix24PartnerContactPersonId,
         private ?Uuid $bitrix24PartnerId,
         private ?string $externalId,
-        private ?string $comment = null
-    ) {}
+        private ?string $comment = null,
+        private $isEmitApplicationInstallationCreatedEvent = false,
+    ) {
+        $this->addApplicationCreatedEventIfNeeded($this->isEmitApplicationInstallationCreatedEvent);
+    }
 
     #[\Override]
     public function getId(): Uuid
@@ -323,5 +327,18 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     public function getComment(): ?string
     {
         return $this->comment;
+    }
+
+    private function addApplicationCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
+    {
+
+        if ($isEmitCreatedEvent) {
+            // Создание события и добавление его в массив событий
+            $this->events[] = new ApplicationInstallationCreatedEvent(
+                $this->id,
+                $this->createdAt,
+                $this->bitrix24AccountId
+            );
+        }
     }
 }
