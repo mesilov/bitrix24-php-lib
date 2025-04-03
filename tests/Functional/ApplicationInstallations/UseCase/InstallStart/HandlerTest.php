@@ -25,8 +25,6 @@ use Bitrix24\Lib\Tests\Functional\ApplicationInstallations\Builders\ApplicationI
 use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
-use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent;
-use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
@@ -50,14 +48,13 @@ use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountReposit
 #[CoversClass(ApplicationInstallations\UseCase\InstallStart\Handler::class)]
 class HandlerTest extends TestCase
 {
-    private Handler $handlerApplicationInstallation;
-    private Bitrix24Accounts\UseCase\InstallStart\Handler $handlerBitrix24Account;
+    private Handler $handler;
 
     private Flusher $flusher;
 
-    private ApplicationInstallationRepository $applicationInstallationRepository;
+    private ApplicationInstallationRepository $repository;
 
-    private Bitrix24AccountRepository $bitrix24AccountRepository;
+    private Bitrix24AccountRepository $bitrix24accountRepository;
 
     private TraceableEventDispatcher $eventDispatcher;
 
@@ -66,18 +63,12 @@ class HandlerTest extends TestCase
     {
         $entityManager = EntityManagerFactory::get();
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
-        $this->applicationInstallationRepository = new ApplicationInstallationRepository($entityManager);
-        $this->bitrix24AccountRepository = new Bitrix24AccountRepository($entityManager);
+        $this->repository = new ApplicationInstallationRepository($entityManager);
         $this->flusher = new Flusher($entityManager, $this->eventDispatcher);
-
-        $this->handlerApplicationInstallation = new Handler(
-            $this->applicationInstallationRepository,
-            $this->flusher,
-            new NullLogger()
-        );
-
-        $this->handlerBitrix24Account = new Bitrix24Accounts\UseCase\InstallStart\Handler(
-            $this->bitrix24AccountRepository,
+        $this->bitrix24accountRepository = new Bitrix24AccountRepository($entityManager);
+        $this->handler = new Handler(
+            $this->bitrix24accountRepository,
+            $this->repository,
             $this->flusher,
             new NullLogger()
         );
@@ -86,7 +77,7 @@ class HandlerTest extends TestCase
 
     /**
      * @throws InvalidArgumentException
-     * @throws  Bitrix24AccountNotFoundException|ApplicationInstallationNotFoundException
+     * @throws  ApplicationInstallationNotFoundException
      */
     #[Test]
     public function testInstallNewApplicationInstallation(): void
@@ -96,8 +87,24 @@ class HandlerTest extends TestCase
             ->withApplicationScope(new Scope(['crm']))
             ->build();
 
-        $this->handlerBitrix24Account->handle(
-            new Bitrix24Accounts\UseCase\InstallStart\Command(
+
+        $applicationInstallationBuilder = (new ApplicationInstallationBuilder())
+            ->withApplicationStatus(new ApplicationStatus('F'))
+            ->withPortalLicenseFamily(PortalLicenseFamily::free)
+            ->build();
+
+        $this->handler->handle(
+            new ApplicationInstallations\UseCase\InstallStart\Command(
+                $applicationInstallationBuilder->getId(),
+                $bitrix24AccountBuilder->getId(),
+                $applicationInstallationBuilder->getApplicationStatus(),
+                $applicationInstallationBuilder->getPortalLicenseFamily(),
+                $applicationInstallationBuilder->getPortalUsersCount(),
+                $applicationInstallationBuilder->getContactPersonId(),
+                $applicationInstallationBuilder->getBitrix24PartnerContactPersonId(),
+                $applicationInstallationBuilder->getBitrix24PartnerId(),
+                $applicationInstallationBuilder->getExternalId(),
+                $applicationInstallationBuilder->getComment(),
                 $bitrix24AccountBuilder->getId(),
                 $bitrix24AccountBuilder->getBitrix24UserId(),
                 $bitrix24AccountBuilder->isBitrix24UserAdmin(),
@@ -109,32 +116,7 @@ class HandlerTest extends TestCase
             )
         );
 
-        $bitrix24Account = $this->bitrix24AccountRepository->getById($bitrix24AccountBuilder->getId());
-
-        $this->assertEquals($bitrix24Account->getId(), $bitrix24AccountBuilder->getId());
-
-
-        $applicationInstallationBuilder = (new ApplicationInstallationBuilder())
-            ->withApplicationStatus(new ApplicationStatus('F'))
-            ->withPortalLicenseFamily(PortalLicenseFamily::free)
-            ->build();
-
-        $this->handlerApplicationInstallation->handle(
-            new ApplicationInstallations\UseCase\InstallStart\Command(
-                $applicationInstallationBuilder->getId(),
-                $bitrix24AccountBuilder->getId(),
-                $applicationInstallationBuilder->getApplicationStatus(),
-                $applicationInstallationBuilder->getPortalLicenseFamily(),
-                $applicationInstallationBuilder->getPortalUsersCount(),
-                $applicationInstallationBuilder->getContactPersonId(),
-                $applicationInstallationBuilder->getBitrix24PartnerContactPersonId(),
-                $applicationInstallationBuilder->getBitrix24PartnerId(),
-                $applicationInstallationBuilder->getExternalId(),
-                $applicationInstallationBuilder->getComment()
-            )
-        );
-
-        $applicationInstallation = $this->applicationInstallationRepository->getById($applicationInstallationBuilder->getId());
+        $applicationInstallation = $this->repository->getById($applicationInstallationBuilder->getId());
 
         $dispatchedEvents = $this->eventDispatcher->getOrphanedEvents();
         print_r($dispatchedEvents); // Выводит список событий
