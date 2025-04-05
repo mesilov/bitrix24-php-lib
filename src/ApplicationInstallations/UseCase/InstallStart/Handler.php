@@ -13,7 +13,7 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\Applicati
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Carbon\CarbonImmutable;
 use Psr\Log\LoggerInterface;
-
+use Symfony\Component\Uid\Uuid;
 readonly class Handler
 {
     public function __construct(
@@ -47,6 +47,11 @@ readonly class Handler
         $this->bitrix24AccountRepository->save($bitrix24Account);
         $this->flusher->flush($bitrix24Account);
 
+        $applicationToken = Uuid::v7()->toRfc4122();
+        $bitrix24Account->applicationInstalled($applicationToken);
+        $this->bitrix24AccountRepository->save($bitrix24Account);
+        $this->flusher->flush($bitrix24Account);
+
         $applicationInstallation = new ApplicationInstallation(
             $command->uuid,
             ApplicationInstallationStatus::new,
@@ -63,6 +68,11 @@ readonly class Handler
             $command->comment,
             true
         );
+
+        $this->applicationInstallationRepository->save($applicationInstallation);
+        $this->flusher->flush($applicationInstallation);
+
+        $applicationInstallation->applicationInstalled();
 
         $this->applicationInstallationRepository->save($applicationInstallation);
         $this->flusher->flush($applicationInstallation);

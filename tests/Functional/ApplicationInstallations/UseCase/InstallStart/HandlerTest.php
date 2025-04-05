@@ -119,10 +119,12 @@ class HandlerTest extends TestCase
         $applicationInstallation = $this->repository->getById($applicationInstallationBuilder->getId());
 
         $dispatchedEvents = $this->eventDispatcher->getOrphanedEvents();
-        print_r($dispatchedEvents); // Выводит список событий
 
         $this->assertContains('Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent', $dispatchedEvents);
         $this->assertContains('Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationCreatedEvent', $dispatchedEvents);
-        $this->assertEquals(ApplicationInstallationStatus::new, $applicationInstallation->getStatus());
+        $this->assertContains('Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationInstalledEvent', $dispatchedEvents);
+        $this->assertContains('Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationFinishedEvent', $dispatchedEvents);
+        $this->assertEquals(ApplicationInstallationStatus::active, $applicationInstallation->getStatus());
+        $this->assertEquals($bitrix24AccountBuilder->getId(), $applicationInstallation->getBitrix24AccountId());
     }
 }
