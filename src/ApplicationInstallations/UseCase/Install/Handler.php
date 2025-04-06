@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\ApplicationInstallations\UseCase\InstallStart;
+namespace Bitrix24\Lib\ApplicationInstallations\UseCase\Install;
 
 use Bitrix24\Lib\ApplicationInstallations\Entity\ApplicationInstallation;
 use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationInstallationRepository;

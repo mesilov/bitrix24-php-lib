@@ -81,6 +81,17 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
         ;
     }
 
+    public function findActiveApplicationInstallations(): array
+    {
+        return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
+            ->createQueryBuilder('appInstallation')
+            ->where('appInstallation.status IN (:statuses)')
+            ->setParameter('statuses', [ApplicationInstallationStatus::active,ApplicationInstallationStatus::new])
+            ->getQuery()
+            ->getResult()
+            ;
+    }
+
     #[\Override]
     public function findByExternalId(string $externalId): array
     {

@@ -19,7 +19,7 @@ class ApplicationInstallationBuilder
 
     private readonly CarbonImmutable $updatedAt;
 
-    private readonly Uuid $bitrix24AccountId;
+    private  Uuid $bitrix24AccountId;
 
     private readonly ?Uuid $contactPersonId;
 
@@ -69,6 +69,13 @@ class ApplicationInstallationBuilder
     public function withApplicationStatus(ApplicationStatus $applicationStatus): self
     {
         $this->applicationStatus = $applicationStatus;
+
+        return $this;
+    }
+
+    public function withBitrix24AccountId(Uuid $bitrix24AccountId): self
+    {
+        $this->bitrix24AccountId = $bitrix24AccountId;
 
         return $this;
     }

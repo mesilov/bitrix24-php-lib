@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\ApplicationInstallations\UseCase\InstallStart;
+namespace Bitrix24\Lib\ApplicationInstallations\UseCase\Install;
 
 use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
 use Bitrix24\SDK\Application\ApplicationStatus;

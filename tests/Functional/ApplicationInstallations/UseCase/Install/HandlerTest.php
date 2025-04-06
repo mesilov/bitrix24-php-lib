@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Tests\Functional\ApplicationInstallations\UseCase\InstallStart;
+namespace Bitrix24\Lib\Tests\Functional\ApplicationInstallations\UseCase\Install;
 
 
 use Bitrix24\Lib\Bitrix24Accounts;
@@ -39,13 +39,13 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 
 use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationInstallationRepository;
-use Bitrix24\Lib\ApplicationInstallations\UseCase\InstallStart\Handler;
+use Bitrix24\Lib\ApplicationInstallations\UseCase\Install\Handler;
 
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 /**
  * @internal
  */
-#[CoversClass(ApplicationInstallations\UseCase\InstallStart\Handler::class)]
+#[CoversClass(ApplicationInstallations\UseCase\Install\Handler::class)]
 class HandlerTest extends TestCase
 {
     private Handler $handler;
@@ -94,7 +94,7 @@ class HandlerTest extends TestCase
             ->build();
 
         $this->handler->handle(
-            new ApplicationInstallations\UseCase\InstallStart\Command(
+            new ApplicationInstallations\UseCase\Install\Command(
                 $applicationInstallationBuilder->getId(),
                 $bitrix24AccountBuilder->getId(),
                 $applicationInstallationBuilder->getApplicationStatus(),
