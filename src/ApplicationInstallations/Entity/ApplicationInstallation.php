@@ -331,7 +331,6 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
 
     private function addApplicationCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
     {
-
         if ($isEmitCreatedEvent) {
             // Создание события и добавление его в массив событий
             $this->events[] = new ApplicationInstallationCreatedEvent(

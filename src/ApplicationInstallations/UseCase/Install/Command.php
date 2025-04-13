@@ -36,7 +36,6 @@ readonly class Command
         $this->validate();
     }
 
-
     private function validate(): void
     {
         if ($this->portalUsersCount <= 0) {

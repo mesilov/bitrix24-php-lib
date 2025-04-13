@@ -6,6 +6,8 @@ namespace Bitrix24\Lib\ApplicationInstallations\UseCase\Reinstall;
 
 use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
 use Bitrix24\SDK\Application\ApplicationStatus;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
@@ -15,6 +17,7 @@ readonly class Command
 {
     public function __construct(
         public Uuid $uuid,
+        public ApplicationInstallationStatus $applicationInstallationStatus,
         public Uuid $bitrix24AccountId,
         public ApplicationStatus $applicationStatus,
         public PortalLicenseFamily $portalLicenseFamily,
@@ -25,17 +28,18 @@ readonly class Command
         public ?string $externalId,
         public ?string $comment,
         public Uuid $bitrix24AccountUuid,
+        public Bitrix24AccountStatus $bitrix24AccountStatus,
         public int $bitrix24UserId,
         public bool $isBitrix24UserAdmin,
         public string $memberId,
         public Domain $domain,
         public AuthToken $authToken,
         public int $applicationVersion,
-        public Scope $applicationScope
+        public Scope $applicationScope,
+        public ?string $applicationToken
     ) {
         $this->validate();
     }
-
 
     private function validate(): void
     {

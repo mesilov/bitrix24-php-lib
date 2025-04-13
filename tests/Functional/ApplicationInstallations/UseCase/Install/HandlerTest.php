@@ -120,10 +120,10 @@ class HandlerTest extends TestCase
 
         $dispatchedEvents = $this->eventDispatcher->getOrphanedEvents();
 
-        $this->assertContains('Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent', $dispatchedEvents);
-        $this->assertContains('Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationCreatedEvent', $dispatchedEvents);
-        $this->assertContains('Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationInstalledEvent', $dispatchedEvents);
-        $this->assertContains('Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationFinishedEvent', $dispatchedEvents);
+        $this->assertContains(\Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent::class, $dispatchedEvents);
+        $this->assertContains(\Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationCreatedEvent::class, $dispatchedEvents);
+        $this->assertContains(\Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationInstalledEvent::class, $dispatchedEvents);
+        $this->assertContains(\Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationFinishedEvent::class, $dispatchedEvents);
         $this->assertEquals(ApplicationInstallationStatus::active, $applicationInstallation->getStatus());
         $this->assertEquals($bitrix24AccountBuilder->getId(), $applicationInstallation->getBitrix24AccountId());
     }

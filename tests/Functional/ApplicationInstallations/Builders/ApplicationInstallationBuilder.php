@@ -73,9 +73,9 @@ class ApplicationInstallationBuilder
         return $this;
     }
 
-    public function withBitrix24AccountId(Uuid $bitrix24AccountId): self
+    public function withBitrix24AccountId(Uuid $uuid): self
     {
-        $this->bitrix24AccountId = $bitrix24AccountId;
+        $this->bitrix24AccountId = $uuid;
 
         return $this;
     }

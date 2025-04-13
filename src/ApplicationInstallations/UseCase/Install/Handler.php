@@ -14,6 +14,7 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountSt
 use Carbon\CarbonImmutable;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+
 readonly class Handler
 {
     public function __construct(

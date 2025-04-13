@@ -86,10 +86,10 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
         return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('appInstallation')
             ->where('appInstallation.status IN (:statuses)')
-            ->setParameter('statuses', [ApplicationInstallationStatus::active,ApplicationInstallationStatus::new])
+            ->setParameter('statuses', [ApplicationInstallationStatus::active, ApplicationInstallationStatus::new])
             ->getQuery()
             ->getResult()
-            ;
+        ;
     }
 
     #[\Override]
