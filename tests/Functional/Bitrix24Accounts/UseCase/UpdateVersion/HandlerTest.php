@@ -69,7 +69,7 @@ class HandlerTest extends TestCase
         $applicationToken = Uuid::v7()->toRfc4122();
 
         $bitrix24Account = (new Bitrix24AccountBuilder())
-            ->withStatus(Bitrix24AccountStatus::active)
+            ->withStatus(Bitrix24AccountStatus::new)
             ->withApplicationToken($applicationToken)
             ->build();
 
@@ -98,7 +98,7 @@ class HandlerTest extends TestCase
         $applicationToken = Uuid::v7()->toRfc4122();
 
         $bitrix24Account = (new Bitrix24AccountBuilder())
-            ->withStatus(Bitrix24AccountStatus::active)
+            ->withStatus(Bitrix24AccountStatus::new)
             ->withApplicationToken($applicationToken)
             ->build();
 
@@ -126,8 +126,10 @@ class HandlerTest extends TestCase
     #[Test]
     public function testNotValidVersionForUpdateVersion(): void
     {
+        $applicationToken = Uuid::v7()->toRfc4122();
         $bitrix24Account = (new Bitrix24AccountBuilder())
-            ->withStatus(Bitrix24AccountStatus::active)
+            ->withStatus(Bitrix24AccountStatus::new)
+            ->withApplicationToken($applicationToken)
             ->build();
 
 

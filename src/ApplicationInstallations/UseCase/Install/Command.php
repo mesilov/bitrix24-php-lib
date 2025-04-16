@@ -14,8 +14,6 @@ use Symfony\Component\Uid\Uuid;
 readonly class Command
 {
     public function __construct(
-        public Uuid $uuid,
-        public Uuid $bitrix24AccountId,
         public ApplicationStatus $applicationStatus,
         public PortalLicenseFamily $portalLicenseFamily,
         public ?int $portalUsersCount,
@@ -24,7 +22,6 @@ readonly class Command
         public ?Uuid $bitrix24PartnerId,
         public ?string $externalId,
         public ?string $comment,
-        public Uuid $bitrix24AccountUuid,
         public int $bitrix24UserId,
         public bool $isBitrix24UserAdmin,
         public string $memberId,

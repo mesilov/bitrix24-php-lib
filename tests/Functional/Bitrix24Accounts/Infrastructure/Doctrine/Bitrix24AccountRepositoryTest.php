@@ -56,10 +56,7 @@ class Bitrix24AccountRepositoryTest extends Bitrix24AccountRepositoryInterfaceTe
             $isBitrix24UserAdmin,
             $memberId,
             $domainUrl,
-            $bitrix24AccountStatus,
             $authToken,
-            $createdAt,
-            $updatedAt,
             $applicationVersion,
             $applicationScope
         );

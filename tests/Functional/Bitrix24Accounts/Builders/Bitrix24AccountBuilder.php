@@ -33,13 +33,9 @@ class Bitrix24AccountBuilder
 
     private string $domainUrl;
 
-    private Bitrix24AccountStatus $status = Bitrix24AccountStatus::active;
+    private Bitrix24AccountStatus $status;
 
     private readonly AuthToken $authToken;
-
-    private readonly CarbonImmutable $createdAt;
-
-    private readonly CarbonImmutable $updatedAt;
 
     private readonly int $applicationVersion;
 
@@ -55,8 +51,6 @@ class Bitrix24AccountBuilder
         $this->memberId = Uuid::v4()->toRfc4122();
         $this->domainUrl = Uuid::v4()->toRfc4122().'-example.com';
         $this->authToken = new AuthToken('old_1', 'old_2', 3600);
-        $this->createdAt = CarbonImmutable::now();
-        $this->updatedAt = CarbonImmutable::now();
         $this->applicationVersion = 1;
         $this->applicationScope = new Scope();
     }
@@ -104,10 +98,7 @@ class Bitrix24AccountBuilder
             $this->isBitrix24UserAdmin,
             $this->memberId,
             $this->domainUrl,
-            $this->status,
             $this->authToken,
-            $this->createdAt,
-            $this->updatedAt,
             $this->applicationVersion,
             $this->applicationScope
         );

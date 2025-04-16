@@ -23,6 +23,7 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountBl
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountDomainUrlChangedEvent;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
+use Bitrix24\SDK\Core\Credentials\Credentials;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Bitrix24\SDK\Core\Response\DTO\RenewedAuthToken;
@@ -33,6 +34,12 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
 {
     private ?string $applicationToken = null;
 
+    private readonly CarbonImmutable $createdAt;
+
+    private CarbonImmutable $updatedAt;
+
+    private Bitrix24AccountStatus $status;
+
     public function __construct(
         private readonly Uuid $id,
         private readonly int $bitrix24UserId,
@@ -40,15 +47,15 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         /** bitrix24 portal unique id */
         private readonly string $memberId,
         private string $domainUrl,
-        private Bitrix24AccountStatus $status,
         private AuthToken $authToken,
-        private readonly CarbonImmutable $createdAt,
-        private CarbonImmutable $updatedAt,
         private int $applicationVersion,
         private Scope $applicationScope,
         private $isEmitBitrix24AccountCreatedEvent = false,
         private ?string $comment = null
     ) {
+        $this->createdAt = new CarbonImmutable();
+        $this->updatedAt = new CarbonImmutable();
+        $this->status = Bitrix24AccountStatus::new;
         $this->addAccountCreatedEventIfNeeded($this->isEmitBitrix24AccountCreatedEvent);
     }
 

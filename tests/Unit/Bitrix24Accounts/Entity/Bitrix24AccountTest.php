@@ -49,10 +49,7 @@ class Bitrix24AccountTest extends Bitrix24AccountInterfaceTest
             $isBitrix24UserAdmin,
             $memberId,
             $domainUrl,
-            $bitrix24AccountStatus,
             $authToken,
-            $createdAt,
-            $updatedAt,
             $applicationVersion,
             $applicationScope
         );

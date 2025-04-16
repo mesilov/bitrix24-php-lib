@@ -95,8 +95,6 @@ class HandlerTest extends TestCase
 
         $this->handler->handle(
             new ApplicationInstallations\UseCase\Install\Command(
-                $applicationInstallationBuilder->getId(),
-                $bitrix24AccountBuilder->getId(),
                 $applicationInstallationBuilder->getApplicationStatus(),
                 $applicationInstallationBuilder->getPortalLicenseFamily(),
                 $applicationInstallationBuilder->getPortalUsersCount(),
@@ -105,7 +103,6 @@ class HandlerTest extends TestCase
                 $applicationInstallationBuilder->getBitrix24PartnerId(),
                 $applicationInstallationBuilder->getExternalId(),
                 $applicationInstallationBuilder->getComment(),
-                $bitrix24AccountBuilder->getId(),
                 $bitrix24AccountBuilder->getBitrix24UserId(),
                 $bitrix24AccountBuilder->isBitrix24UserAdmin(),
                 $bitrix24AccountBuilder->getMemberId(),

@@ -34,10 +34,7 @@ readonly class Handler
             $command->isBitrix24UserAdmin,
             $command->memberId,
             $command->domain->value,
-            Bitrix24AccountStatus::new,
             $command->authToken,
-            new CarbonImmutable(),
-            new CarbonImmutable(),
             $command->applicationVersion,
             $command->applicationScope,
             true

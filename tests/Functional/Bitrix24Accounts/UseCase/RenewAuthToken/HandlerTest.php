@@ -20,6 +20,7 @@ use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\SDK\Application\ApplicationStatus;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Response\DTO\RenewedAuthToken;
@@ -30,6 +31,7 @@ use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * @internal
@@ -64,7 +66,10 @@ class HandlerTest extends TestCase
     #[Test]
     public function testRenewAuthTokenWithoutBitrix24UserId(): void
     {
+        $applicationToken = Uuid::v7()->toRfc4122();
         $bitrix24Account = (new Bitrix24AccountBuilder())
+            ->withStatus(Bitrix24AccountStatus::new)
+            ->withApplicationToken($applicationToken)
             ->build();
         $this->repository->save($bitrix24Account);
         $this->flusher->flush();
