@@ -116,10 +116,6 @@ readonly class Handler
     {
         $activeApplicationInstallations = $this->applicationInstallationRepository->findActiveApplicationInstallations();
 
-        /*
-         У нас вообще может быть приложений больше чем одно активных или в статусе new ? Мне кажется это значит что что-то не сработало в прошлый раз.
-         Так как приложение у нас по факту же только одно ?
-        */
         if (!([] === $activeApplicationInstallations) && count($activeApplicationInstallations) > 1) {
             // Тут может добавить исключение для приложения ? По подобию MultipleBitrix24AccountsFoundException
             throw new \InvalidArgumentException(

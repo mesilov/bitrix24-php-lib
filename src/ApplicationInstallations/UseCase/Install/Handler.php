@@ -9,8 +9,11 @@ use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationIns
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
+use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Carbon\CarbonImmutable;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -46,6 +49,30 @@ readonly class Handler
             'applicationScope' => $command->applicationScope
         ]);
 
+        $accountsCount = 0;
+
+        /** @var AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $activeApplicationInstallation */
+        $activeApplicationInstallation = $this->getActiveApplicationInstallation();
+        //Решили 13 апреля расширить контракт установки и добавить получения токена
+        $activeApplicationToken = $activeApplicationInstallation->getApplicationToken();
+        if (!empty($activeApplicationInstallation)) {
+
+            $oldBitrix24AccountId = $activeApplicationInstallation->getBitrix24AccountId();
+            $oldBitrix24Account = $this->bitrix24AccountRepository->getById($oldBitrix24AccountId);
+            /** @var AggregateRootEventsEmitterInterface[]|Bitrix24AccountInterface[] $accounts */
+            $accounts = $this->bitrix24AccountRepository->findByMemberId($oldBitrix24Account->getMemberId());
+            $accountsCount = count($accounts);
+            foreach ($accounts as $account) {
+                //Сюда пробрасываем токен полученный выше
+                $account->applicationUninstalled($activeApplicationToken);
+                $this->bitrix24AccountRepository->save($account);
+            }
+
+            $activeApplicationInstallation->applicationUninstalled();
+
+            $this->flusher->flush(...$accounts);
+        }
+
         $bitrix24AccountId = Uuid::v7();
         $applicationInstallationId = Uuid::v7();
 
@@ -61,13 +88,8 @@ readonly class Handler
             true
         );
 
-        $this->bitrix24AccountRepository->save($bitrix24Account);
-        $this->flusher->flush($bitrix24Account);
-
         $applicationToken = Uuid::v7()->toRfc4122();
         $bitrix24Account->applicationInstalled($applicationToken);
-        $this->bitrix24AccountRepository->save($bitrix24Account);
-        $this->flusher->flush($bitrix24Account);
 
         $applicationInstallation = new ApplicationInstallation(
             $applicationInstallationId,
@@ -86,19 +108,35 @@ readonly class Handler
             true
         );
 
-        $this->applicationInstallationRepository->save($applicationInstallation);
-        $this->flusher->flush($applicationInstallation);
-
         $applicationInstallation->applicationInstalled();
 
+        $this->bitrix24AccountRepository->save($bitrix24Account);
         $this->applicationInstallationRepository->save($applicationInstallation);
-        $this->flusher->flush($applicationInstallation);
+        $this->flusher->flush($applicationInstallation,$bitrix24Account);
 
         $this->logger->info(
             'ApplicationInstallations.InstallStart.Finish',
             [
-                'id' => $command->uuid->toRfc4122(),
+                'applicationId' => $applicationInstallationId,
+                'bitrix24AccountId' => $bitrix24AccountId,
+                'applicationToken' => $applicationToken,
+                'memberId' => $command->memberId,
+                'domain' => $command->domain,
+                'accountsUninstalledCount' => $accountsCount,
             ]
         );
+    }
+    private function getActiveApplicationInstallation(): ApplicationInstallationInterface
+    {
+        $activeApplicationInstallations = $this->applicationInstallationRepository->findActiveApplicationInstallations();
+
+        if (!([] === $activeApplicationInstallations) && count($activeApplicationInstallations) > 1) {
+            // Тут может добавить исключение для приложения ? По подобию MultipleBitrix24AccountsFoundException
+            throw new \InvalidArgumentException(
+                'multiple application installations with active or new status'
+            );
+        }
+
+        return $activeApplicationInstallations[0];
     }
 }
