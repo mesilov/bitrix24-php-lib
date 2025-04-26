@@ -94,8 +94,10 @@ class HandlerTest extends TestCase
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
             ->build();
 
+
         $this->handler->handle(
             new ApplicationInstallations\UseCase\Install\Command(
+                $applicationInstallationBuilder->getApplicationToken(),
                 $applicationInstallationBuilder->getApplicationStatus(),
                 $applicationInstallationBuilder->getPortalLicenseFamily(),
                 $applicationInstallationBuilder->getPortalUsersCount(),
@@ -130,7 +132,7 @@ class HandlerTest extends TestCase
     {
         //Загружаем в базу данных аккаунт и установку приложения для тестирования переустановки.
         $applicationToken = Uuid::v7()->toRfc4122();
-        $bitrix24Account = (new Bitrix24AccountBuilder())
+        $oldBitrix24Account = (new Bitrix24AccountBuilder())
             ->withApplicationScope(new Scope(['crm']))
             ->withStatus(Bitrix24AccountStatus::new)
             ->withApplicationToken($applicationToken)
@@ -140,11 +142,12 @@ class HandlerTest extends TestCase
         $oldApplicationInstallationBuilder = (new ApplicationInstallationBuilder())
             ->withApplicationStatus(new ApplicationStatus('F'))
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
-            ->withBitrix24AccountId($bitrix24Account->getId())
+            ->withBitrix24AccountId($oldBitrix24Account->getId())
             ->withApplicationStatusInstallation(ApplicationInstallationStatus::active)
+            ->withApplicationToken($applicationToken)
             ->build();
 
-        $this->bitrix24accountRepository->save($bitrix24Account);
+        $this->bitrix24accountRepository->save($oldBitrix24Account);
         $this->repository->save($oldApplicationInstallationBuilder);
         $this->flusher->flush();
 
@@ -159,6 +162,7 @@ class HandlerTest extends TestCase
 
         $this->handler->handle(
             new ApplicationInstallations\UseCase\Install\Command(
+                $applicationInstallationBuilder->getApplicationToken(),
                 $applicationInstallationBuilder->getApplicationStatus(),
                 $applicationInstallationBuilder->getPortalLicenseFamily(),
                 $applicationInstallationBuilder->getPortalUsersCount(),

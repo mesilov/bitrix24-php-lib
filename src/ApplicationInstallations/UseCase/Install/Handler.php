@@ -12,7 +12,6 @@ use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
-use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Carbon\CarbonImmutable;
 use Psr\Log\LoggerInterface;
@@ -53,9 +52,11 @@ readonly class Handler
 
         /** @var AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $activeApplicationInstallation */
         $activeApplicationInstallation = $this->getActiveApplicationInstallation();
-        //Решили 13 апреля расширить контракт установки и добавить получения токена
-        $activeApplicationToken = $activeApplicationInstallation->getApplicationToken();
+
         if (!empty($activeApplicationInstallation)) {
+
+            //Решили 13 апреля расширить контракт установки и добавить получения токена
+            $activeApplicationToken = $activeApplicationInstallation->getApplicationToken();
 
             $oldBitrix24AccountId = $activeApplicationInstallation->getBitrix24AccountId();
             $oldBitrix24Account = $this->bitrix24AccountRepository->getById($oldBitrix24AccountId);
@@ -88,8 +89,8 @@ readonly class Handler
             true
         );
 
-        $applicationToken = Uuid::v7()->toRfc4122();
-        $bitrix24Account->applicationInstalled($applicationToken);
+
+        $bitrix24Account->applicationInstalled($command->applicationToken);
 
         $applicationInstallation = new ApplicationInstallation(
             $applicationInstallationId,
@@ -104,6 +105,7 @@ readonly class Handler
             $command->bitrix24PartnerContactPersonId,
             $command->bitrix24PartnerId,
             $command->externalId,
+            $command->applicationToken,
             $command->comment,
             true
         );
@@ -119,24 +121,23 @@ readonly class Handler
             [
                 'applicationId' => $applicationInstallationId,
                 'bitrix24AccountId' => $bitrix24AccountId,
-                'applicationToken' => $applicationToken,
+                'applicationToken' => $command->applicationToken,
                 'memberId' => $command->memberId,
                 'domain' => $command->domain,
                 'accountsUninstalledCount' => $accountsCount,
             ]
         );
     }
-    private function getActiveApplicationInstallation(): ApplicationInstallationInterface
+    private function getActiveApplicationInstallation(): ApplicationInstallationInterface|null
     {
         $activeApplicationInstallations = $this->applicationInstallationRepository->findActiveApplicationInstallations();
 
-        if (!([] === $activeApplicationInstallations) && count($activeApplicationInstallations) > 1) {
-            // Тут может добавить исключение для приложения ? По подобию MultipleBitrix24AccountsFoundException
+        if (count($activeApplicationInstallations) > 1) {
             throw new \InvalidArgumentException(
                 'multiple application installations with active or new status'
             );
         }
 
-        return $activeApplicationInstallations[0];
+        return $activeApplicationInstallations[0] ?? null;
     }
 }

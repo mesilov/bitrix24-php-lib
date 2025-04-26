@@ -39,6 +39,8 @@ class ApplicationInstallationBuilder
 
     private ?string $comment = null;
 
+    private string $applicationToken;
+
 
     public function __construct()
     {
@@ -50,6 +52,8 @@ class ApplicationInstallationBuilder
         $this->contactPersonId = Uuid::v7();
         $this->bitrix24PartnerId = Uuid::v7();
         $this->portalUsersCount = random_int(1, 1_000_000);
+        //Токен который будет прилетать при событии установки в битриксе
+        $this->applicationToken = Uuid::v7()->toRfc4122();
     }
 
     public function withExternalId(string $externalId): self
@@ -69,6 +73,13 @@ class ApplicationInstallationBuilder
     public function withApplicationStatus(ApplicationStatus $applicationStatus): self
     {
         $this->applicationStatus = $applicationStatus;
+
+        return $this;
+    }
+
+    public function withApplicationToken(string $applicationToken): self
+    {
+        $this->applicationToken = $applicationToken;
 
         return $this;
     }
@@ -102,6 +113,7 @@ class ApplicationInstallationBuilder
             $this->bitrix24PartnerContactPersonId,
             $this->bitrix24PartnerId,
             $this->externalId,
+            $this->applicationToken,
             $this->comment
         );
     }

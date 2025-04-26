@@ -28,7 +28,10 @@
 
         <field name="portalUsersCount" type="integer" column="portal_users_count" nullable="true"/>
 
+        <field name="applicationToken" type="string" column="application_token" nullable="false"/>
+
         <field name="comment" type="text" column="comment" nullable="true"/>
+
 
         <embedded name="applicationStatus" class="Bitrix24\SDK\Application\ApplicationStatus"/>
     </entity>

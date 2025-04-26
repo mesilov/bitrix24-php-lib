@@ -54,12 +54,6 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
     {
         $applicationInstallation = $this->getEntityManager()->getRepository(ApplicationInstallation::class)->find($uuid);
 
-        if (null === $applicationInstallation) {
-            throw new ApplicationInstallationNotFoundException(
-                sprintf('application installed not found by id %s', $uuid->toRfc4122())
-            );
-        }
-
         if (ApplicationInstallationStatus::deleted !== $applicationInstallation->getStatus()) {
             throw new InvalidArgumentException(
                 sprintf('you cannot delete application installed because you status must be deleted your status %s', $applicationInstallation->getStatus()->name)

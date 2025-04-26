@@ -18,6 +18,7 @@ use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
+use Bitrix24\SDK\Core\Exceptions\LogicException;
 
 class ApplicationInstallation extends AggregateRoot implements ApplicationInstallationInterface
 {
@@ -34,8 +35,9 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         private ?Uuid $bitrix24PartnerContactPersonId,
         private ?Uuid $bitrix24PartnerId,
         private ?string $externalId,
+        private readonly string $applicationToken,
         private ?string $comment = null,
-        private $isEmitApplicationInstallationCreatedEvent = false,
+        private $isEmitApplicationInstallationCreatedEvent = false
     ) {
         $this->addApplicationCreatedEventIfNeeded($this->isEmitApplicationInstallationCreatedEvent);
     }
@@ -69,6 +71,12 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     {
         return $this->contactPersonId;
     }
+
+    public function getApplicationToken(): string
+    {
+        return $this->applicationToken;
+    }
+
 
     #[\Override]
     public function changeContactPerson(?Uuid $uuid): void
@@ -156,7 +164,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
             ApplicationInstallationStatus::new !== $this->status
             && ApplicationInstallationStatus::blocked !== $this->status
         ) {
-            throw new \LogicException(
+            throw new LogicException(
                 sprintf(
                     'installation was interrupted because status must be in new or blocked,but your status is %s',
                     $this->status->value
@@ -185,7 +193,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
             ApplicationInstallationStatus::active !== $this->status
             && ApplicationInstallationStatus::blocked !== $this->status
         ) {
-            throw new \LogicException(
+            throw new LogicException(
                 sprintf(
                     'installation was interrupted because status must be in active or blocked, but your status is %s',
                     $this->status->value
@@ -211,7 +219,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     public function markAsActive(?string $comment): void
     {
         if (ApplicationInstallationStatus::blocked !== $this->status) {
-            throw new \LogicException(
+            throw new LogicException(
                 sprintf(
                     'you must be in status blocked to complete the installation, now status is «%s»',
                     $this->status->value
@@ -237,7 +245,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
             ApplicationInstallationStatus::new !== $this->status
             && ApplicationInstallationStatus::active !== $this->status
         ) {
-            throw new \LogicException(sprintf(
+            throw new LogicException(sprintf(
                 'You can block application installation only in status new or active,but your status is «%s»',
                 $this->status->value
             ));

@@ -43,10 +43,7 @@ class Bitrix24AccountRepositoryTest extends Bitrix24AccountRepositoryInterfaceTe
         bool $isBitrix24UserAdmin,
         string $memberId,
         string $domainUrl,
-        Bitrix24AccountStatus $bitrix24AccountStatus,
         AuthToken $authToken,
-        CarbonImmutable $createdAt,
-        CarbonImmutable $updatedAt,
         int $applicationVersion,
         Scope $applicationScope
     ): Bitrix24AccountInterface {
