@@ -144,7 +144,6 @@ class HandlerTest extends TestCase
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
             ->withBitrix24AccountId($oldBitrix24Account->getId())
             ->withApplicationStatusInstallation(ApplicationInstallationStatus::active)
-            ->withApplicationToken($applicationToken)
             ->build();
 
         $this->bitrix24accountRepository->save($oldBitrix24Account);
@@ -162,7 +161,6 @@ class HandlerTest extends TestCase
 
         $this->handler->handle(
             new ApplicationInstallations\UseCase\Install\Command(
-                $applicationInstallationBuilder->getApplicationToken(),
                 $applicationInstallationBuilder->getApplicationStatus(),
                 $applicationInstallationBuilder->getPortalLicenseFamily(),
                 $applicationInstallationBuilder->getPortalUsersCount(),

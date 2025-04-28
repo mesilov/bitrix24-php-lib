@@ -28,7 +28,7 @@
 
         <field name="portalUsersCount" type="integer" column="portal_users_count" nullable="true"/>
 
-        <field name="applicationToken" type="string" column="application_token" nullable="false"/>
+        <field name="applicationToken" type="string" column="application_token" nullable="true"/>
 
         <field name="comment" type="text" column="comment" nullable="true"/>
 

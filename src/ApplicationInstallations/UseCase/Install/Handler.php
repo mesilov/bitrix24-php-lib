@@ -10,10 +10,8 @@ use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
-use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
-use Carbon\CarbonImmutable;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -31,21 +29,7 @@ readonly class Handler
     public function handle(Command $command): void
     {
         $this->logger->info('ApplicationInstallations.InstallStart.start', [
-            'applicationStatus' => $command->applicationStatus,
-            'portalLicenseFamily' => $command->portalLicenseFamily,
-            'portalUsersCount' => $command->portalUsersCount,
-            'contactPersonId' => $command->contactPersonId,
-            'bitrix24PartnerContactPersonId' => $command->bitrix24PartnerContactPersonId,
-            'bitrix24PartnerId' => $command->bitrix24PartnerId,
-            'externalId' => $command->externalId,
-            'comment' => $command->comment,
-            'bitrix24UserId' => $command->bitrix24UserId,
-            'isBitrix24UserAdmin' => $command->isBitrix24UserAdmin,
-            'memberId' => $command->memberId,
-            'domain' => $command->domain,
-            'authToken' => $command->authToken,
-            'applicationVersion' => $command->applicationVersion,
-            'applicationScope' => $command->applicationScope
+            (string)$command
         ]);
 
         $accountsCount = 0;
@@ -94,9 +78,6 @@ readonly class Handler
 
         $applicationInstallation = new ApplicationInstallation(
             $applicationInstallationId,
-            ApplicationInstallationStatus::new,
-            new CarbonImmutable(),
-            new CarbonImmutable(),
             $bitrix24AccountId,
             $command->applicationStatus,
             $command->portalLicenseFamily,
@@ -105,7 +86,6 @@ readonly class Handler
             $command->bitrix24PartnerContactPersonId,
             $command->bitrix24PartnerId,
             $command->externalId,
-            $command->applicationToken,
             $command->comment,
             true
         );
@@ -121,9 +101,6 @@ readonly class Handler
             [
                 'applicationId' => $applicationInstallationId,
                 'bitrix24AccountId' => $bitrix24AccountId,
-                'applicationToken' => $command->applicationToken,
-                'memberId' => $command->memberId,
-                'domain' => $command->domain,
                 'accountsUninstalledCount' => $accountsCount,
             ]
         );

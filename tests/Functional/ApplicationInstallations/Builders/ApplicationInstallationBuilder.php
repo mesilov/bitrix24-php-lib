@@ -15,10 +15,6 @@ class ApplicationInstallationBuilder
 {
     private readonly Uuid $id;
 
-    private readonly CarbonImmutable $createdAt;
-
-    private readonly CarbonImmutable $updatedAt;
-
     private  Uuid $bitrix24AccountId;
 
     private readonly ?Uuid $contactPersonId;
@@ -29,7 +25,7 @@ class ApplicationInstallationBuilder
 
     private ?string $externalId = null;
 
-    private ApplicationInstallationStatus $status = ApplicationInstallationStatus::active;
+    private ApplicationInstallationStatus $status;
 
     private ApplicationStatus $applicationStatus;
 
@@ -39,21 +35,14 @@ class ApplicationInstallationBuilder
 
     private ?string $comment = null;
 
-    private string $applicationToken;
-
-
     public function __construct()
     {
         $this->id = Uuid::v7();
-        $this->createdAt = CarbonImmutable::now();
-        $this->updatedAt = CarbonImmutable::now();
         $this->bitrix24AccountId = Uuid::v7();
         $this->bitrix24PartnerContactPersonId = Uuid::v7();
         $this->contactPersonId = Uuid::v7();
         $this->bitrix24PartnerId = Uuid::v7();
         $this->portalUsersCount = random_int(1, 1_000_000);
-        //Токен который будет прилетать при событии установки в битриксе
-        $this->applicationToken = Uuid::v7()->toRfc4122();
     }
 
     public function withExternalId(string $externalId): self
@@ -77,13 +66,6 @@ class ApplicationInstallationBuilder
         return $this;
     }
 
-    public function withApplicationToken(string $applicationToken): self
-    {
-        $this->applicationToken = $applicationToken;
-
-        return $this;
-    }
-
     public function withBitrix24AccountId(Uuid $uuid): self
     {
         $this->bitrix24AccountId = $uuid;
@@ -100,11 +82,8 @@ class ApplicationInstallationBuilder
 
     public function build(): ApplicationInstallation
     {
-        return new ApplicationInstallation(
+       $applicationInstallation = new ApplicationInstallation(
             $this->id,
-            $this->status,
-            $this->createdAt,
-            $this->updatedAt,
             $this->bitrix24AccountId,
             $this->applicationStatus,
             $this->portalLicenseFamily,
@@ -113,9 +92,16 @@ class ApplicationInstallationBuilder
             $this->bitrix24PartnerContactPersonId,
             $this->bitrix24PartnerId,
             $this->externalId,
-            $this->applicationToken,
             $this->comment
         );
+
+       if (!empty($this->status)) {
+           if ($this->status == ApplicationInstallationStatus::active) {
+               $applicationInstallation->applicationInstalled();
+           }
+       }
+
+       return $applicationInstallation;
     }
 
 

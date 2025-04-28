@@ -22,11 +22,14 @@ use Bitrix24\SDK\Core\Exceptions\LogicException;
 
 class ApplicationInstallation extends AggregateRoot implements ApplicationInstallationInterface
 {
+
+    private ?string $applicationToken = null;
+    private CarbonImmutable $createdAt;
+    private CarbonImmutable $updatedAt;
+    private ApplicationInstallationStatus $status;
+
     public function __construct(
         private readonly Uuid $id,
-        private ApplicationInstallationStatus $status,
-        private readonly CarbonImmutable $createdAt,
-        private CarbonImmutable $updatedAt,
         private readonly Uuid $bitrix24AccountId,
         private ApplicationStatus $applicationStatus,
         private PortalLicenseFamily $portalLicenseFamily,
@@ -35,10 +38,12 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         private ?Uuid $bitrix24PartnerContactPersonId,
         private ?Uuid $bitrix24PartnerId,
         private ?string $externalId,
-        private readonly string $applicationToken,
         private ?string $comment = null,
         private $isEmitApplicationInstallationCreatedEvent = false
     ) {
+        $this->createdAt = new CarbonImmutable();
+        $this->updatedAt = new CarbonImmutable();
+        $this->status = ApplicationInstallationStatus::new;
         $this->addApplicationCreatedEventIfNeeded($this->isEmitApplicationInstallationCreatedEvent);
     }
 
@@ -76,7 +81,6 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     {
         return $this->applicationToken;
     }
-
 
     #[\Override]
     public function changeContactPerson(?Uuid $uuid): void

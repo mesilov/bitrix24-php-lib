@@ -14,7 +14,6 @@ use Symfony\Component\Uid\Uuid;
 readonly class Command
 {
     public function __construct(
-        public string $applicationToken,
         public ApplicationStatus $applicationStatus,
         public PortalLicenseFamily $portalLicenseFamily,
         public ?int $portalUsersCount,
@@ -34,12 +33,26 @@ readonly class Command
         $this->validate();
     }
 
+    public function __toString(): string
+    {
+        return sprintf(
+            " portalUsersCount: %s, contactPersonId: %s, bitrix24PartnerContactPersonId: %s,
+             bitrix24PartnerId: %s, externalId: %s, comment: %s, bitrix24UserId: %d,
+              isBitrix24UserAdmin: %s, memberId: %s",
+            $this->portalUsersCount ?? 'null',
+            $this->contactPersonId ?? 'null',
+            $this->bitrix24PartnerContactPersonId ?? 'null',
+            $this->bitrix24PartnerId ?? 'null',
+            $this->externalId ?? 'null',
+            $this->comment ?? 'null',
+            $this->bitrix24UserId,
+            $this->isBitrix24UserAdmin ? 'true' : 'false',
+            $this->memberId
+        );
+    }
+
     private function validate(): void
     {
-
-        if ('' === $this->applicationToken) {
-            throw new \InvalidArgumentException('applicationToken must be a non-empty string.');
-        }
 
         if ($this->portalUsersCount <= 0) {
             throw new \InvalidArgumentException('Portal Users count must be a positive integer.');
