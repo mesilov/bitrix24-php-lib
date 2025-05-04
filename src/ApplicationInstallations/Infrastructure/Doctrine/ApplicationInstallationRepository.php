@@ -75,12 +75,14 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
         ;
     }
 
-    public function findActiveApplicationInstallations(): array
+    public function findActiveApplicationInstallations(string $memberId): array
     {
         return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('appInstallation')
             ->where('appInstallation.status IN (:statuses)')
+            ->andWhere('appInstallation.memberId = :memberId')
             ->setParameter('statuses', [ApplicationInstallationStatus::active, ApplicationInstallationStatus::new])
+            ->setParameter('memberId', $memberId)
             ->getQuery()
             ->getResult()
         ;
@@ -100,5 +102,28 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->getQuery()
             ->getResult()
         ;
+    }
+
+    public function findActiveByAccountIds(array $accountIds): array
+    {
+        if (empty($accountIds)) {
+            return [];
+        }
+
+        $activeStatuses = [
+            ApplicationInstallationStatus::new,
+            ApplicationInstallationStatus::active,
+        ];
+
+        $installations = $this->getEntityManager()->getRepository(ApplicationInstallation::class)
+            ->createQueryBuilder('applicationInstallation')
+            ->where('applicationInstallation.bitrix24AccountId IN (:accountIds)')
+            ->andWhere('applicationInstallation.status IN (:statuses)')
+            ->setParameter('accountIds', $accountIds)
+            ->setParameter('statuses', $activeStatuses)
+            ->getQuery()
+            ->getResult();
+
+        return $installations;
     }
 }

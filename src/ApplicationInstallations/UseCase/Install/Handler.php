@@ -9,9 +9,6 @@ use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationIns
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
-use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
-use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
-use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -28,34 +25,33 @@ readonly class Handler
 
     public function handle(Command $command): void
     {
-        $this->logger->info('ApplicationInstallations.InstallStart.start', [
+        $this->logger->info('ApplicationInstallations.Install.start', [
             (string)$command
         ]);
 
-        $accountsCount = 0;
+        //Проверяем есть ли активные аккаунты если есть значит деактивируем аккаунты и установщики
+        // 1. Получаем все аккаунты с этим memberId
+        $accounts = $this->bitrix24AccountRepository->findActiveByMemberId($command->memberId);
+        if (!empty($accounts)) {
+            $accountIds = array_map(fn($acc) => $acc->getId(), $accounts);
+            // 2. Получаем все активные установки для этих аккаунтов
+            $activeInstallations = $this->applicationInstallationRepository->findActiveByAccountIds($accountIds);
 
-        /** @var AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $activeApplicationInstallation */
-        $activeApplicationInstallation = $this->getActiveApplicationInstallation();
+            // 3. Деактивируем все активные установки и связанные аккаунты
+            foreach ($activeInstallations as $installation) {
+                $installation->applicationUninstalled();
+                $this->applicationInstallationRepository->save($installation);
+            }
 
-        if (!empty($activeApplicationInstallation)) {
-
-            //Решили 13 апреля расширить контракт установки и добавить получения токена
-            $activeApplicationToken = $activeApplicationInstallation->getApplicationToken();
-
-            $oldBitrix24AccountId = $activeApplicationInstallation->getBitrix24AccountId();
-            $oldBitrix24Account = $this->bitrix24AccountRepository->getById($oldBitrix24AccountId);
-            /** @var AggregateRootEventsEmitterInterface[]|Bitrix24AccountInterface[] $accounts */
-            $accounts = $this->bitrix24AccountRepository->findByMemberId($oldBitrix24Account->getMemberId());
-            $accountsCount = count($accounts);
             foreach ($accounts as $account) {
-                //Сюда пробрасываем токен полученный выше
-                $account->applicationUninstalled($activeApplicationToken);
+                //Нужна правка в контракте ушли от обязательного параметра токена!!!
+                $account->applicationUninstalled();
                 $this->bitrix24AccountRepository->save($account);
             }
 
-            $activeApplicationInstallation->applicationUninstalled();
-
-            $this->flusher->flush(...$accounts);
+            // Здесь сразу флашим так как это условие не всегда работает , и лучше сначало разобраться с аккаунтами и установщиками
+            // которые нужно деактивировать , а после уже работаем с новыми сущностями.
+            $this->flusher->flush(...$activeInstallations, ...$accounts);
         }
 
         $bitrix24AccountId = Uuid::v7();
@@ -74,7 +70,7 @@ readonly class Handler
         );
 
 
-        $bitrix24Account->applicationInstalled($command->applicationToken);
+        $bitrix24Account->applicationInstalled();
 
         $applicationInstallation = new ApplicationInstallation(
             $applicationInstallationId,
@@ -97,24 +93,11 @@ readonly class Handler
         $this->flusher->flush($applicationInstallation,$bitrix24Account);
 
         $this->logger->info(
-            'ApplicationInstallations.InstallStart.Finish',
+            'ApplicationInstallations.Install.Finish',
             [
                 'applicationId' => $applicationInstallationId,
-                'bitrix24AccountId' => $bitrix24AccountId,
-                'accountsUninstalledCount' => $accountsCount,
+                'bitrix24AccountId' => $bitrix24AccountId
             ]
         );
-    }
-    private function getActiveApplicationInstallation(): ApplicationInstallationInterface|null
-    {
-        $activeApplicationInstallations = $this->applicationInstallationRepository->findActiveApplicationInstallations();
-
-        if (count($activeApplicationInstallations) > 1) {
-            throw new \InvalidArgumentException(
-                'multiple application installations with active or new status'
-            );
-        }
-
-        return $activeApplicationInstallations[0] ?? null;
     }
 }

@@ -176,7 +176,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
      * @throws InvalidArgumentException
      */
     #[\Override]
-    public function applicationInstalled(string $applicationToken): void
+    public function applicationInstalled(): void
     {
         if (Bitrix24AccountStatus::new !== $this->status) {
             throw new InvalidArgumentException(
@@ -187,12 +187,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
             );
         }
 
-        if ('' === $applicationToken) {
-            throw new InvalidArgumentException('application token cannot be empty');
-        }
-
         $this->status = Bitrix24AccountStatus::active;
-        $this->applicationToken = $applicationToken;
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24AccountApplicationInstalledEvent(
             $this->id,
@@ -200,15 +195,10 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         );
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
+
     #[\Override]
-    public function applicationUninstalled(string $applicationToken): void
+    public function applicationUninstalled(): void
     {
-        $this->guardEmptyToken($applicationToken);
-        $this->guardTokenMismatch($applicationToken);
-        $this->guardApplicationIsActive();
         $this->status = Bitrix24AccountStatus::deleted;
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24AccountApplicationUninstalledEvent(
@@ -358,5 +348,15 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
                 $this->createdAt
             );
         }
+    }
+
+    public function setToken(string $applicationToken): void
+    {
+        if ('' === $applicationToken) {
+            throw new InvalidArgumentException('application token cannot be empty');
+        }
+
+        $this->updatedAt = new CarbonImmutable();
+        $this->applicationToken = $applicationToken;
     }
 }

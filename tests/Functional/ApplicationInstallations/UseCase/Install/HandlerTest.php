@@ -97,7 +97,6 @@ class HandlerTest extends TestCase
 
         $this->handler->handle(
             new ApplicationInstallations\UseCase\Install\Command(
-                $applicationInstallationBuilder->getApplicationToken(),
                 $applicationInstallationBuilder->getApplicationStatus(),
                 $applicationInstallationBuilder->getPortalLicenseFamily(),
                 $applicationInstallationBuilder->getPortalUsersCount(),
@@ -130,28 +129,33 @@ class HandlerTest extends TestCase
     #[Test]
     public function testReinstallApplicationInstallation(): void
     {
+
+        $memberId = Uuid::v4()->toRfc4122();
+
         //Загружаем в базу данных аккаунт и установку приложения для тестирования переустановки.
         $applicationToken = Uuid::v7()->toRfc4122();
-        $oldBitrix24Account = (new Bitrix24AccountBuilder())
+        $currentBitrix24Account = (new Bitrix24AccountBuilder())
             ->withApplicationScope(new Scope(['crm']))
             ->withStatus(Bitrix24AccountStatus::new)
             ->withApplicationToken($applicationToken)
+            ->withMemberId($memberId)
             ->build();
 
 
-        $oldApplicationInstallationBuilder = (new ApplicationInstallationBuilder())
+        $currentApplicationInstallationBuilder = (new ApplicationInstallationBuilder())
             ->withApplicationStatus(new ApplicationStatus('F'))
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
-            ->withBitrix24AccountId($oldBitrix24Account->getId())
+            ->withBitrix24AccountId($currentBitrix24Account->getId())
             ->withApplicationStatusInstallation(ApplicationInstallationStatus::active)
             ->build();
 
-        $this->bitrix24accountRepository->save($oldBitrix24Account);
-        $this->repository->save($oldApplicationInstallationBuilder);
+        $this->bitrix24accountRepository->save($currentBitrix24Account);
+        $this->repository->save($currentApplicationInstallationBuilder);
         $this->flusher->flush();
 
         $bitrix24AccountBuilder = (new Bitrix24AccountBuilder())
             ->withApplicationScope(new Scope(['crm']))
+            ->withMemberId($memberId)
             ->build();
 
         $applicationInstallationBuilder = (new ApplicationInstallationBuilder())

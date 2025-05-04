@@ -105,6 +105,30 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         return $this->findBy($criteria);
     }
 
+    public function findActiveByMemberId(string $memberId): array
+    {
+        if ('' === trim($memberId)) {
+            throw new InvalidArgumentException('memberId cannot be empty');
+        }
+
+        $activeStatuses = [
+            Bitrix24AccountStatus::new,
+            Bitrix24AccountStatus::active,
+        ];
+
+        $accounts = $this->getEntityManager()->getRepository(Bitrix24Account::class)
+            ->createQueryBuilder('b24')
+            ->where('b24.memberId = :memberId')
+            ->andWhere('b24.status IN (:statuses)')
+            ->setParameter('memberId', $memberId)
+            ->setParameter('statuses', $activeStatuses)
+            ->getQuery()
+            ->getResult()
+        ;
+
+        return $accounts;
+    }
+
     #[\Override]
     public function delete(Uuid $uuid): void
     {

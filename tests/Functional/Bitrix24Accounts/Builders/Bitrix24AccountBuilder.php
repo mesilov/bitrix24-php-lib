@@ -104,7 +104,8 @@ class Bitrix24AccountBuilder
         );
 
         if ($this->applicationToken !== null && Bitrix24AccountStatus::new == $this->status) {
-            $bitrix24Account->applicationInstalled($this->applicationToken);
+            $bitrix24Account->applicationInstalled();
+            $bitrix24Account->setToken($this->applicationToken);
         }
 
         return $bitrix24Account;
