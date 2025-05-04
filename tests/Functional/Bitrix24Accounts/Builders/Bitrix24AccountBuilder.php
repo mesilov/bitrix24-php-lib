@@ -43,6 +43,10 @@ class Bitrix24AccountBuilder
 
     private ?string $applicationToken = null;
 
+    private bool $isSetToken = false;
+
+    private bool $isInstalled = false;
+
     public function __construct()
     {
         $this->id = Uuid::v7();
@@ -90,6 +94,20 @@ class Bitrix24AccountBuilder
         return $this;
     }
 
+    public function withSetToken(): self
+    {
+        $this->isSetToken = true;
+
+        return $this;
+    }
+
+    public function withInstalled(): self
+    {
+        $this->isInstalled = true;
+
+        return $this;
+    }
+
     public function build(): Bitrix24Account
     {
         $bitrix24Account = new Bitrix24Account(
@@ -103,10 +121,15 @@ class Bitrix24AccountBuilder
             $this->applicationScope
         );
 
-        if ($this->applicationToken !== null && Bitrix24AccountStatus::new == $this->status) {
+        if ($this->isInstalled && Bitrix24AccountStatus::new == $this->status) {
             $bitrix24Account->applicationInstalled();
+        }
+
+        if ($this->isSetToken && $this->applicationToken !== null) {
             $bitrix24Account->setToken($this->applicationToken);
         }
+
+
 
         return $bitrix24Account;
     }
