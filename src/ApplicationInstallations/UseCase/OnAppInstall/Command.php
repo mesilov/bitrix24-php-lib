@@ -5,13 +5,13 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall;
 
-
 readonly class Command
 {
     public function __construct(
         public string $memberId,
         public string $domainUrl,
-        public string $applicationToken
+        public string $applicationToken,
+        public string $applicationStatus,
     ) {
         $this->validate();
     }
@@ -31,5 +31,8 @@ readonly class Command
             throw new \InvalidArgumentException('ApplicationToken must be a non-empty string.');
         }
 
+        if ('' === $this->applicationStatus) {
+            throw new \InvalidArgumentException('ApplicationStatus must be a non-empty string.');
+        }
     }
 }

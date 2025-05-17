@@ -105,7 +105,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         return $this->findBy($criteria);
     }
 
-    public function findActiveByMemberId(string $memberId): array
+    public function findActiveByMemberId(string $memberId): Bitrix24AccountInterface|null
     {
         if ('' === trim($memberId)) {
             throw new InvalidArgumentException('memberId cannot be empty');
@@ -126,7 +126,11 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
             ->getResult()
         ;
 
-        return $accounts;
+        if (empty($accounts)){
+            return null;
+        }
+
+        return $accounts[0];
     }
 
     #[\Override]

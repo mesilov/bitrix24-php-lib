@@ -161,6 +161,16 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         return $this->status;
     }
 
+    public function setToken(string $applicationToken): void
+    {
+        if ('' === $applicationToken) {
+            throw new InvalidArgumentException('application token cannot be empty');
+        }
+
+        $this->updatedAt = new CarbonImmutable();
+        $this->applicationToken = $applicationToken;
+    }
+
     #[\Override]
     public function applicationInstalled(): void
     {

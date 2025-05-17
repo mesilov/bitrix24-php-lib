@@ -26,6 +26,7 @@ use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuild
 use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
@@ -69,8 +70,10 @@ class HandlerTest extends TestCase
         $this->repository = new ApplicationInstallationRepository($entityManager);
         $this->flusher = new Flusher($entityManager, $this->eventDispatcher);
         $this->bitrix24accountRepository = new Bitrix24AccountRepository($entityManager);
+        $this->applicationInstallationRepository = new ApplicationInstallationRepository($entityManager);
         $this->handler = new Handler(
             $this->bitrix24accountRepository,
+            $this->applicationInstallationRepository,
             $this->flusher,
             new NullLogger()
         );
@@ -78,7 +81,7 @@ class HandlerTest extends TestCase
     }
 
     /**
-     * @throws InvalidArgumentException
+     * @throws InvalidArgumentException|Bitrix24AccountNotFoundException
      */
     #[Test]
     public function testEventOnAppInstall(): void
@@ -86,6 +89,7 @@ class HandlerTest extends TestCase
         $memberId = Uuid::v4()->toRfc4122();
         $domainUrl = Uuid::v4()->toRfc4122().'-example.com';
         $applicationToken = Uuid::v7()->toRfc4122();
+        $applicationStatus = 'T';
 
         $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withApplicationScope(new Scope(['crm']))
@@ -111,6 +115,7 @@ class HandlerTest extends TestCase
                 $memberId,
                 $domainUrl,
                 $applicationToken,
+                $applicationStatus
             )
         );
 

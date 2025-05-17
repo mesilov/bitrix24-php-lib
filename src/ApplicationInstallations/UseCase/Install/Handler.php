@@ -9,6 +9,9 @@ use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationIns
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
+use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -29,33 +32,24 @@ readonly class Handler
             (string)$command
         ]);
 
-        //Проверяем есть ли активные аккаунты если есть значит деактивируем аккаунты и установщики
-        // 1. Получаем все аккаунты с этим memberId
-        /* (В идеале же у нас только один аккаунт должен быть с memberId, но я думаю лучше все таки возвращать массив мало ли)!!!!!
-            одновременно придет несколько событий установки. или при миграции задублируются строки
-            Поэтому я добавлю еще условие в котором если больше чем один аккаунт будем удалять но еще + записывать в лог
-        */
-        $accounts = $this->bitrix24AccountRepository->findActiveByMemberId($command->memberId);
-        if (!empty($accounts)) {
-            $accountIds = array_map(fn($acc) => $acc->getId(), $accounts);
-            // 2. Получаем все активные установки для этих аккаунтов
-            $activeInstallations = $this->applicationInstallationRepository->findActiveByAccountIds($accountIds);
 
-            // 3. Деактивируем все активные установки и связанные аккаунты
-            foreach ($activeInstallations as $installation) {
-                $installation->applicationUninstalled();
-                $this->applicationInstallationRepository->save($installation);
-            }
+        /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $b24Account */
+        $b24Account = $this->bitrix24AccountRepository->findActiveByMemberId($command->memberId);
 
-            foreach ($accounts as $account) {
-                //Нужна правка в контракте ушли от обязательного параметра токена!!!
-                $account->applicationUninstalled();
-                $this->bitrix24AccountRepository->save($account);
-            }
+        if ($b24Account !== null) {
 
-            // Здесь сразу флашим так как это условие не всегда работает , и лучше сначало разобраться с аккаунтами и установщиками
-            // которые нужно деактивировать , а после уже работаем с новыми сущностями.
-            $this->flusher->flush(...$activeInstallations, ...$accounts);
+            /** @var AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $activeInstallation */
+            $activeInstallation = $this->getActiveApplicationInstallations($b24Account->getId());
+
+            $activeInstallation->applicationUninstalled();
+            $this->applicationInstallationRepository->save($activeInstallation);
+
+            $b24Account->applicationUninstalled();
+            $this->bitrix24AccountRepository->save($b24Account);
+
+            /* Здесь сразу флашим так как это условие не всегда работает , и лучше сначало разобраться с аккаунтами и установщиками
+             которые нужно деактивировать , а после уже работаем с новыми сущностями. */
+            $this->flusher->flush($b24Account, $activeInstallation);
         }
 
         $bitrix24AccountId = Uuid::v7();
@@ -103,5 +97,12 @@ readonly class Handler
                 'bitrix24AccountId' => $bitrix24AccountId
             ]
         );
+    }
+
+    private function getActiveApplicationInstallations(Uuid $b24AccountId): ApplicationInstallationInterface
+    {
+        $activeInstallations = $this->applicationInstallationRepository->findActiveByAccountId($b24AccountId);
+
+        return $activeInstallations[0];
     }
 }

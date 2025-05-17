@@ -104,12 +104,8 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
         ;
     }
 
-    public function findActiveByAccountIds(array $accountIds): array
+    public function findActiveByAccountId(Uuid $b24AccountId): array
     {
-        if (empty($accountIds)) {
-            return [];
-        }
-
         $activeStatuses = [
             ApplicationInstallationStatus::new,
             ApplicationInstallationStatus::active,
@@ -117,9 +113,9 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
 
         $installations = $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('applicationInstallation')
-            ->where('applicationInstallation.bitrix24AccountId IN (:accountIds)')
+            ->where('applicationInstallation.bitrix24AccountId = :b24AccountId')
             ->andWhere('applicationInstallation.status IN (:statuses)')
-            ->setParameter('accountIds', $accountIds)
+            ->setParameter('b24AccountId', $b24AccountId)
             ->setParameter('statuses', $activeStatuses)
             ->getQuery()
             ->getResult();
