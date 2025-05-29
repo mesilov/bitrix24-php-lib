@@ -139,6 +139,7 @@ class HandlerTest extends TestCase
             ->withStatus(Bitrix24AccountStatus::new)
             ->withApplicationToken($applicationToken)
             ->withMemberId($memberId)
+            ->withMaster(true)
             ->build();
 
 
@@ -180,6 +181,69 @@ class HandlerTest extends TestCase
                 $bitrix24AccountBuilder->getAuthToken(),
                 $bitrix24AccountBuilder->getApplicationVersion(),
                 $bitrix24AccountBuilder->getApplicationScope()
+            )
+        );
+
+        $dispatchedEvents = $this->eventDispatcher->getOrphanedEvents();
+
+        $this->assertContains(\Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent::class, $dispatchedEvents);
+        $this->assertContains(\Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationCreatedEvent::class, $dispatchedEvents);
+        $this->assertContains(\Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationInstalledEvent::class, $dispatchedEvents);
+        $this->assertContains(\Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationFinishedEvent::class, $dispatchedEvents);
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    #[Test]
+    public function testFewInstallationsOnOneAccount(): void
+    {
+
+        $memberId = Uuid::v4()->toRfc4122();
+
+        //Загружаем в базу данных аккаунт и установку приложения для тестирования переустановки.
+        $applicationToken = Uuid::v7()->toRfc4122();
+        $currentBitrix24Account = (new Bitrix24AccountBuilder())
+            ->withApplicationScope(new Scope(['crm']))
+            ->withStatus(Bitrix24AccountStatus::new)
+            ->withApplicationToken($applicationToken)
+            ->withMemberId($memberId)
+            ->build();
+
+
+        $currentApplicationInstallationBuilder = (new ApplicationInstallationBuilder())
+            ->withApplicationStatus(new ApplicationStatus('F'))
+            ->withPortalLicenseFamily(PortalLicenseFamily::free)
+            ->withBitrix24AccountId($currentBitrix24Account->getId())
+            ->withApplicationStatusInstallation(ApplicationInstallationStatus::active)
+            ->build();
+
+        $this->bitrix24accountRepository->save($currentBitrix24Account);
+        $this->repository->save($currentApplicationInstallationBuilder);
+        $this->flusher->flush();
+
+        $applicationInstallationBuilder = (new ApplicationInstallationBuilder())
+            ->withApplicationStatus(new ApplicationStatus('F'))
+            ->withPortalLicenseFamily(PortalLicenseFamily::free)
+            ->build();
+
+        $this->handler->handle(
+            new ApplicationInstallations\UseCase\Install\Command(
+                $applicationInstallationBuilder->getApplicationStatus(),
+                $applicationInstallationBuilder->getPortalLicenseFamily(),
+                $applicationInstallationBuilder->getPortalUsersCount(),
+                $applicationInstallationBuilder->getContactPersonId(),
+                $applicationInstallationBuilder->getBitrix24PartnerContactPersonId(),
+                $applicationInstallationBuilder->getBitrix24PartnerId(),
+                $applicationInstallationBuilder->getExternalId(),
+                $applicationInstallationBuilder->getComment(),
+                $currentBitrix24Account->getBitrix24UserId(),
+                $currentBitrix24Account->isBitrix24UserAdmin(),
+                $currentBitrix24Account->getMemberId(),
+                new Domain($currentBitrix24Account->getDomainUrl()),
+                $currentBitrix24Account->getAuthToken(),
+                $currentBitrix24Account->getApplicationVersion(),
+                $currentBitrix24Account->getApplicationScope()
             )
         );
 

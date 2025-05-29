@@ -13,7 +13,7 @@
 
         <field name="updatedAt" type="carbon_immutable" column="update_at_utc" precision="3" nullable="false"/>
 
-        <field name="bitrix24AccountId" type="uuid" column="bitrix_24_account_id" nullable="false"/>
+        <field name="bitrix24AccountId" type="uuid" column="bitrix_24_account_id" nullable="false" unique="true"/>
 
         <field name="contactPersonId" type="uuid" column="contact_person_id" nullable="true"/>
 

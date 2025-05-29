@@ -50,6 +50,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         private AuthToken $authToken,
         private int $applicationVersion,
         private Scope $applicationScope,
+        private bool $isMaster = false,
         private $isEmitBitrix24AccountCreatedEvent = false,
         private ?string $comment = null
     ) {
@@ -75,6 +76,11 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
     public function isBitrix24UserAdmin(): bool
     {
         return $this->isBitrix24UserAdmin;
+    }
+
+    public function isMaster(): bool
+    {
+        return $this->isMaster;
     }
 
     #[\Override]

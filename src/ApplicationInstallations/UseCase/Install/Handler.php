@@ -12,6 +12,8 @@ use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
+use Bitrix24\SDK\Core\Exceptions\LogicException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -26,30 +28,42 @@ readonly class Handler
     {
     }
 
+    /**
+     * @throws LogicException
+     * @throws InvalidArgumentException
+     */
     public function handle(Command $command): void
     {
         $this->logger->info('ApplicationInstallations.Install.start', [
             (string)$command
         ]);
 
+        /*
+         * Аккаунтов может быть несколько , но установку на портал проводят только 1 раз , то есть есть мастер аккаунт который нужно получать.
+         * У остальных аккаунтов установок быть не может это просто (доступы/авторизации).
+         * Решить какое поле для мастера добавить в аккаунт.
+         */
+        /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface[] $b24Accounts */
+        $b24Accounts = $this->bitrix24AccountRepository->findActiveByMemberId($command->memberId);
 
-        /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $b24Account */
-        $b24Account = $this->bitrix24AccountRepository->findActiveByMemberId($command->memberId);
-
-        if ($b24Account !== null) {
-
-            /** @var AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $activeInstallation */
-            $activeInstallation = $this->getActiveApplicationInstallations($b24Account->getId());
-
-            $activeInstallation->applicationUninstalled();
-            $this->applicationInstallationRepository->save($activeInstallation);
-
-            $b24Account->applicationUninstalled();
-            $this->bitrix24AccountRepository->save($b24Account);
+        if ($b24Accounts !== []) {
+            $entitiesToFlush = [];
+            foreach ($b24Accounts as $b24Account) {
+                $isMaster = $b24Account->isMaster();
+                if ($isMaster) {
+                    $activeInstallation = $this->applicationInstallationRepository->findActiveByAccountId($b24Account->getId());
+                    $activeInstallation->applicationUninstalled();
+                    $this->applicationInstallationRepository->save($activeInstallation);
+                    $entitiesToFlush[] = $activeInstallation;
+                }
+                $b24Account->applicationUninstalled();
+                $this->bitrix24AccountRepository->save($b24Account);
+                $entitiesToFlush[] = $b24Account;
+            }
 
             /* Здесь сразу флашим так как это условие не всегда работает , и лучше сначало разобраться с аккаунтами и установщиками
              которые нужно деактивировать , а после уже работаем с новыми сущностями. */
-            $this->flusher->flush($b24Account, $activeInstallation);
+            $this->flusher->flush(...$entitiesToFlush);
         }
 
         $bitrix24AccountId = Uuid::v7();
@@ -64,6 +78,7 @@ readonly class Handler
             $command->authToken,
             $command->applicationVersion,
             $command->applicationScope,
+            true,
             true
         );
 
@@ -97,12 +112,5 @@ readonly class Handler
                 'bitrix24AccountId' => $bitrix24AccountId
             ]
         );
-    }
-
-    private function getActiveApplicationInstallations(Uuid $b24AccountId): ApplicationInstallationInterface
-    {
-        $activeInstallations = $this->applicationInstallationRepository->findActiveByAccountId($b24AccountId);
-
-        return $activeInstallations[0];
     }
 }

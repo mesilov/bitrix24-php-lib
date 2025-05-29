@@ -42,7 +42,7 @@ class Bitrix24AccountBuilder
     private Scope $applicationScope;
 
     private ?string $applicationToken = null;
-
+    private bool $isMaster = false;
     private bool $isSetToken = false;
 
     private bool $isInstalled = false;
@@ -101,6 +101,13 @@ class Bitrix24AccountBuilder
         return $this;
     }
 
+    public function withMaster(bool $isMaster): self
+    {
+        $this->isMaster = $isMaster;
+
+        return $this;
+    }
+
     public function withInstalled(): self
     {
         $this->isInstalled = true;
@@ -118,7 +125,8 @@ class Bitrix24AccountBuilder
             $this->domainUrl,
             $this->authToken,
             $this->applicationVersion,
-            $this->applicationScope
+            $this->applicationScope,
+            $this->isMaster
         );
 
         if ($this->isInstalled && Bitrix24AccountStatus::new == $this->status) {
