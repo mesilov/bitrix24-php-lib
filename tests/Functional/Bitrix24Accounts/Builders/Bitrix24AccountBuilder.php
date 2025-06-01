@@ -42,7 +42,7 @@ class Bitrix24AccountBuilder
     private Scope $applicationScope;
 
     private ?string $applicationToken = null;
-    private bool $isMaster = false;
+    private bool $isMasterAccount = false;
     private bool $isSetToken = false;
 
     private bool $isInstalled = false;
@@ -103,7 +103,7 @@ class Bitrix24AccountBuilder
 
     public function withMaster(bool $isMaster): self
     {
-        $this->isMaster = $isMaster;
+        $this->isMasterAccount = $isMaster;
 
         return $this;
     }
@@ -126,15 +126,15 @@ class Bitrix24AccountBuilder
             $this->authToken,
             $this->applicationVersion,
             $this->applicationScope,
-            $this->isMaster
+            $this->isMasterAccount
         );
 
         if ($this->isInstalled && Bitrix24AccountStatus::new == $this->status) {
-            $bitrix24Account->applicationInstalled();
+            $bitrix24Account->applicationInstalled(null);
         }
 
         if ($this->isSetToken && $this->applicationToken !== null) {
-            $bitrix24Account->setToken($this->applicationToken);
+            $bitrix24Account->setApplicationToken($this->applicationToken);
         }
 
 

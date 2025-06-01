@@ -12,6 +12,7 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\Applicati
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 use Psr\Log\LoggerInterface;
 
@@ -26,6 +27,9 @@ readonly class Handler
     {
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     public function handle(Command $command): void
     {
         $this->logger->info('ApplicationInstallation.OnAppInstall.start', [
@@ -35,18 +39,23 @@ readonly class Handler
             'application_status' => $command->applicationStatus,
         ]);
 
+        //Тут нужно получить аккаунт мастера , так как если я не ошибаюсь , события установки могут приходить не сразу.
+        //И за это время на портале могут появится несколько других авторизаций.
         /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account */
-        $bitrix24Account = $this->getAccountByMemberId($command->memberId);
+        $bitrix24Account = $this->bitrix24AccountRepository->findMasterByMemberId(
+            $command->memberId,
+            Bitrix24AccountStatus::active,
+        );
 
         /** @var AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $applicationInstallation */
-        $applicationInstallation = $this->getApplicationInstallationByAccountId($bitrix24Account->getId());
+        $applicationInstallation = $this->applicationInstallationRepository->findByBitrix24AccountId($bitrix24Account->getId());
 
         $applicationStatus = new ApplicationStatus($command->applicationStatus);
 
         $applicationInstallation->changeApplicationStatus($applicationStatus);
 
-        $applicationInstallation->setToken($command->applicationToken);
-        $bitrix24Account->setToken($command->applicationToken);
+        $applicationInstallation->setApplicationToken($command->applicationToken);
+        $bitrix24Account->setApplicationToken($command->applicationToken);
 
         $this->bitrix24AccountRepository->save($bitrix24Account);
         $this->applicationInstallationRepository->save($applicationInstallation);
@@ -54,22 +63,5 @@ readonly class Handler
         $this->flusher->flush($applicationInstallation,$bitrix24Account);
 
         $this->logger->info('ApplicationInstallation.OnAppInstall.finish');
-    }
-
-    private function getAccountByMemberId(string $memberId): Bitrix24AccountInterface
-    {
-        $accounts = $this->bitrix24AccountRepository->findByMemberId(
-            $memberId,
-            Bitrix24AccountStatus::active,
-        );
-
-        return $accounts[0];
-    }
-
-    private function getApplicationInstallationByAccountId(Uuid $b24AccountId): ApplicationInstallationInterface
-    {
-        $applicationInstallations = $this->applicationInstallationRepository->findByBitrix24AccountId($b24AccountId);
-
-        return $applicationInstallations[0];
     }
 }

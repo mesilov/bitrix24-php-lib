@@ -49,14 +49,14 @@ readonly class Handler
         if ($b24Accounts !== []) {
             $entitiesToFlush = [];
             foreach ($b24Accounts as $b24Account) {
-                $isMaster = $b24Account->isMaster();
+                $isMaster = $b24Account->isMasterAccount();
                 if ($isMaster) {
                     $activeInstallation = $this->applicationInstallationRepository->findActiveByAccountId($b24Account->getId());
                     $activeInstallation->applicationUninstalled();
                     $this->applicationInstallationRepository->save($activeInstallation);
                     $entitiesToFlush[] = $activeInstallation;
                 }
-                $b24Account->applicationUninstalled();
+                $b24Account->applicationUninstalled(null);
                 $this->bitrix24AccountRepository->save($b24Account);
                 $entitiesToFlush[] = $b24Account;
             }
@@ -83,7 +83,7 @@ readonly class Handler
         );
 
 
-        $bitrix24Account->applicationInstalled();
+        $bitrix24Account->applicationInstalled(null);
 
         $applicationInstallation = new ApplicationInstallation(
             $applicationInstallationId,

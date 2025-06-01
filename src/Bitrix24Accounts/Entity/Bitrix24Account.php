@@ -23,7 +23,6 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountBl
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountDomainUrlChangedEvent;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
-use Bitrix24\SDK\Core\Credentials\Credentials;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Bitrix24\SDK\Core\Response\DTO\RenewedAuthToken;
@@ -41,18 +40,18 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
     private Bitrix24AccountStatus $status;
 
     public function __construct(
-        private readonly Uuid $id,
-        private readonly int $bitrix24UserId,
-        private readonly bool $isBitrix24UserAdmin,
+        private readonly Uuid   $id,
+        private readonly int    $bitrix24UserId,
+        private readonly bool   $isBitrix24UserAdmin,
         /** bitrix24 portal unique id */
         private readonly string $memberId,
-        private string $domainUrl,
-        private AuthToken $authToken,
-        private int $applicationVersion,
-        private Scope $applicationScope,
-        private bool $isMaster = false,
-        private $isEmitBitrix24AccountCreatedEvent = false,
-        private ?string $comment = null
+        private string          $domainUrl,
+        private AuthToken       $authToken,
+        private int             $applicationVersion,
+        private Scope           $applicationScope,
+        private readonly bool   $isMasterAccount = false,
+        private                 $isEmitBitrix24AccountCreatedEvent = false,
+        private ?string         $comment = null
     ) {
         $this->createdAt = new CarbonImmutable();
         $this->updatedAt = new CarbonImmutable();
@@ -76,11 +75,6 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
     public function isBitrix24UserAdmin(): bool
     {
         return $this->isBitrix24UserAdmin;
-    }
-
-    public function isMaster(): bool
-    {
-        return $this->isMaster;
     }
 
     #[\Override]
@@ -179,10 +173,11 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
     }
 
     /**
+     * @param string|null $applicationToken
      * @throws InvalidArgumentException
      */
     #[\Override]
-    public function applicationInstalled(): void
+    public function applicationInstalled(?string $applicationToken): void
     {
         if (Bitrix24AccountStatus::new !== $this->status) {
             throw new InvalidArgumentException(
@@ -191,6 +186,10 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
                     $this->status->name
                 )
             );
+        }
+
+        if ('' !== $applicationToken) {
+            $this->applicationToken = $applicationToken;
         }
 
         $this->status = Bitrix24AccountStatus::active;
@@ -203,7 +202,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
 
 
     #[\Override]
-    public function applicationUninstalled(): void
+    public function applicationUninstalled(?string $applicationToken): void
     {
         $this->status = Bitrix24AccountStatus::deleted;
         $this->updatedAt = new CarbonImmutable();
@@ -216,6 +215,8 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
     #[\Override]
     public function isApplicationTokenValid(string $applicationToken): bool
     {
+        $this->guardTokenMismatch($applicationToken);
+
         return $this->applicationToken === $applicationToken;
     }
 
@@ -283,6 +284,22 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         $this->status = Bitrix24AccountStatus::active;
         $this->comment = $comment;
         $this->updatedAt = new CarbonImmutable();
+    }
+
+
+    #[\Override]
+    public function isMasterAccount(): bool
+    {
+        return $this->isMasterAccount;
+    }
+
+    #[\Override]
+    public function setApplicationToken(string $applicationToken): void
+    {
+        $this->guardEmptyToken($applicationToken);
+
+        $this->updatedAt = new CarbonImmutable();
+        $this->applicationToken = $applicationToken;
     }
 
     /**
@@ -356,13 +373,4 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         }
     }
 
-    public function setToken(string $applicationToken): void
-    {
-        if ('' === $applicationToken) {
-            throw new InvalidArgumentException('application token cannot be empty');
-        }
-
-        $this->updatedAt = new CarbonImmutable();
-        $this->applicationToken = $applicationToken;
-    }
 }

@@ -163,16 +163,11 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
 
     public function setToken(string $applicationToken): void
     {
-        if ('' === $applicationToken) {
-            throw new InvalidArgumentException('application token cannot be empty');
-        }
 
-        $this->updatedAt = new CarbonImmutable();
-        $this->applicationToken = $applicationToken;
     }
 
     #[\Override]
-    public function applicationInstalled(): void
+    public function applicationInstalled(?string $applicationToken = null): void
     {
         if (
             ApplicationInstallationStatus::new !== $this->status
@@ -184,6 +179,10 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
                     $this->status->value
                 )
             );
+        }
+
+        if ('' !== $applicationToken) {
+            $this->applicationToken = $applicationToken;
         }
 
         $this->status = ApplicationInstallationStatus::active;
@@ -201,7 +200,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     }
 
     #[\Override]
-    public function applicationUninstalled(): void
+    public function applicationUninstalled(?string $applicationToken = null): void
     {
         if (
             ApplicationInstallationStatus::active !== $this->status
@@ -361,5 +360,20 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
                 $this->bitrix24AccountId
             );
         }
+    }
+
+    public function isApplicationTokenValid(string $applicationToken): bool
+    {
+        return $this->applicationToken === $applicationToken;
+    }
+
+    public function setApplicationToken(string $applicationToken): void
+    {
+        if ('' === $applicationToken) {
+            throw new InvalidArgumentException('application token cannot be empty');
+        }
+
+        $this->updatedAt = new CarbonImmutable();
+        $this->applicationToken = $applicationToken;
     }
 }

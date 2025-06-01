@@ -12,7 +12,7 @@
 
         <field name="memberId" type="string" column="member_id" nullable="false"/>
 
-        <field name="isMaster" type="boolean" column="is_master" nullable="true"/>
+        <field name="isMasterAccount" type="boolean" column="is_master_account" nullable="true"/>
 
         <field name="domainUrl" type="string" column="domain_url" nullable="false"/>
 

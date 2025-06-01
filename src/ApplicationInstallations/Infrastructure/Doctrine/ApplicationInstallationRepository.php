@@ -64,14 +64,15 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
     }
 
     #[\Override]
-    public function findByBitrix24AccountId(Uuid $uuid): array
+    //У нас в установке аккаунтId это констрейнт, так что возращать мы должны сущность.
+    public function findByBitrix24AccountId(Uuid $uuid): ApplicationInstallationInterface
     {
         return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('appInstallation')
             ->where('appInstallation.bitrix24AccountId = :bitrix24AccountId')
             ->setParameter('bitrix24AccountId', $uuid)
             ->getQuery()
-            ->getResult()
+            ->getOneOrNullResult()
         ;
     }
 

@@ -105,6 +105,40 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         return $this->findBy($criteria);
     }
 
+    /**
+     * @phpstan-return Bitrix24AccountInterface
+     * @throws InvalidArgumentException
+     */
+    public function findMasterByMemberId(
+        string $memberId,
+        ?Bitrix24AccountStatus $bitrix24AccountStatus = null,
+        ?int $bitrix24UserId = null,
+        ?bool $isAdmin = null
+    ): Bitrix24AccountInterface {
+        if ('' === trim($memberId)) {
+            throw new InvalidArgumentException('memberId cannot be empty');
+        }
+
+        $criteria = [
+            'memberId' => $memberId,
+            'isMasterAccount' => true
+        ];
+
+        if ($bitrix24AccountStatus instanceof Bitrix24AccountStatus) {
+            $criteria['status'] = $bitrix24AccountStatus->name;
+        }
+
+        if (null !== $bitrix24UserId) {
+            $criteria['bitrix24UserId'] = $bitrix24UserId;
+        }
+
+        if (null !== $isAdmin) {
+            $criteria['isBitrix24UserAdmin'] = $isAdmin;
+        }
+
+        return $this->findOneBy($criteria);
+    }
+
     public function findActiveByMemberId(string $memberId): array
     {
         if ('' === trim($memberId)) {

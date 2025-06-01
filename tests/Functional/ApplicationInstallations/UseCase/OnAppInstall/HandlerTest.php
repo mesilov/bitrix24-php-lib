@@ -56,7 +56,7 @@ class HandlerTest extends TestCase
 
     private Flusher $flusher;
 
-    private ApplicationInstallationRepository $repository;
+    private ApplicationInstallationRepository $applicationInstallationRepository;
 
     private Bitrix24AccountRepository $bitrix24accountRepository;
 
@@ -67,10 +67,9 @@ class HandlerTest extends TestCase
     {
         $entityManager = EntityManagerFactory::get();
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
-        $this->repository = new ApplicationInstallationRepository($entityManager);
+        $this->applicationInstallationRepository = new ApplicationInstallationRepository($entityManager);
         $this->flusher = new Flusher($entityManager, $this->eventDispatcher);
         $this->bitrix24accountRepository = new Bitrix24AccountRepository($entityManager);
-        $this->applicationInstallationRepository = new ApplicationInstallationRepository($entityManager);
         $this->handler = new Handler(
             $this->bitrix24accountRepository,
             $this->applicationInstallationRepository,
@@ -97,6 +96,7 @@ class HandlerTest extends TestCase
             ->withMemberId($memberId)
             ->withDomainUrl($domainUrl)
             ->withInstalled()
+            ->withMaster(true)
             ->build();
 
         $applicationInstallationBuilder = (new ApplicationInstallationBuilder())
@@ -107,7 +107,7 @@ class HandlerTest extends TestCase
             ->build();
 
         $this->bitrix24accountRepository->save($bitrix24Account);
-        $this->repository->save($applicationInstallationBuilder);
+        $this->applicationInstallationRepository->save($applicationInstallationBuilder);
         $this->flusher->flush();
 
         $this->handler->handle(
@@ -120,6 +120,7 @@ class HandlerTest extends TestCase
         );
 
         $updated = $this->bitrix24accountRepository->getById($bitrix24Account->getId());
+
         $this->assertTrue(
             $updated->isApplicationTokenValid($applicationToken),
             sprintf(
