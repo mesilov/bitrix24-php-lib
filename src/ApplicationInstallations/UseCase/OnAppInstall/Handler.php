@@ -47,7 +47,7 @@ readonly class Handler
             Bitrix24AccountStatus::active,
         );
 
-        /** @var AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $applicationInstallation */
+        /** @var AggregateRootEventsEmitterInterface|ApplicationInstallationInterface|null $applicationInstallation */
         $applicationInstallation = $this->applicationInstallationRepository->findByBitrix24AccountId($bitrix24Account->getId());
 
         $applicationStatus = new ApplicationStatus($command->applicationStatus);

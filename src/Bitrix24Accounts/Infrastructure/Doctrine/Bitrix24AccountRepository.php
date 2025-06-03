@@ -106,7 +106,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     }
 
     /**
-     * @phpstan-return Bitrix24AccountInterface
+     * @phpstan-return Bitrix24AccountInterface|null
      * @throws InvalidArgumentException
      */
     public function findMasterByMemberId(
@@ -114,7 +114,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         ?Bitrix24AccountStatus $bitrix24AccountStatus = null,
         ?int $bitrix24UserId = null,
         ?bool $isAdmin = null
-    ): Bitrix24AccountInterface {
+    ): Bitrix24AccountInterface|null {
         if ('' === trim($memberId)) {
             throw new InvalidArgumentException('memberId cannot be empty');
         }

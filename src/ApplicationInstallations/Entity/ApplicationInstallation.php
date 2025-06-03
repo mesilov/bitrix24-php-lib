@@ -83,7 +83,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     }
 
     #[\Override]
-    public function changeContactPerson(?Uuid $uuid): void
+    public function changeContactPerson(Uuid $uuid): void
     {
         $this->updatedAt = new CarbonImmutable();
 
@@ -104,7 +104,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     }
 
     #[\Override]
-    public function changeBitrix24PartnerContactPerson(?Uuid $uuid): void
+    public function changeBitrix24PartnerContactPerson(Uuid $uuid): void
     {
         $this->updatedAt = new CarbonImmutable();
 
@@ -125,7 +125,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     }
 
     #[\Override]
-    public function changeBitrix24Partner(?Uuid $uuid): void
+    public function changeBitrix24Partner(Uuid $uuid): void
     {
         $this->updatedAt = new CarbonImmutable();
 
@@ -159,11 +159,6 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     public function getStatus(): ApplicationInstallationStatus
     {
         return $this->status;
-    }
-
-    public function setToken(string $applicationToken): void
-    {
-
     }
 
     #[\Override]

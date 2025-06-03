@@ -65,7 +65,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
 
     #[\Override]
     //У нас в установке аккаунтId это констрейнт, так что возращать мы должны сущность.
-    public function findByBitrix24AccountId(Uuid $uuid): ApplicationInstallationInterface
+    public function findByBitrix24AccountId(Uuid $uuid): ApplicationInstallationInterface|null
     {
         return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('appInstallation')
@@ -105,7 +105,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
         ;
     }
 
-    public function findActiveByAccountId(Uuid $b24AccountId): ApplicationInstallationInterface
+    public function findActiveByAccountId(Uuid $b24AccountId): ApplicationInstallationInterface|null
     {
         $activeStatuses = [
             ApplicationInstallationStatus::new,
