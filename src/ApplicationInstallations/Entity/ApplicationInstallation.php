@@ -176,7 +176,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
             );
         }
 
-        if ('' !== $applicationToken) {
+        if (!empty($applicationToken)) {
             $this->applicationToken = $applicationToken;
         }
 

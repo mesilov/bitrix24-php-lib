@@ -188,7 +188,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
             );
         }
 
-        if ('' !== $applicationToken) {
+        if (!empty($applicationToken)) {
             $this->applicationToken = $applicationToken;
         }
 
@@ -345,18 +345,6 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
                     $this->applicationToken,
                     $this->id->toRfc4122(),
                     $this->domainUrl
-                )
-            );
-        }
-    }
-
-    private function guardApplicationIsActive(): void
-    {
-        if (Bitrix24AccountStatus::active !== $this->status) {
-            throw new InvalidArgumentException(
-                sprintf(
-                    'for uninstall account must be in status «active», current status - «%s»',
-                    $this->status->name
                 )
             );
         }

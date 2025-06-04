@@ -46,9 +46,6 @@ class ApplicationInstallationRepositoryTest extends ApplicationInstallationRepos
     {
         return new ApplicationInstallation(
             $uuid,
-            $applicationInstallationStatus,
-            $createdAt,
-            $updatedAt,
             $bitrix24AccountUuid,
             $applicationStatus,
             $portalLicenseFamily,
