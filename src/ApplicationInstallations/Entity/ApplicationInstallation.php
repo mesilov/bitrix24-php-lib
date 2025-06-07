@@ -77,11 +77,6 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         return $this->contactPersonId;
     }
 
-    public function getApplicationToken(): string
-    {
-        return $this->applicationToken;
-    }
-
     #[\Override]
     public function changeContactPerson(Uuid $uuid): void
     {

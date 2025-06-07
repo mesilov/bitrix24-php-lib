@@ -75,6 +75,7 @@ class HandlerTest extends TestCase
         $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withStatus(Bitrix24AccountStatus::new)
             ->withApplicationToken($applicationToken)
+            ->withInstalled()
             ->build();
 
         $this->repository->save($bitrix24Account);

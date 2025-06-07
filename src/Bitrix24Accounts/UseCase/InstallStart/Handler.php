@@ -37,6 +37,7 @@ readonly class Handler
             $command->authToken,
             $command->applicationVersion,
             $command->applicationScope,
+            false,
             true
         );
 

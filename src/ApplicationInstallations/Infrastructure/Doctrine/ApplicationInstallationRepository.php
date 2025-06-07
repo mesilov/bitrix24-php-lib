@@ -37,8 +37,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->setParameter('uuid', $uuid)
             ->setParameter('status', ApplicationInstallationStatus::deleted)
             ->getQuery()
-            ->getOneOrNullResult()
-        ;
+            ->getOneOrNullResult();
 
         if (null === $applicationInstallation) {
             throw new ApplicationInstallationNotFoundException(
@@ -53,6 +52,12 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
     public function delete(Uuid $uuid): void
     {
         $applicationInstallation = $this->getEntityManager()->getRepository(ApplicationInstallation::class)->find($uuid);
+
+        if ($applicationInstallation == null) {
+            throw new ApplicationInstallationNotFoundException(
+                sprintf('Application installation with uuid %s not found', $uuid->toRfc4122())
+            );
+        }
 
         if (ApplicationInstallationStatus::deleted !== $applicationInstallation->getStatus()) {
             throw new InvalidArgumentException(
@@ -72,8 +77,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->where('appInstallation.bitrix24AccountId = :bitrix24AccountId')
             ->setParameter('bitrix24AccountId', $uuid)
             ->getQuery()
-            ->getOneOrNullResult()
-        ;
+            ->getOneOrNullResult();
     }
 
     public function findActiveApplicationInstallations(string $memberId): array
@@ -85,8 +89,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->setParameter('statuses', [ApplicationInstallationStatus::active, ApplicationInstallationStatus::new])
             ->setParameter('memberId', $memberId)
             ->getQuery()
-            ->getResult()
-        ;
+            ->getResult();
     }
 
     #[\Override]
@@ -101,8 +104,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->where('appInstallation.externalId = :externalId')
             ->setParameter('externalId', $externalId)
             ->getQuery()
-            ->getResult()
-        ;
+            ->getResult();
     }
 
     public function findActiveByAccountId(Uuid $b24AccountId): ApplicationInstallationInterface|null

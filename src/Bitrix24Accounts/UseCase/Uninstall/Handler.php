@@ -32,7 +32,7 @@ readonly class Handler
         $accounts = $this->bitrix24AccountRepository->findByApplicationToken($command->applicationToken);
         $accountsCount = count($accounts);
         foreach ($accounts as $account) {
-            $account->applicationUninstalled();
+            $account->applicationUninstalled(null);
             $this->bitrix24AccountRepository->save($account);
         }
 
