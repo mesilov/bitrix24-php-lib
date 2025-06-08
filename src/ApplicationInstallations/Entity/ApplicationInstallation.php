@@ -20,6 +20,19 @@ use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
 use Bitrix24\SDK\Core\Exceptions\LogicException;
 
+/**
+ * Установка может происходить по 2 сценриям.
+ * 1) UI - Пользователь запускает установку через интерфейс.
+ * Bitrix24 отправляет первичный запрос на /install.php с параметрами:
+ * AUTH_ID, REFRESH_ID, member_id в теле запроса. Без application_token
+ * Система создаёт Bitrix24Account в статусе new.
+ * Bitrix24 отправляет событие ONAPPINSTALL на /event-handler.php и передает application_token
+ * Вызывается applicationInstalled($applicationToken) с полученным токеном.
+ * 2) Без UI - Установка инициируется прямым POST-запросом с полным набором credentials.
+ * Сразу создается Bitrix24Account. У установщика и у аккаунта вызывается метод с переданыым токеном:
+ * $bitrix24Account->applicationInstalled($applicationToken);
+ * $applicationInstallation->applicationInstalled($applicationToken);
+ */
 class ApplicationInstallation extends AggregateRoot implements ApplicationInstallationInterface
 {
 
