@@ -205,7 +205,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
     public function applicationUninstalled(?string $applicationToken): void
     {
         $this->status = Bitrix24AccountStatus::deleted;
-        $this->updatedAt = new CarbonImmutable();
+        $this->updatedAt = new CarbonImmutable();;
         $this->events[] = new Bitrix24AccountApplicationUninstalledEvent(
             $this->id,
             new CarbonImmutable()

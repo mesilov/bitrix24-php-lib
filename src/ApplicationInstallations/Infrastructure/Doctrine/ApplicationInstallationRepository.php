@@ -75,6 +75,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
         return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('appInstallation')
             ->where('appInstallation.bitrix24AccountId = :bitrix24AccountId')
+            ->orderBy('appInstallation.createdAt', 'DESC')
             ->setParameter('bitrix24AccountId', $uuid)
             ->getQuery()
             ->getOneOrNullResult();
@@ -102,6 +103,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
         return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('appInstallation')
             ->where('appInstallation.externalId = :externalId')
+            ->orderBy('appInstallation.createdAt', 'DESC')
             ->setParameter('externalId', $externalId)
             ->getQuery()
             ->getResult();
