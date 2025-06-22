@@ -91,60 +91,15 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     }
 
     #[\Override]
-    public function changeContactPerson(Uuid $uuid): void
-    {
-        $this->updatedAt = new CarbonImmutable();
-
-        $this->contactPersonId = $uuid;
-
-        $this->events[] = new Events\ApplicationInstallationContactPersonChangedEvent(
-            $this->id,
-            $this->updatedAt,
-            $this->contactPersonId,
-            $uuid
-        );
-    }
-
-    #[\Override]
     public function getBitrix24PartnerContactPersonId(): ?Uuid
     {
         return $this->bitrix24PartnerContactPersonId;
     }
 
     #[\Override]
-    public function changeBitrix24PartnerContactPerson(Uuid $uuid): void
-    {
-        $this->updatedAt = new CarbonImmutable();
-
-        $this->bitrix24PartnerContactPersonId = $uuid;
-
-        $this->events[] = new Events\ApplicationInstallationBitrix24PartnerContactPersonChangedEvent(
-            $this->id,
-            $this->updatedAt,
-            $this->bitrix24PartnerContactPersonId,
-            $uuid
-        );
-    }
-
-    #[\Override]
     public function getBitrix24PartnerId(): ?Uuid
     {
         return $this->bitrix24PartnerId;
-    }
-
-    #[\Override]
-    public function changeBitrix24Partner(Uuid $uuid): void
-    {
-        $this->updatedAt = new CarbonImmutable();
-
-        $this->bitrix24PartnerId = $uuid;
-
-        $this->events[] = new Events\ApplicationInstallationBitrix24PartnerChangedEvent(
-            $this->id,
-            $this->updatedAt,
-            $this->bitrix24PartnerId,
-            $uuid
-        );
     }
 
     #[\Override]
@@ -365,11 +320,13 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         }
     }
 
+    #[\Override]
     public function isApplicationTokenValid(string $applicationToken): bool
     {
         return $this->applicationToken === $applicationToken;
     }
 
+    #[\Override]
     public function setApplicationToken(string $applicationToken): void
     {
         if ('' === $applicationToken) {
@@ -378,5 +335,41 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
 
         $this->updatedAt = new CarbonImmutable();
         $this->applicationToken = $applicationToken;
+    }
+
+    #[\Override]
+    public function linkContactPerson(Uuid $uuid): void
+    {
+        // TODO: Implement linkContactPerson() method.
+    }
+
+    #[\Override]
+    public function unlinkContactPerson(): void
+    {
+        // TODO: Implement unlinkContactPerson() method.
+    }
+
+    #[\Override]
+    public function linkBitrix24PartnerContactPerson(Uuid $uuid): void
+    {
+        // TODO: Implement linkBitrix24PartnerContactPerson() method.
+    }
+
+    #[\Override]
+    public function unlinkBitrix24PartnerContactPerson(): void
+    {
+        // TODO: Implement unlinkBitrix24PartnerContactPerson() method.
+    }
+
+    #[\Override]
+    public function linkBitrix24Partner(Uuid $uuid): void
+    {
+        // TODO: Implement linkBitrix24Partner() method.
+    }
+
+    #[\Override]
+    public function unlinkBitrix24Partner(): void
+    {
+        // TODO: Implement unlinkBitrix24Partner() method.
     }
 }
