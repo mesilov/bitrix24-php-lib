@@ -10,6 +10,7 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\Applicati
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationBlockedEvent;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationContactPersonLinkedEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationFinishedEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationUnblockedEvent;
@@ -42,18 +43,19 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     private ApplicationInstallationStatus $status;
 
     public function __construct(
-        private readonly Uuid $id,
-        private readonly Uuid $bitrix24AccountId,
-        private ApplicationStatus $applicationStatus,
+        private readonly Uuid       $id,
+        private readonly Uuid       $bitrix24AccountId,
+        private ApplicationStatus   $applicationStatus,
         private PortalLicenseFamily $portalLicenseFamily,
-        private ?int $portalUsersCount,
-        private ?Uuid $contactPersonId,
-        private ?Uuid $bitrix24PartnerContactPersonId,
-        private ?Uuid $bitrix24PartnerId,
-        private ?string $externalId,
-        private ?string $comment = null,
-        private $isEmitApplicationInstallationCreatedEvent = false
-    ) {
+        private ?int                $portalUsersCount,
+        private ?Uuid               $contactPersonId,
+        private ?Uuid               $bitrix24PartnerContactPersonId,
+        private ?Uuid               $bitrix24PartnerId,
+        private ?string             $externalId,
+        private ?string             $comment = null,
+        private                     $isEmitApplicationInstallationCreatedEvent = false
+    )
+    {
         $this->createdAt = new CarbonImmutable();
         $this->updatedAt = new CarbonImmutable();
         $this->status = ApplicationInstallationStatus::new;
@@ -340,36 +342,82 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function linkContactPerson(Uuid $uuid): void
     {
-        // TODO: Implement linkContactPerson() method.
+        $this->updatedAt = new CarbonImmutable();
+        $this->contactPersonId = $uuid;
+
+        $this->events[] = new ApplicationInstallationContactPersonLinkedEvent(
+            $this->id,
+            $this->updatedAt,
+            $this->contactPersonId
+        );
     }
 
     #[\Override]
     public function unlinkContactPerson(): void
     {
-        // TODO: Implement unlinkContactPerson() method.
+        $this->updatedAt = new CarbonImmutable();
+
+        $this->events[] = new Events\ApplicationInstallationContactPersonUnlinkedEvent(
+            $this->id,
+            $this->updatedAt,
+            $this->contactPersonId
+        );
+
+        $this->contactPersonId = null;
     }
 
     #[\Override]
     public function linkBitrix24PartnerContactPerson(Uuid $uuid): void
     {
-        // TODO: Implement linkBitrix24PartnerContactPerson() method.
+        $this->updatedAt = new CarbonImmutable();
+        $this->bitrix24PartnerContactPersonId = $uuid;
+
+        $this->events[] = new Events\ApplicationInstallationBitrix24PartnerContactPersonLinkedEvent(
+            $this->id,
+            $this->updatedAt,
+            $this->bitrix24PartnerContactPersonId
+        );
     }
 
     #[\Override]
     public function unlinkBitrix24PartnerContactPerson(): void
     {
-        // TODO: Implement unlinkBitrix24PartnerContactPerson() method.
+        $this->updatedAt = new CarbonImmutable();
+
+        $this->events[] = new Events\ApplicationInstallationBitrix24PartnerContactPersonUnlinkedEvent(
+            $this->id,
+            $this->updatedAt,
+            $this->bitrix24PartnerContactPersonId
+        );
+
+        $this->bitrix24PartnerContactPersonId = null;
     }
 
     #[\Override]
     public function linkBitrix24Partner(Uuid $uuid): void
     {
-        // TODO: Implement linkBitrix24Partner() method.
+        $this->updatedAt = new CarbonImmutable();
+        $this->bitrix24PartnerId = $uuid;
+
+        $this->events[] = new Events\ApplicationInstallationBitrix24PartnerLinkedEvent(
+            $this->id,
+            $this->updatedAt,
+            $this->bitrix24PartnerId
+        );
     }
 
     #[\Override]
     public function unlinkBitrix24Partner(): void
     {
-        // TODO: Implement unlinkBitrix24Partner() method.
+        $this->updatedAt = new CarbonImmutable();
+
+        $this->events[] = new Events\ApplicationInstallationBitrix24PartnerUnlinkedEvent(
+            $this->id,
+            $this->updatedAt,
+            $this->bitrix24PartnerId
+        );
+
+        $this->bitrix24PartnerId = null;
+
     }
 }
