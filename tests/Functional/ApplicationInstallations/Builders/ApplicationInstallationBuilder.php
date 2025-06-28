@@ -35,6 +35,8 @@ class ApplicationInstallationBuilder
 
     private ?string $comment = null;
 
+    private ?string $applicationToken = null;
+
     public function __construct()
     {
         $this->id = Uuid::v7();
@@ -48,6 +50,13 @@ class ApplicationInstallationBuilder
     public function withExternalId(string $externalId): self
     {
         $this->externalId = $externalId;
+
+        return $this;
+    }
+
+    public function withApplicationToken(string $applicationToken): self
+    {
+        $this->applicationToken = $applicationToken;
 
         return $this;
     }
@@ -97,7 +106,11 @@ class ApplicationInstallationBuilder
 
        if (!empty($this->status)) {
            if ($this->status == ApplicationInstallationStatus::active) {
-               $applicationInstallation->applicationInstalled();
+               if (!empty($this->applicationToken)) {
+                   $applicationInstallation->applicationInstalled($this->applicationToken);
+               }else{
+                   $applicationInstallation->applicationInstalled();
+               }
            }
        }
 

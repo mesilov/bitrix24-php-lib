@@ -28,41 +28,42 @@ readonly class Handler
     public function handle(Command $command): void
     {
         $this->logger->info('ApplicationInstallations.Uninstall.start', [
-            'applicationToken' => $command->applicationToken,
+            'domainUrl' => $command->domainUrl,
+            'memberId' => $command->memberId,
+            'applicationToken' => $command->applicationToken
         ]);
 
-        /** @var AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $activeApplicationInstallation */
-        $activeApplicationInstallation = $this->getActiveApplicationInstallation();
+        /*
+            * Аккаунтов может быть несколько , но деинсталяция на портале проводится только 1 раз , то есть есть мастер аккаунт который нужно получать.
+            * У остальных аккаунтов деинсталяции быть не может это просто (доступы/авторизации).
+        */
+        /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface[] $b24Accounts */
+        $b24Accounts = $this->bitrix24AccountRepository->findActiveByMemberId($command->memberId);
 
-        if (!empty($activeApplicationInstallation)) {
-
-            //Решили 13 апреля расширить контракт установки и добавить получения токена
-            $activeApplicationToken = $activeApplicationInstallation->getApplicationToken();
-
-            $oldBitrix24AccountId = $activeApplicationInstallation->getBitrix24AccountId();
-            $oldBitrix24Account = $this->bitrix24AccountRepository->getById($oldBitrix24AccountId);
-            /** @var AggregateRootEventsEmitterInterface[]|Bitrix24AccountInterface[] $accounts */
-            $accounts = $this->bitrix24AccountRepository->findByMemberId($oldBitrix24Account->getMemberId());
-            $accountsCount = count($accounts);
-            foreach ($accounts as $account) {
-                //Сюда пробрасываем токен полученный выше
-                $account->applicationUninstalled($activeApplicationToken);
-                $this->bitrix24AccountRepository->save($account);
+        if ($b24Accounts !== []) {
+            $entitiesToFlush = [];
+            foreach ($b24Accounts as $b24Account) {
+                $isMaster = $b24Account->isMasterAccount();
+                if ($isMaster) {
+                    $activeInstallation = $this->applicationInstallationRepository->findActiveByAccountId($b24Account->getId());
+                    $isTokenValid = $activeInstallation->isApplicationTokenValid($command->applicationToken);
+                    if ($isTokenValid) {
+                        $activeInstallation->applicationUninstalled($command->applicationToken);
+                        $this->applicationInstallationRepository->save($activeInstallation);
+                        $entitiesToFlush[] = $activeInstallation;
+                    }
+                }
+                // Тут нужно в методе что то делать с токеном ? Удалять же его по идеи не надо .
+                $b24Account->applicationUninstalled(null);
+                $this->bitrix24AccountRepository->save($b24Account);
+                $entitiesToFlush[] = $b24Account;
             }
 
-            $activeApplicationInstallation->applicationUninstalled();
-
-            $this->flusher->flush(...$accounts);
+            $this->flusher->flush(...$entitiesToFlush);
         }
 
         $this->logger->info(
-            'ApplicationInstallations.Uninstall.Finish',
-            [
-                'applicationInstallationId' => $activeApplicationInstallation->getId(),
-                'applicationToken' => $command->applicationToken,
-                'bitrix24AccountId' => $activeApplicationInstallation->getBitrix24AccountId(),
-                'accountsUninstalledCount' => $accountsCount,
-            ]
+            'ApplicationInstallations.Uninstall.Finish'
         );
     }
 

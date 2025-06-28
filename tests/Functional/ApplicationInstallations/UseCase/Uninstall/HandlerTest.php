@@ -44,6 +44,7 @@ use Bitrix24\Lib\ApplicationInstallations\UseCase\Uninstall\Handler;
 
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Symfony\Component\Uid\Uuid;
+use function Symfony\Component\Translation\t;
 
 /**
  * @internal
@@ -83,12 +84,14 @@ class HandlerTest extends TestCase
     #[Test]
     public function testUninstallApplicationInstallation(): void
     {
-        //Загружаем в базу данных аккаунт и установку приложения для тестирования переустановки.
+        //Загружаем в базу данных аккаунт и установку приложения для их деинсталяции.
         $applicationToken = Uuid::v7()->toRfc4122();
         $oldBitrix24Account = (new Bitrix24AccountBuilder())
             ->withApplicationScope(new Scope(['crm']))
             ->withStatus(Bitrix24AccountStatus::new)
             ->withApplicationToken($applicationToken)
+            ->withMaster(true)
+            ->withSetToken()
             ->build();
 
 
@@ -97,6 +100,7 @@ class HandlerTest extends TestCase
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
             ->withBitrix24AccountId($oldBitrix24Account->getId())
             ->withApplicationStatusInstallation(ApplicationInstallationStatus::active)
+            ->withApplicationToken($applicationToken)
             ->build();
 
         $this->bitrix24accountRepository->save($oldBitrix24Account);
@@ -105,7 +109,9 @@ class HandlerTest extends TestCase
 
         $this->handler->handle(
            new ApplicationInstallations\UseCase\Uninstall\Command(
-               $applicationToken,
+               new Domain($oldBitrix24Account->getDomainUrl()),
+               $oldBitrix24Account->getMemberId(),
+               $applicationToken
            )
         );
 
