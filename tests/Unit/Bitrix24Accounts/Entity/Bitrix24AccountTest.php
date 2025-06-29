@@ -34,6 +34,7 @@ class Bitrix24AccountTest extends Bitrix24AccountInterfaceTest
         Uuid $uuid,
         int $bitrix24UserId,
         bool $isBitrix24UserAdmin,
+        bool $isMasterAccount,
         string $memberId,
         string $domainUrl,
         AuthToken $authToken,
@@ -48,7 +49,8 @@ class Bitrix24AccountTest extends Bitrix24AccountInterfaceTest
             $domainUrl,
             $authToken,
             $applicationVersion,
-            $applicationScope
+            $applicationScope,
+            $isMasterAccount
         );
     }
 }

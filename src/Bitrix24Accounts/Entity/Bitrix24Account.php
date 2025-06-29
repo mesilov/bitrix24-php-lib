@@ -215,8 +215,6 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
     #[\Override]
     public function isApplicationTokenValid(string $applicationToken): bool
     {
-        $this->guardTokenMismatch($applicationToken);
-
         return $this->applicationToken === $applicationToken;
     }
 

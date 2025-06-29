@@ -37,9 +37,6 @@ class ApplicationInstallationTest extends ApplicationInstallationInterfaceTest
     ApplicationInstallationInterface {
         return new ApplicationInstallation(
             $uuid,
-            $applicationInstallationStatus,
-            $createdAt,
-            $updatedAt,
             $bitrix24AccountUuid,
             $applicationStatus,
             $portalLicenseFamily,
@@ -47,7 +44,8 @@ class ApplicationInstallationTest extends ApplicationInstallationInterfaceTest
             $clientContactPersonUuid,
             $partnerContactPersonUuid,
             $partnerUuid,
-            $externalId
+            $externalId,
+            null
         );
     }
 }
