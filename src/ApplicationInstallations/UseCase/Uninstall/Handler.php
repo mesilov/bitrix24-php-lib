@@ -6,10 +6,11 @@ namespace Bitrix24\Lib\ApplicationInstallations\UseCase\Uninstall;
 
 
 use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationInstallationRepository;
+use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
-use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Psr\Log\LoggerInterface;
 
@@ -34,11 +35,13 @@ readonly class Handler
         ]);
 
         /*
-            * Аккаунтов может быть несколько , но деинсталяция на портале проводится только 1 раз , то есть есть мастер аккаунт который нужно получать.
-            * У остальных аккаунтов деинсталяции быть не может это просто (доступы/авторизации).
+            * 1)Аккаунтов может быть несколько , но деинсталяция на портале проводится только 1 раз , то есть есть мастер аккаунт который нужно получать.
+            * 2)У остальных аккаунтов деинсталяции быть не может это просто (доступы/авторизации).
+            * 3)Может быть такой сценарий что при увольнении сотрудника особенно админа у которого была активная установка. Установка может зависнуть ,
+            * таким образом нужно пробегаться по всем аккаунтам и установкам и проверять нету ли активных, если что деактивировать.
         */
         /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface[] $b24Accounts */
-        $b24Accounts = $this->bitrix24AccountRepository->findActiveByMemberId($command->memberId);
+        $b24Accounts = $this->bitrix24AccountRepository->findByMemberId($command->memberId);
 
         if ($b24Accounts !== []) {
             $entitiesToFlush = [];
@@ -46,15 +49,17 @@ readonly class Handler
                 $isMaster = $b24Account->isMasterAccount();
                 if ($isMaster) {
                     $activeInstallation = $this->applicationInstallationRepository->findActiveByAccountId($b24Account->getId());
-                    $isTokenValid = $activeInstallation->isApplicationTokenValid($command->applicationToken);
-                    if ($isTokenValid) {
+                    if ($activeInstallation !== null) {
                         $activeInstallation->applicationUninstalled($command->applicationToken);
                         $this->applicationInstallationRepository->save($activeInstallation);
                         $entitiesToFlush[] = $activeInstallation;
                     }
+                        //  Тут тоже спорно получается , а если установка была по событию, а событие не произошло и токен не записался. ???
+                        $b24Account->applicationUninstalled($command->applicationToken);
+                }else{
+                        $b24Account->applicationUninstalled(null);
                 }
-                // Тут нужно в методе что то делать с токеном ? Удалять же его по идеи не надо .
-                $b24Account->applicationUninstalled(null);
+
                 $this->bitrix24AccountRepository->save($b24Account);
                 $entitiesToFlush[] = $b24Account;
             }
@@ -65,18 +70,5 @@ readonly class Handler
         $this->logger->info(
             'ApplicationInstallations.Uninstall.Finish'
         );
-    }
-
-    private function getActiveApplicationInstallation(): ApplicationInstallationInterface|null
-    {
-        $activeApplicationInstallations = $this->applicationInstallationRepository->findActiveApplicationInstallations();
-
-        if (count($activeApplicationInstallations) > 1) {
-            throw new \InvalidArgumentException(
-                'multiple application installations with active or new status'
-            );
-        }
-
-        return $activeApplicationInstallations[0] ?? null;
     }
 }

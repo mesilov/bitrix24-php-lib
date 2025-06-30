@@ -52,7 +52,8 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
         private readonly bool   $isMasterAccount = false,
         private                 $isEmitBitrix24AccountCreatedEvent = false,
         private ?string         $comment = null
-    ) {
+    )
+    {
         $this->createdAt = new CarbonImmutable();
         $this->updatedAt = new CarbonImmutable();
         $this->status = Bitrix24AccountStatus::new;
@@ -204,12 +205,21 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
     #[\Override]
     public function applicationUninstalled(?string $applicationToken): void
     {
-        $this->status = Bitrix24AccountStatus::deleted;
-        $this->updatedAt = new CarbonImmutable();;
-        $this->events[] = new Bitrix24AccountApplicationUninstalledEvent(
-            $this->id,
-            new CarbonImmutable()
-        );
+        if (
+            Bitrix24AccountStatus::new == $this->status
+            || Bitrix24AccountStatus::active == $this->status
+        ) {
+            if ($applicationToken !== null) {
+                $this->guardTokenMismatch($applicationToken);
+            }
+
+            $this->status = Bitrix24AccountStatus::deleted;
+            $this->updatedAt = new CarbonImmutable();;
+            $this->events[] = new Bitrix24AccountApplicationUninstalledEvent(
+                $this->id,
+                new CarbonImmutable()
+            );
+        }
     }
 
     #[\Override]

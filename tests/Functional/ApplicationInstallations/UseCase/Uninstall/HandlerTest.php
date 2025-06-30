@@ -44,7 +44,7 @@ use Bitrix24\Lib\ApplicationInstallations\UseCase\Uninstall\Handler;
 
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Symfony\Component\Uid\Uuid;
-use function Symfony\Component\Translation\t;
+
 
 /**
  * @internal
@@ -82,7 +82,7 @@ class HandlerTest extends TestCase
      * @throws InvalidArgumentException
      */
     #[Test]
-    public function testUninstallApplicationInstallation(): void
+    public function testUninstall(): void
     {
         //Загружаем в базу данных аккаунт и установку приложения для их деинсталяции.
         $applicationToken = Uuid::v7()->toRfc4122();
@@ -118,6 +118,95 @@ class HandlerTest extends TestCase
         $dispatchedEvents = $this->eventDispatcher->getOrphanedEvents();
 
         $this->assertContains(\Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationUninstalledEvent::class, $dispatchedEvents);
-
     }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    #[Test]
+    public function testUninstallWithNotValidToken()
+    {
+        //Загружаем в базу данных аккаунт и установку приложения для их деинсталяции.
+        $applicationToken = Uuid::v7()->toRfc4122();
+        $oldBitrix24Account = (new Bitrix24AccountBuilder())
+            ->withApplicationScope(new Scope(['crm']))
+            ->withStatus(Bitrix24AccountStatus::new)
+            ->withApplicationToken($applicationToken)
+            ->withMaster(true)
+            ->withSetToken()
+            ->build();
+
+
+        $oldApplicationInstallationBuilder = (new ApplicationInstallationBuilder())
+            ->withApplicationStatus(new ApplicationStatus('F'))
+            ->withPortalLicenseFamily(PortalLicenseFamily::free)
+            ->withBitrix24AccountId($oldBitrix24Account->getId())
+            ->withApplicationStatusInstallation(ApplicationInstallationStatus::active)
+            ->withApplicationToken($applicationToken)
+            ->build();
+
+        $this->bitrix24accountRepository->save($oldBitrix24Account);
+        $this->repository->save($oldApplicationInstallationBuilder);
+        $this->flusher->flush();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('application token «testNotValidToken» mismatch with application token «'. $applicationToken .'» for application installation «'.$oldApplicationInstallationBuilder->getId()->toRfc4122() .'»');
+        $this->handler->handle(
+            new ApplicationInstallations\UseCase\Uninstall\Command(
+                new Domain($oldBitrix24Account->getDomainUrl()),
+                $oldBitrix24Account->getMemberId(),
+                'testNotValidToken'
+            )
+        );
+    }
+
+    public function testUninstallWithFewAccount()
+    {
+        $memberId = Uuid::v4()->toRfc4122();
+        //Загружаем в базу данных аккаунт и установку приложения для их деинсталяции.
+        $applicationToken = Uuid::v7()->toRfc4122();
+        $oldBitrix24Account = (new Bitrix24AccountBuilder())
+            ->withApplicationScope(new Scope(['crm']))
+            ->withStatus(Bitrix24AccountStatus::new)
+            ->withApplicationToken($applicationToken)
+            ->withMaster(true)
+            ->withMemberId($memberId)
+            ->withSetToken()
+            ->build();
+
+
+        $oldBitrix24Account2 = (new Bitrix24AccountBuilder())
+            ->withApplicationScope(new Scope(['crm']))
+            ->withStatus(Bitrix24AccountStatus::new)
+            ->withMemberId($memberId)
+            ->build();
+
+        $oldApplicationInstallationBuilder = (new ApplicationInstallationBuilder())
+            ->withApplicationStatus(new ApplicationStatus('F'))
+            ->withPortalLicenseFamily(PortalLicenseFamily::free)
+            ->withBitrix24AccountId($oldBitrix24Account->getId())
+            ->withApplicationStatusInstallation(ApplicationInstallationStatus::active)
+            ->withApplicationToken($applicationToken)
+            ->build();
+
+        $this->bitrix24accountRepository->save($oldBitrix24Account);
+        $this->bitrix24accountRepository->save($oldBitrix24Account2);
+
+        $this->repository->save($oldApplicationInstallationBuilder);
+        $this->flusher->flush();
+
+        $this->handler->handle(
+            new ApplicationInstallations\UseCase\Uninstall\Command(
+                new Domain($oldBitrix24Account->getDomainUrl()),
+                $oldBitrix24Account->getMemberId(),
+                $applicationToken
+            )
+        );
+
+        $dispatchedEvents = $this->eventDispatcher->getOrphanedEvents();
+
+        $this->assertContains(\Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationUninstalledEvent::class, $dispatchedEvents);
+    }
+
+
 }

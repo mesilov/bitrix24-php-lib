@@ -174,6 +174,11 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
             );
         }
 
+        // Это проверка для мастер аккаунтов чтобы удостовериться что передан верный токен для деинсталяции.
+        if ($applicationToken !== null){
+            $this->guardTokenMismatch($applicationToken);
+        }
+
         $this->status = ApplicationInstallationStatus::deleted;
         $this->updatedAt = new CarbonImmutable();
 
@@ -419,5 +424,19 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
 
         $this->bitrix24PartnerId = null;
 
+    }
+
+    private function guardTokenMismatch(string $applicationToken): void
+    {
+        if (!$this->isApplicationTokenValid($applicationToken)) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'application token «%s» mismatch with application token «%s» for application installation «%s»',
+                    $applicationToken,
+                    $this->applicationToken,
+                    $this->id->toRfc4122()
+                )
+            );
+        }
     }
 }
