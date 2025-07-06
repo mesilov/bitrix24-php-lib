@@ -12,8 +12,7 @@ readonly class Command
         public Domain $domainUrl,
         public string $memberId,
         public string $applicationToken
-    )
-    {
+    ) {
         $this->validate();
     }
 

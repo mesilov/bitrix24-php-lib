@@ -108,6 +108,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
 
     /**
      * @phpstan-return Bitrix24AccountInterface|null
+     *
      * @throws InvalidArgumentException
      */
     public function findMasterByMemberId(
@@ -115,14 +116,14 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         ?Bitrix24AccountStatus $bitrix24AccountStatus = null,
         ?int $bitrix24UserId = null,
         ?bool $isAdmin = null
-    ): Bitrix24AccountInterface|null {
+    ): ?Bitrix24AccountInterface {
         if ('' === trim($memberId)) {
             throw new InvalidArgumentException('memberId cannot be empty');
         }
 
         $criteria = [
             'memberId' => $memberId,
-            'isMasterAccount' => true
+            'isMasterAccount' => true,
         ];
 
         if ($bitrix24AccountStatus instanceof Bitrix24AccountStatus) {
@@ -151,7 +152,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
             Bitrix24AccountStatus::active,
         ];
 
-        $accounts = $this->getEntityManager()->getRepository(Bitrix24Account::class)
+        return $this->getEntityManager()->getRepository(Bitrix24Account::class)
             ->createQueryBuilder('b24')
             ->where('b24.memberId = :memberId')
             ->andWhere('b24.status IN (:statuses)')
@@ -161,8 +162,6 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
             ->getQuery()
             ->getResult()
         ;
-
-        return $accounts;
     }
 
     #[\Override]

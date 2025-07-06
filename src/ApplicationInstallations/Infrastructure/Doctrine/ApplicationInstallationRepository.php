@@ -37,7 +37,8 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->setParameter('uuid', $uuid)
             ->setParameter('status', ApplicationInstallationStatus::deleted)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
 
         if (null === $applicationInstallation) {
             throw new ApplicationInstallationNotFoundException(
@@ -53,7 +54,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
     {
         $applicationInstallation = $this->getEntityManager()->getRepository(ApplicationInstallation::class)->find($uuid);
 
-        if ($applicationInstallation == null) {
+        if (null == $applicationInstallation) {
             throw new ApplicationInstallationNotFoundException(
                 sprintf('Application installation with uuid %s not found', $uuid->toRfc4122())
             );
@@ -69,8 +70,8 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
     }
 
     #[\Override]
-    //У нас в установке аккаунтId это констрейнт, так что возращать мы должны сущность.
-    public function findByBitrix24AccountId(Uuid $uuid): ApplicationInstallationInterface|null
+    // У нас в установке аккаунтId это констрейнт, так что возращать мы должны сущность.
+    public function findByBitrix24AccountId(Uuid $uuid): ?ApplicationInstallationInterface
     {
         return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('appInstallation')
@@ -78,7 +79,8 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->orderBy('appInstallation.createdAt', 'DESC')
             ->setParameter('bitrix24AccountId', $uuid)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
     }
 
     #[\Override]
@@ -94,25 +96,24 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->orderBy('appInstallation.createdAt', 'DESC')
             ->setParameter('externalId', $externalId)
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
     }
 
-    public function findActiveByAccountId(Uuid $b24AccountId): ApplicationInstallationInterface|null
+    public function findActiveByAccountId(Uuid $uuid): ?ApplicationInstallationInterface
     {
         $activeStatuses = [
             ApplicationInstallationStatus::new,
             ApplicationInstallationStatus::active,
         ];
 
-        $installation = $this->getEntityManager()->getRepository(ApplicationInstallation::class)
+        return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('applicationInstallation')
             ->where('applicationInstallation.bitrix24AccountId = :b24AccountId')
             ->andWhere('applicationInstallation.status IN (:statuses)')
-            ->setParameter('b24AccountId', $b24AccountId)
+            ->setParameter('b24AccountId', $uuid)
             ->setParameter('statuses', $activeStatuses)
             ->getQuery()
             ->getOneOrNullResult();
-
-        return $installation;
     }
 }

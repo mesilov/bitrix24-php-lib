@@ -95,7 +95,7 @@ class HandlerTest extends TestCase
             ->build();
 
 
-        $oldApplicationInstallationBuilder = (new ApplicationInstallationBuilder())
+        $applicationInstallation = (new ApplicationInstallationBuilder())
             ->withApplicationStatus(new ApplicationStatus('F'))
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
             ->withBitrix24AccountId($oldBitrix24Account->getId())
@@ -104,7 +104,7 @@ class HandlerTest extends TestCase
             ->build();
 
         $this->bitrix24accountRepository->save($oldBitrix24Account);
-        $this->repository->save($oldApplicationInstallationBuilder);
+        $this->repository->save($applicationInstallation);
         $this->flusher->flush();
 
         $this->handler->handle(
@@ -124,7 +124,7 @@ class HandlerTest extends TestCase
      * @throws InvalidArgumentException
      */
     #[Test]
-    public function testUninstallWithNotValidToken()
+    public function testUninstallWithNotValidToken(): void
     {
         //Загружаем в базу данных аккаунт и установку приложения для их деинсталяции.
         $applicationToken = Uuid::v7()->toRfc4122();
@@ -137,7 +137,7 @@ class HandlerTest extends TestCase
             ->build();
 
 
-        $oldApplicationInstallationBuilder = (new ApplicationInstallationBuilder())
+        $applicationInstallation = (new ApplicationInstallationBuilder())
             ->withApplicationStatus(new ApplicationStatus('F'))
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
             ->withBitrix24AccountId($oldBitrix24Account->getId())
@@ -146,11 +146,11 @@ class HandlerTest extends TestCase
             ->build();
 
         $this->bitrix24accountRepository->save($oldBitrix24Account);
-        $this->repository->save($oldApplicationInstallationBuilder);
+        $this->repository->save($applicationInstallation);
         $this->flusher->flush();
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('application token «testNotValidToken» mismatch with application token «'. $applicationToken .'» for application installation «'.$oldApplicationInstallationBuilder->getId()->toRfc4122() .'»');
+        $this->expectExceptionMessage('application token «testNotValidToken» mismatch with application token «'. $applicationToken .'» for application installation «'.$applicationInstallation->getId()->toRfc4122() .'»');
         $this->handler->handle(
             new ApplicationInstallations\UseCase\Uninstall\Command(
                 new Domain($oldBitrix24Account->getDomainUrl()),
@@ -160,7 +160,7 @@ class HandlerTest extends TestCase
         );
     }
 
-    public function testUninstallWithFewAccount()
+    public function testUninstallWithFewAccount(): void
     {
         $memberId = Uuid::v4()->toRfc4122();
         //Загружаем в базу данных аккаунт и установку приложения для их деинсталяции.
@@ -175,13 +175,13 @@ class HandlerTest extends TestCase
             ->build();
 
 
-        $oldBitrix24Account2 = (new Bitrix24AccountBuilder())
+        $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withApplicationScope(new Scope(['crm']))
             ->withStatus(Bitrix24AccountStatus::new)
             ->withMemberId($memberId)
             ->build();
 
-        $oldApplicationInstallationBuilder = (new ApplicationInstallationBuilder())
+        $applicationInstallation = (new ApplicationInstallationBuilder())
             ->withApplicationStatus(new ApplicationStatus('F'))
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
             ->withBitrix24AccountId($oldBitrix24Account->getId())
@@ -190,9 +190,9 @@ class HandlerTest extends TestCase
             ->build();
 
         $this->bitrix24accountRepository->save($oldBitrix24Account);
-        $this->bitrix24accountRepository->save($oldBitrix24Account2);
+        $this->bitrix24accountRepository->save($bitrix24Account);
 
-        $this->repository->save($oldApplicationInstallationBuilder);
+        $this->repository->save($applicationInstallation);
         $this->flusher->flush();
 
         $this->handler->handle(

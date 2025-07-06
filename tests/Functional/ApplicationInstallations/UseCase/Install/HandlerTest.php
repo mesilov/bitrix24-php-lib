@@ -143,7 +143,7 @@ class HandlerTest extends TestCase
             ->build();
 
 
-        $currentApplicationInstallationBuilder = (new ApplicationInstallationBuilder())
+        $applicationInstallation = (new ApplicationInstallationBuilder())
             ->withApplicationStatus(new ApplicationStatus('F'))
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
             ->withBitrix24AccountId($currentBitrix24Account->getId())
@@ -151,7 +151,7 @@ class HandlerTest extends TestCase
             ->build();
 
         $this->bitrix24accountRepository->save($currentBitrix24Account);
-        $this->repository->save($currentApplicationInstallationBuilder);
+        $this->repository->save($applicationInstallation);
         $this->flusher->flush();
 
         $bitrix24AccountBuilder = (new Bitrix24AccountBuilder())
@@ -211,7 +211,7 @@ class HandlerTest extends TestCase
             ->build();
 
 
-        $currentApplicationInstallationBuilder = (new ApplicationInstallationBuilder())
+        $applicationInstallation = (new ApplicationInstallationBuilder())
             ->withApplicationStatus(new ApplicationStatus('F'))
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
             ->withBitrix24AccountId($currentBitrix24Account->getId())
@@ -219,7 +219,7 @@ class HandlerTest extends TestCase
             ->build();
 
         $this->bitrix24accountRepository->save($currentBitrix24Account);
-        $this->repository->save($currentApplicationInstallationBuilder);
+        $this->repository->save($applicationInstallation);
         $this->flusher->flush();
 
         $applicationInstallationBuilder = (new ApplicationInstallationBuilder())

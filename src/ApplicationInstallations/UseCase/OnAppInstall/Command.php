@@ -1,6 +1,5 @@
 <?php
 
-
 declare(strict_types=1);
 
 namespace Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall;
@@ -18,7 +17,6 @@ readonly class Command
 
     private function validate(): void
     {
-
         if ('' === $this->memberId) {
             throw new \InvalidArgumentException('Member ID must be a non-empty string.');
         }

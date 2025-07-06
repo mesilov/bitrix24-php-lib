@@ -42,7 +42,9 @@ class Bitrix24AccountBuilder
     private Scope $applicationScope;
 
     private ?string $applicationToken = null;
+
     private bool $isMasterAccount = false;
+
     private bool $isSetToken = false;
 
     private bool $isInstalled = false;

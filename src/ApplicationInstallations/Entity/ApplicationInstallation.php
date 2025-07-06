@@ -17,9 +17,9 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\Applicati
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationUninstalledEvent;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
+use Bitrix24\SDK\Core\Exceptions\LogicException;
 use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
-use Bitrix24\SDK\Core\Exceptions\LogicException;
 
 /**
  * Установка может происходить по 2 сценриям.
@@ -32,33 +32,33 @@ use Bitrix24\SDK\Core\Exceptions\LogicException;
  * 2) Без UI - Установка инициируется прямым POST-запросом с полным набором credentials.
  * Сразу создается Bitrix24Account. У установщика и у аккаунта вызывается метод с переданыым токеном:
  * $bitrix24Account->applicationInstalled($applicationToken);
- * $applicationInstallation->applicationInstalled($applicationToken);
+ * $applicationInstallation->applicationInstalled($applicationToken);.
  */
 class ApplicationInstallation extends AggregateRoot implements ApplicationInstallationInterface
 {
-
     private ?string $applicationToken = null;
-    private CarbonImmutable $createdAt;
+
+    private readonly CarbonImmutable $createdAt;
+
     private CarbonImmutable $updatedAt;
-    private ApplicationInstallationStatus $status;
+
+    private ApplicationInstallationStatus $status = ApplicationInstallationStatus::new;
 
     public function __construct(
-        private readonly Uuid       $id,
-        private readonly Uuid       $bitrix24AccountId,
-        private ApplicationStatus   $applicationStatus,
+        private readonly Uuid $id,
+        private readonly Uuid $bitrix24AccountId,
+        private ApplicationStatus $applicationStatus,
         private PortalLicenseFamily $portalLicenseFamily,
-        private ?int                $portalUsersCount,
-        private ?Uuid               $contactPersonId,
-        private ?Uuid               $bitrix24PartnerContactPersonId,
-        private ?Uuid               $bitrix24PartnerId,
-        private ?string             $externalId,
-        private ?string             $comment = null,
-        private                     $isEmitApplicationInstallationCreatedEvent = false
-    )
-    {
+        private ?int $portalUsersCount,
+        private ?Uuid $contactPersonId,
+        private ?Uuid $bitrix24PartnerContactPersonId,
+        private ?Uuid $bitrix24PartnerId,
+        private ?string $externalId,
+        private ?string $comment = null,
+        private $isEmitApplicationInstallationCreatedEvent = false
+    ) {
         $this->createdAt = new CarbonImmutable();
         $this->updatedAt = new CarbonImmutable();
-        $this->status = ApplicationInstallationStatus::new;
         $this->addApplicationCreatedEventIfNeeded($this->isEmitApplicationInstallationCreatedEvent);
     }
 
@@ -141,7 +141,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
             );
         }
 
-        if (!empty($applicationToken)) {
+        if (null !== $applicationToken && '' !== $applicationToken && '0' !== $applicationToken) {
             $this->applicationToken = $applicationToken;
         }
 
@@ -175,7 +175,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         }
 
         // Это проверка для мастер аккаунтов чтобы удостовериться что передан верный токен для деинсталяции.
-        if ($applicationToken !== null){
+        if (null !== $applicationToken) {
             $this->guardTokenMismatch($applicationToken);
         }
 
@@ -315,18 +315,6 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         return $this->comment;
     }
 
-    private function addApplicationCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
-    {
-        if ($isEmitCreatedEvent) {
-            // Создание события и добавление его в массив событий
-            $this->events[] = new ApplicationInstallationCreatedEvent(
-                $this->id,
-                $this->createdAt,
-                $this->bitrix24AccountId
-            );
-        }
-    }
-
     #[\Override]
     public function isApplicationTokenValid(string $applicationToken): bool
     {
@@ -423,7 +411,18 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         );
 
         $this->bitrix24PartnerId = null;
+    }
 
+    private function addApplicationCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
+    {
+        if ($isEmitCreatedEvent) {
+            // Создание события и добавление его в массив событий
+            $this->events[] = new ApplicationInstallationCreatedEvent(
+                $this->id,
+                $this->createdAt,
+                $this->bitrix24AccountId
+            );
+        }
     }
 
     private function guardTokenMismatch(string $applicationToken): void

@@ -49,7 +49,7 @@ readonly class Handler
             [
                 'b24_domain_url' => $command->domain,
                 'b24_member_id' => $command->memberId,
-                'b24_user_id' => $command->bitrix24UserId
+                'b24_user_id' => $command->bitrix24UserId,
             ]
         );
     }

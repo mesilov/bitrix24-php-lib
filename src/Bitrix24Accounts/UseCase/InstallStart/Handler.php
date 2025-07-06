@@ -6,10 +6,8 @@ namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallStart;
 
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Services\Flusher;
-use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
-use Carbon\CarbonImmutable;
 use Psr\Log\LoggerInterface;
 
 readonly class Handler

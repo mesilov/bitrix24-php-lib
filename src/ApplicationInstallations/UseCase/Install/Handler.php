@@ -20,13 +20,11 @@ use Symfony\Component\Uid\Uuid;
 readonly class Handler
 {
     public function __construct(
-        private Bitrix24AccountRepository         $bitrix24AccountRepository,
+        private Bitrix24AccountRepository $bitrix24AccountRepository,
         private ApplicationInstallationRepository $applicationInstallationRepository,
-        private Flusher                           $flusher,
-        private LoggerInterface                   $logger
-    )
-    {
-    }
+        private Flusher $flusher,
+        private LoggerInterface $logger
+    ) {}
 
     /**
      * @throws LogicException
@@ -35,7 +33,7 @@ readonly class Handler
     public function handle(Command $command): void
     {
         $this->logger->info('ApplicationInstallations.Install.start', [
-            (string)$command
+            (string) $command,
         ]);
 
         /*
@@ -46,16 +44,18 @@ readonly class Handler
         /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface[] $b24Accounts */
         $b24Accounts = $this->bitrix24AccountRepository->findActiveByMemberId($command->memberId);
 
-        if ($b24Accounts !== []) {
+        if ([] !== $b24Accounts) {
             $entitiesToFlush = [];
             foreach ($b24Accounts as $b24Account) {
                 $isMaster = $b24Account->isMasterAccount();
                 if ($isMaster) {
+                    /** @var AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $activeInstallation */
                     $activeInstallation = $this->applicationInstallationRepository->findActiveByAccountId($b24Account->getId());
                     $activeInstallation->applicationUninstalled();
                     $this->applicationInstallationRepository->save($activeInstallation);
                     $entitiesToFlush[] = $activeInstallation;
                 }
+
                 $b24Account->applicationUninstalled(null);
                 $this->bitrix24AccountRepository->save($b24Account);
                 $entitiesToFlush[] = $b24Account;
@@ -66,11 +66,11 @@ readonly class Handler
             $this->flusher->flush(...$entitiesToFlush);
         }
 
-        $bitrix24AccountId = Uuid::v7();
+        $uuidV7 = Uuid::v7();
         $applicationInstallationId = Uuid::v7();
 
         $bitrix24Account = new Bitrix24Account(
-            $bitrix24AccountId,
+            $uuidV7,
             $command->bitrix24UserId,
             $command->isBitrix24UserAdmin,
             $command->memberId,
@@ -82,12 +82,11 @@ readonly class Handler
             true
         );
 
-
         $bitrix24Account->applicationInstalled(null);
 
         $applicationInstallation = new ApplicationInstallation(
             $applicationInstallationId,
-            $bitrix24AccountId,
+            $uuidV7,
             $command->applicationStatus,
             $command->portalLicenseFamily,
             $command->portalUsersCount,
@@ -103,13 +102,13 @@ readonly class Handler
 
         $this->bitrix24AccountRepository->save($bitrix24Account);
         $this->applicationInstallationRepository->save($applicationInstallation);
-        $this->flusher->flush($applicationInstallation,$bitrix24Account);
+        $this->flusher->flush($applicationInstallation, $bitrix24Account);
 
         $this->logger->info(
             'ApplicationInstallations.Install.Finish',
             [
                 'applicationId' => $applicationInstallationId,
-                'bitrix24AccountId' => $bitrix24AccountId
+                'bitrix24AccountId' => $uuidV7,
             ]
         );
     }

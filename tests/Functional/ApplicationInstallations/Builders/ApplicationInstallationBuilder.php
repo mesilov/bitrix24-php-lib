@@ -15,7 +15,7 @@ class ApplicationInstallationBuilder
 {
     private readonly Uuid $id;
 
-    private  Uuid $bitrix24AccountId;
+    private Uuid $bitrix24AccountId;
 
     private readonly ?Uuid $contactPersonId;
 
@@ -91,7 +91,7 @@ class ApplicationInstallationBuilder
 
     public function build(): ApplicationInstallation
     {
-       $applicationInstallation = new ApplicationInstallation(
+        $applicationInstallation = new ApplicationInstallation(
             $this->id,
             $this->bitrix24AccountId,
             $this->applicationStatus,
@@ -104,24 +104,16 @@ class ApplicationInstallationBuilder
             $this->comment
         );
 
-       if (!empty($this->status)) {
-           if ($this->status == ApplicationInstallationStatus::active) {
-               if (!empty($this->applicationToken)) {
-                   $applicationInstallation->applicationInstalled($this->applicationToken);
-               }else{
-                   $applicationInstallation->applicationInstalled();
-               }
-           }
-       }
+        if (!empty($this->status) && $this->status == ApplicationInstallationStatus::active) {
+            if ($this->applicationToken !== null && $this->applicationToken !== '' && $this->applicationToken !== '0') {
+                $applicationInstallation->applicationInstalled($this->applicationToken);
+            } else {
+                $applicationInstallation->applicationInstalled();
+            }
+        }
 
-       return $applicationInstallation;
+        return $applicationInstallation;
     }
-
-
-
-
-
-
 
 
 }
