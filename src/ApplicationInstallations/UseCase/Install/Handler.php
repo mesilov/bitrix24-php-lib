@@ -84,6 +84,8 @@ readonly class Handler
 
         $bitrix24Account->applicationInstalled(null);
 
+        $this->bitrix24AccountRepository->save($bitrix24Account);
+
         $applicationInstallation = new ApplicationInstallation(
             $applicationInstallationId,
             $uuidV7,
@@ -99,9 +101,8 @@ readonly class Handler
         );
 
         $applicationInstallation->applicationInstalled();
-
-        $this->bitrix24AccountRepository->save($bitrix24Account);
         $this->applicationInstallationRepository->save($applicationInstallation);
+
         $this->flusher->flush($applicationInstallation, $bitrix24Account);
 
         $this->logger->info(

@@ -174,8 +174,8 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
             );
         }
 
-        // Это проверка для мастер аккаунтов чтобы удостовериться что передан верный токен для деинсталяции.
         if (null !== $applicationToken) {
+            $this->guardEmptyToken($applicationToken);
             $this->guardTokenMismatch($applicationToken);
         }
 
@@ -436,6 +436,13 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
                     $this->id->toRfc4122()
                 )
             );
+        }
+    }
+
+    private function guardEmptyToken(string $applicationToken): void
+    {
+        if ('' === $applicationToken) {
+            throw new InvalidArgumentException('application token cannot be empty');
         }
     }
 }

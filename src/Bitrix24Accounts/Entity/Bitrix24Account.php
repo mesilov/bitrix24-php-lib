@@ -206,6 +206,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
             || Bitrix24AccountStatus::active == $this->status
         ) {
             if (null !== $applicationToken) {
+                $this->guardEmptyToken($applicationToken);
                 $this->guardTokenMismatch($applicationToken);
             }
 

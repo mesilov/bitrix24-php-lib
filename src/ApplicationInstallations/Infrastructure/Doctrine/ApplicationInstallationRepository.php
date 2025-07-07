@@ -116,4 +116,21 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    public function findActiveByApplicationToken(string $applicationToken): ?ApplicationInstallationInterface
+    {
+        $activeStatuses = [
+            ApplicationInstallationStatus::new,
+            ApplicationInstallationStatus::active
+        ];
+
+        return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
+            ->createQueryBuilder('applicationInstallation')
+            ->where('applicationInstallation.applicationToken = :applicationToken')
+            ->andWhere('applicationInstallation.status IN (:statuses)')
+            ->setParameter('applicationToken', $applicationToken)
+            ->setParameter('statuses', $activeStatuses)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }
