@@ -105,7 +105,7 @@ class ApplicationInstallationBuilder
         );
 
         if (!empty($this->status) && $this->status == ApplicationInstallationStatus::active) {
-            if ($this->applicationToken !== null && $this->applicationToken !== '' && $this->applicationToken !== '0') {
+            if ($this->applicationToken !== null && $this->applicationToken !== '') {
                 $applicationInstallation->applicationInstalled($this->applicationToken);
             } else {
                 $applicationInstallation->applicationInstalled();

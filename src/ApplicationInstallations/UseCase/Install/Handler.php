@@ -27,20 +27,17 @@ readonly class Handler
     ) {}
 
     /**
-     * @throws LogicException
      * @throws InvalidArgumentException
      */
     public function handle(Command $command): void
     {
         $this->logger->info('ApplicationInstallations.Install.start', [
-            (string) $command,
+            'externalId' => $command->externalId,
+            'bitrix24UserId' => $command->bitrix24UserId,
+            'isBitrix24UserAdmin' => $command->isBitrix24UserAdmin,
+            'memberId' => $command->memberId,
         ]);
 
-        /*
-         * Аккаунтов может быть несколько , но установку на портал проводят только 1 раз , то есть есть мастер аккаунт который нужно получать.
-         * У остальных аккаунтов установок быть не может это просто (доступы/авторизации).
-         * Решить какое поле для мастера добавить в аккаунт.
-         */
         /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface[] $b24Accounts */
         $b24Accounts = $this->bitrix24AccountRepository->findActiveByMemberId($command->memberId);
 
@@ -61,8 +58,10 @@ readonly class Handler
                 $entitiesToFlush[] = $b24Account;
             }
 
-            /* Здесь сразу флашим так как это условие не всегда работает , и лучше сначало разобраться с аккаунтами и установщиками
-             которые нужно деактивировать , а после уже работаем с новыми сущностями. */
+            /*
+             Здесь сразу флашим так как это условие не всегда работает , и лучше сначало разобраться с аккаунтами и установщиками
+             которые нужно деактивировать , а после уже работаем с новыми сущностями.
+            */
             $this->flusher->flush(...$entitiesToFlush);
         }
 
@@ -83,7 +82,6 @@ readonly class Handler
         );
 
         $bitrix24Account->applicationInstalled(null);
-
         $this->bitrix24AccountRepository->save($bitrix24Account);
 
         $applicationInstallation = new ApplicationInstallation(

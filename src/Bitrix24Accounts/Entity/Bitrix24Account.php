@@ -186,7 +186,8 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
             );
         }
 
-        if (null !== $applicationToken && '' !== $applicationToken && '0' !== $applicationToken) {
+        if (null !== $applicationToken) {
+            $this->guardEmptyToken($applicationToken);
             $this->applicationToken = $applicationToken;
         }
 

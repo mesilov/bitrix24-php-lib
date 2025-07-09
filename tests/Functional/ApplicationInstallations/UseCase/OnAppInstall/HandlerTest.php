@@ -113,7 +113,7 @@ class HandlerTest extends TestCase
         $this->handler->handle(
             new ApplicationInstallations\UseCase\OnAppInstall\Command(
                 $memberId,
-                $domainUrl,
+                new Domain($domainUrl),
                 $applicationToken,
                 $applicationStatus
             )

@@ -11,7 +11,7 @@ use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Symfony\Component\Uid\Uuid;
 
-readonly class Command implements \Stringable
+readonly class Command
 {
     public function __construct(
         public ApplicationStatus $applicationStatus,
@@ -31,25 +31,6 @@ readonly class Command implements \Stringable
         public Scope $applicationScope
     ) {
         $this->validate();
-    }
-
-    #[\Override]
-    public function __toString(): string
-    {
-        return sprintf(
-            ' portalUsersCount: %s, contactPersonId: %s, bitrix24PartnerContactPersonId: %s,
-             bitrix24PartnerId: %s, externalId: %s, comment: %s, bitrix24UserId: %d,
-              isBitrix24UserAdmin: %s, memberId: %s',
-            $this->portalUsersCount ?? 'null',
-            $this->contactPersonId ?? 'null',
-            $this->bitrix24PartnerContactPersonId ?? 'null',
-            $this->bitrix24PartnerId ?? 'null',
-            $this->externalId ?? 'null',
-            $this->comment ?? 'null',
-            $this->bitrix24UserId,
-            $this->isBitrix24UserAdmin ? 'true' : 'false',
-            $this->memberId
-        );
     }
 
     private function validate(): void

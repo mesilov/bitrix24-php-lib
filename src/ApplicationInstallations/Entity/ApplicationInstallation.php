@@ -141,7 +141,8 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
             );
         }
 
-        if (null !== $applicationToken && '' !== $applicationToken && '0' !== $applicationToken) {
+        if (null !== $applicationToken) {
+            $this->guardEmptyToken($applicationToken);
             $this->applicationToken = $applicationToken;
         }
 
@@ -324,9 +325,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function setApplicationToken(string $applicationToken): void
     {
-        if ('' === $applicationToken) {
-            throw new InvalidArgumentException('application token cannot be empty');
-        }
+        $this->guardEmptyToken($applicationToken);
 
         $this->updatedAt = new CarbonImmutable();
         $this->applicationToken = $applicationToken;
