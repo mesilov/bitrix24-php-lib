@@ -20,11 +20,13 @@ use Symfony\Component\Uid\Uuid;
 readonly class Handler
 {
     public function __construct(
-        private Bitrix24AccountRepository $bitrix24AccountRepository,
+        private Bitrix24AccountRepository         $bitrix24AccountRepository,
         private ApplicationInstallationRepository $applicationInstallationRepository,
-        private Flusher $flusher,
-        private LoggerInterface $logger
-    ) {}
+        private Flusher                           $flusher,
+        private LoggerInterface                   $logger
+    )
+    {
+    }
 
     /**
      * @throws InvalidArgumentException
@@ -36,6 +38,7 @@ readonly class Handler
             'bitrix24UserId' => $command->bitrix24UserId,
             'isBitrix24UserAdmin' => $command->isBitrix24UserAdmin,
             'memberId' => $command->memberId,
+            'applicationToken' => $command->applicationToken,
         ]);
 
         /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface[] $b24Accounts */
@@ -52,7 +55,6 @@ readonly class Handler
                     $this->applicationInstallationRepository->save($activeInstallation);
                     $entitiesToFlush[] = $activeInstallation;
                 }
-
                 $b24Account->applicationUninstalled(null);
                 $this->bitrix24AccountRepository->save($b24Account);
                 $entitiesToFlush[] = $b24Account;
@@ -81,7 +83,7 @@ readonly class Handler
             true
         );
 
-        $bitrix24Account->applicationInstalled(null);
+        $bitrix24Account->applicationInstalled($command->applicationToken);
         $this->bitrix24AccountRepository->save($bitrix24Account);
 
         $applicationInstallation = new ApplicationInstallation(
@@ -98,7 +100,7 @@ readonly class Handler
             true
         );
 
-        $applicationInstallation->applicationInstalled();
+        $applicationInstallation->applicationInstalled($command->applicationToken);
         $this->applicationInstallationRepository->save($applicationInstallation);
 
         $this->flusher->flush($applicationInstallation, $bitrix24Account);

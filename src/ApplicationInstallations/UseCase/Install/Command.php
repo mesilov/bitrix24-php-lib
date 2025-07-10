@@ -10,6 +10,7 @@ use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Symfony\Component\Uid\Uuid;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 
 readonly class Command
 {
@@ -28,7 +29,8 @@ readonly class Command
         public Domain $domain,
         public AuthToken $authToken,
         public int $applicationVersion,
-        public Scope $applicationScope
+        public Scope $applicationScope,
+        public ?string $applicationToken = null,
     ) {
         $this->validate();
     }
@@ -36,27 +38,33 @@ readonly class Command
     private function validate(): void
     {
         if ($this->portalUsersCount <= 0) {
-            throw new \InvalidArgumentException('Portal Users count must be a positive integer.');
+            throw new InvalidArgumentException('Portal Users count must be a positive integer.');
         }
 
         if ('' === $this->externalId) {
-            throw new \InvalidArgumentException('External ID must be a non-empty string.');
+            throw new InvalidArgumentException('External ID must be a non-empty string.');
         }
 
         if ('' === $this->comment) {
-            throw new \InvalidArgumentException('Comment must be a non-empty string.');
+            throw new InvalidArgumentException('Comment must be a non-empty string.');
         }
 
         if ($this->bitrix24UserId <= 0) {
-            throw new \InvalidArgumentException('Bitrix24 User ID must be a positive integer.');
+            throw new InvalidArgumentException('Bitrix24 User ID must be a positive integer.');
         }
 
         if ('' === $this->memberId) {
-            throw new \InvalidArgumentException('Member ID must be a non-empty string.');
+            throw new InvalidArgumentException('Member ID must be a non-empty string.');
         }
 
         if ($this->applicationVersion <= 0) {
-            throw new \InvalidArgumentException('Application version must be a positive integer.');
+            throw new InvalidArgumentException('Application version must be a positive integer.');
+        }
+
+        if ($this->applicationToken !== null) {
+            if ($this->applicationToken == '') {
+                throw new InvalidArgumentException('Application token must be a non-empty string.');
+            }
         }
     }
 }

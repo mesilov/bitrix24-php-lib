@@ -24,8 +24,10 @@ use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\Lib\Tests\Functional\ApplicationInstallations\Builders\ApplicationInstallationBuilder;
 use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\SDK\Application\ApplicationStatus;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
+use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
@@ -82,7 +84,7 @@ class HandlerTest extends TestCase
      * @throws InvalidArgumentException
      */
     #[Test]
-    public function testInstallNewApplicationInstallation(): void
+    public function testNewInstallation(): void
     {
         $bitrix24AccountBuilder = (new Bitrix24AccountBuilder())
             ->withApplicationScope(new Scope(['crm']))
@@ -127,7 +129,96 @@ class HandlerTest extends TestCase
      * @throws InvalidArgumentException
      */
     #[Test]
-    public function testReinstallApplicationInstallation(): void
+    public function testNewInstallationWithToken(): void
+    {
+        $bitrix24AccountBuilder = (new Bitrix24AccountBuilder())
+            ->withApplicationScope(new Scope(['crm']))
+            ->build();
+
+
+        $applicationInstallationBuilder = (new ApplicationInstallationBuilder())
+            ->withApplicationStatus(new ApplicationStatus('F'))
+            ->withPortalLicenseFamily(PortalLicenseFamily::free)
+            ->build();
+
+        $newApplicationToken = Uuid::v7()->toRfc4122();
+
+        $this->handler->handle(
+            new ApplicationInstallations\UseCase\Install\Command(
+                $applicationInstallationBuilder->getApplicationStatus(),
+                $applicationInstallationBuilder->getPortalLicenseFamily(),
+                $applicationInstallationBuilder->getPortalUsersCount(),
+                $applicationInstallationBuilder->getContactPersonId(),
+                $applicationInstallationBuilder->getBitrix24PartnerContactPersonId(),
+                $applicationInstallationBuilder->getBitrix24PartnerId(),
+                $applicationInstallationBuilder->getExternalId(),
+                $applicationInstallationBuilder->getComment(),
+                $bitrix24AccountBuilder->getBitrix24UserId(),
+                $bitrix24AccountBuilder->isBitrix24UserAdmin(),
+                $bitrix24AccountBuilder->getMemberId(),
+                new Domain($bitrix24AccountBuilder->getDomainUrl()),
+                $bitrix24AccountBuilder->getAuthToken(),
+                $bitrix24AccountBuilder->getApplicationVersion(),
+                $bitrix24AccountBuilder->getApplicationScope(),
+                $newApplicationToken
+            )
+        );
+
+        $activeInstallation = $this->repository->findActiveByApplicationToken($newApplicationToken);
+        $this->assertNotNull($activeInstallation);
+
+        $dispatchedEvents = $this->eventDispatcher->getOrphanedEvents();
+
+        $this->assertContains(\Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountCreatedEvent::class, $dispatchedEvents);
+        $this->assertContains(\Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationCreatedEvent::class, $dispatchedEvents);
+        $this->assertContains(\Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationInstalledEvent::class, $dispatchedEvents);
+        $this->assertContains(\Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationFinishedEvent::class, $dispatchedEvents);
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    #[Test]
+    public function testNewInstallationWithEmptyToken(): void
+    {
+        $bitrix24AccountBuilder = (new Bitrix24AccountBuilder())
+            ->withApplicationScope(new Scope(['crm']))
+            ->build();
+
+
+        $applicationInstallationBuilder = (new ApplicationInstallationBuilder())
+            ->withApplicationStatus(new ApplicationStatus('F'))
+            ->withPortalLicenseFamily(PortalLicenseFamily::free)
+            ->build();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->handler->handle(
+            new ApplicationInstallations\UseCase\Install\Command(
+                $applicationInstallationBuilder->getApplicationStatus(),
+                $applicationInstallationBuilder->getPortalLicenseFamily(),
+                $applicationInstallationBuilder->getPortalUsersCount(),
+                $applicationInstallationBuilder->getContactPersonId(),
+                $applicationInstallationBuilder->getBitrix24PartnerContactPersonId(),
+                $applicationInstallationBuilder->getBitrix24PartnerId(),
+                $applicationInstallationBuilder->getExternalId(),
+                $applicationInstallationBuilder->getComment(),
+                $bitrix24AccountBuilder->getBitrix24UserId(),
+                $bitrix24AccountBuilder->isBitrix24UserAdmin(),
+                $bitrix24AccountBuilder->getMemberId(),
+                new Domain($bitrix24AccountBuilder->getDomainUrl()),
+                $bitrix24AccountBuilder->getAuthToken(),
+                $bitrix24AccountBuilder->getApplicationVersion(),
+                $bitrix24AccountBuilder->getApplicationScope(),
+                ''
+            )
+        );
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    #[Test]
+    public function testReinstallInstallation(): void
     {
 
         $memberId = Uuid::v4()->toRfc4122();
@@ -254,4 +345,5 @@ class HandlerTest extends TestCase
         $this->assertContains(\Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Events\Bitrix24AccountApplicationInstalledEvent::class, $dispatchedEvents);
         $this->assertContains(\Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationFinishedEvent::class, $dispatchedEvents);
     }
+
 }
