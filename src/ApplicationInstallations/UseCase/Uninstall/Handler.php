@@ -13,7 +13,6 @@ use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterfac
 use Psr\Log\LoggerInterface;
 
 /**
- *
  * Обработчик сценария деинсталляции приложения.
  *
  * Важно: Сценарий рассчитан на идеальные условия и может не учитывать случаи, когда:
@@ -29,13 +28,11 @@ use Psr\Log\LoggerInterface;
 readonly class Handler
 {
     public function __construct(
-        private Bitrix24AccountRepository         $bitrix24AccountRepository,
+        private Bitrix24AccountRepository $bitrix24AccountRepository,
         private ApplicationInstallationRepository $applicationInstallationRepository,
-        private Flusher                           $flusher,
-        private LoggerInterface                   $logger
-    )
-    {
-    }
+        private Flusher $flusher,
+        private LoggerInterface $logger
+    ) {}
 
     public function handle(Command $command): void
     {
@@ -73,8 +70,8 @@ readonly class Handler
                     $entitiesToFlush[] = $b24Account;
                 }
             }
-            $this->flusher->flush(...$entitiesToFlush);
 
+            $this->flusher->flush(...$entitiesToFlush);
         }
 
         $this->logger->info(

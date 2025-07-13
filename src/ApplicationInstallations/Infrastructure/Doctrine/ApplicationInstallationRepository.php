@@ -114,14 +114,15 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->setParameter('b24AccountId', $uuid)
             ->setParameter('statuses', $activeStatuses)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
     }
 
     public function findActiveByApplicationToken(string $applicationToken): ?ApplicationInstallationInterface
     {
         $activeStatuses = [
             ApplicationInstallationStatus::new,
-            ApplicationInstallationStatus::active
+            ApplicationInstallationStatus::active,
         ];
 
         return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
@@ -131,6 +132,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->setParameter('applicationToken', $applicationToken)
             ->setParameter('statuses', $activeStatuses)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
     }
 }

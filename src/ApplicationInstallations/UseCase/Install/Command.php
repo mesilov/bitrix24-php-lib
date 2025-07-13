@@ -9,8 +9,8 @@ use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
-use Symfony\Component\Uid\Uuid;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
+use Symfony\Component\Uid\Uuid;
 
 readonly class Command
 {
@@ -61,10 +61,8 @@ readonly class Command
             throw new InvalidArgumentException('Application version must be a positive integer.');
         }
 
-        if ($this->applicationToken !== null) {
-            if ($this->applicationToken == '') {
-                throw new InvalidArgumentException('Application token must be a non-empty string.');
-            }
+        if (null !== $this->applicationToken && '' === $this->applicationToken) {
+            throw new InvalidArgumentException('Application token must be a non-empty string.');
         }
     }
 }

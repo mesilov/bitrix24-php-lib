@@ -56,7 +56,7 @@ class CommandTest extends TestCase
         $applicationToken = Uuid::v7()->toRfc4122();
         $applicationStatus = 'T';
 
-        $applicationInstallationBuilder = (new ApplicationInstallationBuilder())
+        (new ApplicationInstallationBuilder())
             ->withApplicationStatus(new ApplicationStatus('F'))
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
             ->withApplicationToken($applicationToken)

@@ -228,11 +228,11 @@ class HandlerTest extends TestCase
 
         $bitrix24Accounts = $this->bitrix24accountRepository->findByMemberId($memberId);
 
-        foreach ($bitrix24Accounts as $account) {
+        foreach ($bitrix24Accounts as $bitrix24Account) {
             $this->assertSame(
                 Bitrix24AccountStatus::deleted,
-                $account->getStatus(),
-                sprintf('Account %s не в статусе "удалён"', $account->getId())
+                $bitrix24Account->getStatus(),
+                sprintf('Account %s не в статусе "удалён"', $bitrix24Account->getId())
             );
         }
     }

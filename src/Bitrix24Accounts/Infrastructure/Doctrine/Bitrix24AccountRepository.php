@@ -222,9 +222,9 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     }
 
     /**
-     * @throws InvalidArgumentException
-     *
      * @phpstan-return Bitrix24AccountInterface&AggregateRootEventsEmitterInterface
+     *
+     * @throws InvalidArgumentException
      */
     #[\Override]
     public function findOneAdminByMemberId(string $memberId): ?Bitrix24AccountInterface
@@ -243,9 +243,9 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     }
 
     /**
-     * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
-     *
      * @return array<AggregateRootEventsEmitterInterface&Bitrix24AccountInterface>
+     *
+     * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
      *
      * @throws InvalidArgumentException
      */
