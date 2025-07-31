@@ -12,6 +12,22 @@ use Bitrix24\SDK\Core\Credentials\Scope;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Установка может происходить по 2 сценриям.
+ * Если в эту команду передается $applicationToken значит это установка без UI.
+ * Иначе это установка с UI и $applicationToken передаваться не должен.
+ *
+ * 1) UI - Пользователь запускает установку через интерфейс.
+ * Bitrix24 отправляет первичный запрос на /install.php с параметрами:
+ * AUTH_ID, REFRESH_ID, member_id в теле запроса. Без application_token
+ * Система создаёт Bitrix24Account в статусе new.
+ * Bitrix24 отправляет событие ONAPPINSTALL на /event-handler.php и передает application_token
+ * Вызывается applicationInstalled($applicationToken) с полученным токеном.
+ * 2) Без UI - Установка инициируется прямым POST-запросом с полным набором credentials.
+ * Сразу создается Bitrix24Account. У установщика и у аккаунта вызывается метод с переданыым токеном:
+ * $bitrix24Account->applicationInstalled($applicationToken);
+ * $applicationInstallation->applicationInstalled($applicationToken);.
+ */
 readonly class Command
 {
     public function __construct(
@@ -61,8 +77,10 @@ readonly class Command
             throw new InvalidArgumentException('Application version must be a positive integer.');
         }
 
-        if (null !== $this->applicationToken && '' === $this->applicationToken) {
-            throw new InvalidArgumentException('Application token must be a non-empty string.');
+        if (null !== $this->applicationToken) {
+            if ('' === trim($this->applicationToken)) {
+                throw new InvalidArgumentException('Application token must be a non-empty string.');
+            }
         }
     }
 }

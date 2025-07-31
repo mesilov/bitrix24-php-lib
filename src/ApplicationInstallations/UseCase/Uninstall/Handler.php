@@ -46,6 +46,11 @@ readonly class Handler
         $activeInstallation = $this->applicationInstallationRepository->findActiveByApplicationToken($command->applicationToken);
 
         if (null !== $activeInstallation) {
+
+            $this->logger->info(
+                'ApplicationInstallations.Uninstall.Start'
+            );
+
             $entitiesToFlush = [];
 
             $activeInstallation->applicationUninstalled($command->applicationToken);
@@ -72,6 +77,20 @@ readonly class Handler
             }
 
             $this->flusher->flush(...$entitiesToFlush);
+
+            $this->logger->info('ApplicationInstallations.Uninstall.completed', [
+                'installationId' => $activeInstallation->getId(),
+                'applicationToken' => $command->applicationToken,
+                'flushedEntitiesCount' => count($entitiesToFlush),
+            ]);
+
+        }else{
+            $this->logger->info('ApplicationInstallations.Uninstall.false_request', [
+                'applicationToken' => $command->applicationToken,
+                'memberId' => $command->memberId,
+                'domainUrl' => $command->domainUrl,
+                'message' => 'No active installation found for uninstall request',
+            ]);
         }
 
         $this->logger->info(

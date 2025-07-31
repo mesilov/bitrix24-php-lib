@@ -36,6 +36,17 @@ readonly class Handler
             'application_status' => $command->applicationStatus,
         ]);
 
+        /** @var null|AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $applicationInstallation */
+        $applicationInstallation = $this->applicationInstallationRepository->findActiveInstallationWithAccountByMemberId($command->memberId);
+
+        $applicationStatus = new ApplicationStatus($command->applicationStatus);
+
+        $applicationInstallation->changeApplicationStatus($applicationStatus);
+
+        $applicationInstallation->setApplicationToken($command->applicationToken);
+
+        $this->applicationInstallationRepository->save($applicationInstallation);
+
         /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account */
         $bitrix24Account = $this->bitrix24AccountRepository->findMasterByMemberId(
             $command->memberId,
@@ -45,17 +56,6 @@ readonly class Handler
         $bitrix24Account->setApplicationToken($command->applicationToken);
 
         $this->bitrix24AccountRepository->save($bitrix24Account);
-
-        /** @var null|AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $applicationInstallation */
-        $applicationInstallation = $this->applicationInstallationRepository->findByBitrix24AccountId($bitrix24Account->getId());
-
-        $applicationStatus = new ApplicationStatus($command->applicationStatus);
-
-        $applicationInstallation->changeApplicationStatus($applicationStatus);
-
-        $applicationInstallation->setApplicationToken($command->applicationToken);
-
-        $this->applicationInstallationRepository->save($applicationInstallation);
 
         $this->flusher->flush($applicationInstallation, $bitrix24Account);
 

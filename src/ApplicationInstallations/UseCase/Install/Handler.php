@@ -26,6 +26,11 @@ readonly class Handler
     ) {}
 
     /**
+     * На данный момент могут быть не обработаны несколько сценариев.
+     * Например :
+     * 1) По какой-то причине мы пропустили событие от Б24 с токеном, о том, что надо удалить приложение (удален портал, мы были не доступны и запрос пропущен или еще как-то)
+     * 2) Надо вручную или еще как-то удалить приложение зная только его member_id (может что-то еще для валидации)
+     *
      * @throws InvalidArgumentException
      */
     public function handle(Command $command): void
@@ -38,32 +43,42 @@ readonly class Handler
             'applicationToken' => $command->applicationToken,
         ]);
 
-        /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface[] $b24Accounts */
-        $b24Accounts = $this->bitrix24AccountRepository->findActiveByMemberId($command->memberId);
+        /** @var null|AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $activeInstallation */
+        $activeInstallation =  $this->applicationInstallationRepository->findActiveInstallationWithAccountByMemberId($command->memberId);
 
-        if ([] !== $b24Accounts) {
+        if (null !== $activeInstallation) {
             $entitiesToFlush = [];
-            foreach ($b24Accounts as $b24Account) {
-                $isMaster = $b24Account->isMasterAccount();
-                if ($isMaster) {
-                    /** @var AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $activeInstallation */
-                    $activeInstallation = $this->applicationInstallationRepository->findActiveByAccountId($b24Account->getId());
-                    $activeInstallation->applicationUninstalled();
-                    $this->applicationInstallationRepository->save($activeInstallation);
-                    $entitiesToFlush[] = $activeInstallation;
-                }
 
-                $b24Account->applicationUninstalled(null);
-                $this->bitrix24AccountRepository->save($b24Account);
-                $entitiesToFlush[] = $b24Account;
+            $activeInstallation->applicationUninstalled();
+
+            $this->applicationInstallationRepository->save($activeInstallation);
+
+            $entitiesToFlush[] = $activeInstallation;
+
+            /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface[] $b24Accounts */
+            $b24Accounts = $this->bitrix24AccountRepository->findByMemberId($command->memberId);
+
+            if ([] !== $b24Accounts) {
+                foreach ($b24Accounts as $b24Account) {
+                    $isMaster = $b24Account->isMasterAccount();
+                    if ($isMaster) {
+                        $b24Account->applicationUninstalled(null);
+                    } else {
+                        $b24Account->applicationUninstalled(null);
+                    }
+
+                    $this->bitrix24AccountRepository->save($b24Account);
+                    $entitiesToFlush[] = $b24Account;
+                }
             }
 
             /*
-             Здесь сразу флашим так как это условие не всегда работает , и лучше сначало разобраться с аккаунтами и установщиками
-             которые нужно деактивировать , а после уже работаем с новыми сущностями.
-            */
+            Здесь сразу флашим так как это условие не всегда работает , и лучше сначало разобраться с аккаунтами и установщиками
+            которые нужно деактивировать , а после уже работаем с новыми сущностями.
+           */
             $this->flusher->flush(...$entitiesToFlush);
         }
+
 
         $uuidV7 = Uuid::v7();
         $applicationInstallationId = Uuid::v7();
