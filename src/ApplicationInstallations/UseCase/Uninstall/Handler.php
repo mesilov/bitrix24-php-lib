@@ -46,7 +46,6 @@ readonly class Handler
         $activeInstallation = $this->applicationInstallationRepository->findActiveByApplicationToken($command->applicationToken);
 
         if (null !== $activeInstallation) {
-
             $this->logger->info(
                 'ApplicationInstallations.Uninstall.Start'
             );
@@ -83,8 +82,7 @@ readonly class Handler
                 'applicationToken' => $command->applicationToken,
                 'flushedEntitiesCount' => count($entitiesToFlush),
             ]);
-
-        }else{
+        } else {
             $this->logger->info('ApplicationInstallations.Uninstall.false_request', [
                 'applicationToken' => $command->applicationToken,
                 'memberId' => $command->memberId,

@@ -24,8 +24,6 @@ class ApplicationInstallationTest extends ApplicationInstallationInterfaceTest
     protected function createApplicationInstallationImplementation(
         Uuid $uuid,
         ApplicationInstallationStatus $applicationInstallationStatus,
-        CarbonImmutable $createdAt,
-        CarbonImmutable $updatedAt,
         Uuid $bitrix24AccountUuid,
         ApplicationStatus $applicationStatus,
         PortalLicenseFamily $portalLicenseFamily,

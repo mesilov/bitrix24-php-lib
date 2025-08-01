@@ -77,10 +77,8 @@ readonly class Command
             throw new InvalidArgumentException('Application version must be a positive integer.');
         }
 
-        if (null !== $this->applicationToken) {
-            if ('' === trim($this->applicationToken)) {
-                throw new InvalidArgumentException('Application token must be a non-empty string.');
-            }
+        if (null !== $this->applicationToken && '' === trim($this->applicationToken)) {
+            throw new InvalidArgumentException('Application token must be a non-empty string.');
         }
     }
 }

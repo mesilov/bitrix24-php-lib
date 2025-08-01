@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine;
 
 use Bitrix24\Lib\ApplicationInstallations\Entity\ApplicationInstallation;
+use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Exceptions\ApplicationInstallationNotFoundException;
@@ -38,7 +39,8 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->setParameter('uuid', $uuid)
             ->setParameter('status', ApplicationInstallationStatus::deleted)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
 
         if (null === $applicationInstallation) {
             throw new ApplicationInstallationNotFoundException(
@@ -79,7 +81,8 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->orderBy('appInstallation.createdAt', 'DESC')
             ->setParameter('bitrix24AccountId', $uuid)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
     }
 
     #[\Override]
@@ -95,7 +98,8 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->orderBy('appInstallation.createdAt', 'DESC')
             ->setParameter('externalId', $externalId)
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
     }
 
     public function findActiveByAccountId(Uuid $uuid): ?ApplicationInstallationInterface
@@ -112,7 +116,8 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->setParameter('b24AccountId', $uuid)
             ->setParameter('statuses', $activeStatuses)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
     }
 
     public function findActiveByApplicationToken(string $applicationToken): ?ApplicationInstallationInterface
@@ -129,21 +134,21 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->setParameter('applicationToken', $applicationToken)
             ->setParameter('statuses', $activeStatuses)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
     }
 
     /**
      * Получаем активную установку приложения с помощью аккаунта.
      *
-     * @param string $memberId
-     * @return ApplicationInstallation|null
+     * @return null|ApplicationInstallation
      */
     public function findActiveInstallationWithAccountByMemberId(string $memberId): ?ApplicationInstallationInterface
     {
-        $qb = $this->createQueryBuilder('ai');
+        $queryBuilder = $this->createQueryBuilder('ai');
 
-        return $qb->leftJoin(
-            'Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account',
+        return $queryBuilder->leftJoin(
+            Bitrix24Account::class,
             'b24',
             Join::WITH,
             'ai.bitrix24AccountId = b24.id AND b24.isMasterAccount = true'

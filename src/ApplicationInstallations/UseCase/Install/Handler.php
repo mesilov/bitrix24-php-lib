@@ -29,7 +29,7 @@ readonly class Handler
      * На данный момент могут быть не обработаны несколько сценариев.
      * Например :
      * 1) По какой-то причине мы пропустили событие от Б24 с токеном, о том, что надо удалить приложение (удален портал, мы были не доступны и запрос пропущен или еще как-то)
-     * 2) Надо вручную или еще как-то удалить приложение зная только его member_id (может что-то еще для валидации)
+     * 2) Надо вручную или еще как-то удалить приложение зная только его member_id (может что-то еще для валидации).
      *
      * @throws InvalidArgumentException
      */
@@ -44,7 +44,7 @@ readonly class Handler
         ]);
 
         /** @var null|AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $activeInstallation */
-        $activeInstallation =  $this->applicationInstallationRepository->findActiveInstallationWithAccountByMemberId($command->memberId);
+        $activeInstallation = $this->applicationInstallationRepository->findActiveInstallationWithAccountByMemberId($command->memberId);
 
         if (null !== $activeInstallation) {
             $entitiesToFlush = [];
@@ -60,13 +60,7 @@ readonly class Handler
 
             if ([] !== $b24Accounts) {
                 foreach ($b24Accounts as $b24Account) {
-                    $isMaster = $b24Account->isMasterAccount();
-                    if ($isMaster) {
-                        $b24Account->applicationUninstalled(null);
-                    } else {
-                        $b24Account->applicationUninstalled(null);
-                    }
-
+                    $b24Account->applicationUninstalled(null);
                     $this->bitrix24AccountRepository->save($b24Account);
                     $entitiesToFlush[] = $b24Account;
                 }
@@ -78,7 +72,6 @@ readonly class Handler
            */
             $this->flusher->flush(...$entitiesToFlush);
         }
-
 
         $uuidV7 = Uuid::v7();
         $applicationInstallationId = Uuid::v7();
