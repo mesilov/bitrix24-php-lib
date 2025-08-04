@@ -63,13 +63,7 @@ readonly class Handler
 
             if ([] !== $b24Accounts) {
                 foreach ($b24Accounts as $b24Account) {
-                    $isMaster = $b24Account->isMasterAccount();
-                    if ($isMaster) {
-                        $b24Account->applicationUninstalled($command->applicationToken);
-                    } else {
-                        $b24Account->applicationUninstalled(null);
-                    }
-
+                    $b24Account->applicationUninstalled(null);
                     $this->bitrix24AccountRepository->save($b24Account);
                     $entitiesToFlush[] = $b24Account;
                 }

@@ -159,6 +159,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->setParameter('memberId', $memberId)
             ->setParameter('status', ApplicationInstallationStatus::deleted)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
     }
 }
