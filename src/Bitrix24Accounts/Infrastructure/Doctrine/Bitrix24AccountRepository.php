@@ -56,6 +56,7 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
             ->createQueryBuilder('b24')
             ->where('b24.id = :id')
             ->andWhere('b24.status != :status')
+            ->orderBy('b24.createdAt', 'DESC')
             ->setParameter('id', $uuid)
             ->setParameter('status', Bitrix24AccountStatus::deleted)
             ->getQuery()
@@ -103,6 +104,64 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         }
 
         return $this->findBy($criteria);
+    }
+
+    /**
+     * @phpstan-return Bitrix24AccountInterface|null
+     *
+     * @throws InvalidArgumentException
+     */
+    public function findMasterByMemberId(
+        string $memberId,
+        ?Bitrix24AccountStatus $bitrix24AccountStatus = null,
+        ?int $bitrix24UserId = null,
+        ?bool $isAdmin = null
+    ): ?Bitrix24AccountInterface {
+        if ('' === trim($memberId)) {
+            throw new InvalidArgumentException('memberId cannot be empty');
+        }
+
+        $criteria = [
+            'memberId' => $memberId,
+            'isMasterAccount' => true,
+        ];
+
+        if ($bitrix24AccountStatus instanceof Bitrix24AccountStatus) {
+            $criteria['status'] = $bitrix24AccountStatus->name;
+        }
+
+        if (null !== $bitrix24UserId) {
+            $criteria['bitrix24UserId'] = $bitrix24UserId;
+        }
+
+        if (null !== $isAdmin) {
+            $criteria['isBitrix24UserAdmin'] = $isAdmin;
+        }
+
+        return $this->findOneBy($criteria);
+    }
+
+    public function findActiveByMemberId(string $memberId): array
+    {
+        if ('' === trim($memberId)) {
+            throw new InvalidArgumentException('memberId cannot be empty');
+        }
+
+        $activeStatuses = [
+            Bitrix24AccountStatus::new,
+            Bitrix24AccountStatus::active,
+        ];
+
+        return $this->getEntityManager()->getRepository(Bitrix24Account::class)
+            ->createQueryBuilder('b24')
+            ->where('b24.memberId = :memberId')
+            ->andWhere('b24.status IN (:statuses)')
+            ->orderBy('b24.createdAt', 'DESC')
+            ->setParameter('memberId', $memberId)
+            ->setParameter('statuses', $activeStatuses)
+            ->getQuery()
+            ->getResult()
+        ;
     }
 
     #[\Override]
@@ -163,9 +222,9 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     }
 
     /**
-     * @throws InvalidArgumentException
-     *
      * @phpstan-return Bitrix24AccountInterface&AggregateRootEventsEmitterInterface
+     *
+     * @throws InvalidArgumentException
      */
     #[\Override]
     public function findOneAdminByMemberId(string $memberId): ?Bitrix24AccountInterface
@@ -184,9 +243,9 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     }
 
     /**
-     * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
-     *
      * @return array<AggregateRootEventsEmitterInterface&Bitrix24AccountInterface>
+     *
+     * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
      *
      * @throws InvalidArgumentException
      */

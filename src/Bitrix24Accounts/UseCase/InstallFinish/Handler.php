@@ -39,7 +39,7 @@ readonly class Handler
         /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account */
         $bitrix24Account = $this->getSingleAccountByMemberId($command->domain->value, $command->memberId, $command->bitrix24UserId);
 
-        $bitrix24Account->applicationInstalled($command->applicationToken);
+        $bitrix24Account->applicationInstalled(null);
 
         $this->bitrix24AccountRepository->save($bitrix24Account);
         $this->flusher->flush($bitrix24Account);
@@ -49,7 +49,6 @@ readonly class Handler
             [
                 'b24_domain_url' => $command->domain,
                 'b24_member_id' => $command->memberId,
-                'b24_application_id' => $command->applicationToken,
                 'b24_user_id' => $command->bitrix24UserId,
             ]
         );

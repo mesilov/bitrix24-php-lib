@@ -75,11 +75,12 @@ class HandlerTest extends TestCase
         $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withStatus(Bitrix24AccountStatus::new)
             ->withApplicationToken($applicationToken)
+            ->withInstalled()
+            ->withSetToken()
             ->build();
 
         $this->repository->save($bitrix24Account);
         $this->flusher->flush();
-
         $this->handler->handle(new Bitrix24Accounts\UseCase\Uninstall\Command($applicationToken));
 
         $this->expectException(Bitrix24AccountNotFoundException::class);
