@@ -12,6 +12,8 @@
 
         <field name="memberId" type="string" column="member_id" nullable="false"/>
 
+        <field name="isMasterAccount" type="boolean" column="is_master_account" nullable="true"/>
+
         <field name="domainUrl" type="string" column="domain_url" nullable="false"/>
 
         <field name="status" enum-type="string" column="status" nullable="false"/>
@@ -23,6 +25,8 @@
         <field name="updatedAt" type="carbon_immutable" column="updated_at_utc" precision="3" nullable="false"/>
 
         <field name="applicationVersion" type="integer" column="application_version" nullable="false"/>
+
+        <field name="comment" type="text" column="comment" nullable="true"/>
 
         <embedded name="authToken" class="Bitrix24\SDK\Core\Credentials\AuthToken"/>
 

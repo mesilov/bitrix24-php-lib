@@ -54,16 +54,6 @@ class CommandTest extends TestCase
     public static function dataForValidateValidDomain(): \Generator
     {
 
-        // Примеры допустимых доменов
-        /*$arrValidDomains = [
-            ['oldDomain' => 'example.com', 'newDomain' => 'example.org'],
-            ['oldDomain' => 'пример.рф', 'newDomain' => 'пример.рус'],
-            ['oldDomain' => 'test-site.org', 'newDomain' => 'test-site.ru'],
-            ['oldDomain' => 'valid-domain.co.uk', 'newDomain' => 'valid-domain.net'],
-            ['oldDomain' => 'subdomain.example.com', 'newDomain' => 'subdomain2.example.com'],
-            ['oldDomain' => 'тест.рус', 'newDomain' => 'тест2.рус'], // Пример с кириллицей
-        ];*/
-
         yield 'validDomain1' => [
             'example.com',
             'example.org',

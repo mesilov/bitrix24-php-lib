@@ -80,7 +80,7 @@ class CommandTest extends TestCase
             'Member ID must be a non-empty string.'
         ];
 
-        yield 'validDomainUrl' => [
+        yield 'emptyDomainUrl' => [
             $bitrix24Account->getId(),
             $bitrix24Account->getBitrix24UserId(),
             $bitrix24Account->isBitrix24UserAdmin(),
@@ -93,7 +93,7 @@ class CommandTest extends TestCase
             sprintf('Invalid domain: %s', '')
         ];
 
-        yield 'validBitrix24UserId' => [
+        yield 'invalidBitrix24UserId' => [
             $bitrix24Account->getId(),
             0,
             $bitrix24Account->isBitrix24UserAdmin(),
@@ -106,7 +106,7 @@ class CommandTest extends TestCase
             'Bitrix24 User ID must be a positive integer.'
         ];
 
-        yield 'validApplicationToken' => [
+        yield 'invalidApplicationVersion' => [
             $bitrix24Account->getId(),
             $bitrix24Account->getBitrix24UserId(),
             $bitrix24Account->isBitrix24UserAdmin(),

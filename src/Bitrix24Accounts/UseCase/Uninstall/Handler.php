@@ -30,9 +30,10 @@ readonly class Handler
 
         /** @var AggregateRootEventsEmitterInterface[]|Bitrix24AccountInterface[] $accounts */
         $accounts = $this->bitrix24AccountRepository->findByApplicationToken($command->applicationToken);
+
         $accountsCount = count($accounts);
         foreach ($accounts as $account) {
-            $account->applicationUninstalled($command->applicationToken);
+            $account->applicationUninstalled(null);
             $this->bitrix24AccountRepository->save($account);
         }
 

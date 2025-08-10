@@ -34,12 +34,10 @@ class Bitrix24AccountTest extends Bitrix24AccountInterfaceTest
         Uuid $uuid,
         int $bitrix24UserId,
         bool $isBitrix24UserAdmin,
+        bool $isMasterAccount,
         string $memberId,
         string $domainUrl,
-        Bitrix24AccountStatus $bitrix24AccountStatus,
         AuthToken $authToken,
-        CarbonImmutable $createdAt,
-        CarbonImmutable $updatedAt,
         int $applicationVersion,
         Scope $applicationScope
     ): Bitrix24AccountInterface {
@@ -49,12 +47,10 @@ class Bitrix24AccountTest extends Bitrix24AccountInterfaceTest
             $isBitrix24UserAdmin,
             $memberId,
             $domainUrl,
-            $bitrix24AccountStatus,
             $authToken,
-            $createdAt,
-            $updatedAt,
             $applicationVersion,
-            $applicationScope
+            $applicationScope,
+            $isMasterAccount
         );
     }
 }
