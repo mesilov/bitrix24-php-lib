@@ -10,7 +10,9 @@ use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\ApplicationInstallationRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Psr\Log\LoggerInterface;
@@ -19,17 +21,18 @@ use Symfony\Component\Uid\Uuid;
 readonly class Handler
 {
     public function __construct(
-        private Bitrix24AccountRepository $bitrix24AccountRepository,
-        private ApplicationInstallationRepository $applicationInstallationRepository,
+        private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
+        private ApplicationInstallationRepositoryInterface $applicationInstallationRepository,
         private Flusher $flusher,
         private LoggerInterface $logger
-    ) {}
+    ) {
+    }
 
     /**
-     * На данный момент могут быть не обработаны несколько сценариев.
-     * Например :
-     * 1) По какой-то причине мы пропустили событие от Б24 с токеном, о том, что надо удалить приложение (удален портал, мы были не доступны и запрос пропущен или еще как-то)
-     * 2) Надо вручную или еще как-то удалить приложение зная только его member_id (может что-то еще для валидации).
+     * At the moment, several scenarios may not be processed.
+     * For example,
+     * 1) For some reason, we missed the event from the B24 with token, that we need to delete the application (the portal was removed, we were not available and the request was missed or somehow)
+     * 2) It is necessary to manually or somehow delete the application knowing only his Member_id (maybe something else for validation).
      *
      * @throws InvalidArgumentException
      */
@@ -67,8 +70,9 @@ readonly class Handler
             }
 
             /*
-            Здесь сразу флашим так как это условие не всегда работает , и лучше сначало разобраться с аккаунтами и установщиками
-            которые нужно деактивировать , а после уже работаем с новыми сущностями.
+            Here flush immediately here, since this condition does not always work,
+            and it was better to at first to deal with accounts and installers
+            which need to be deactivated, and then we are already working with new entities.
            */
             $this->flusher->flush(...$entitiesToFlush);
         }
