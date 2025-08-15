@@ -21,8 +21,8 @@ use Symfony\Component\Uid\Uuid;
 readonly class Handler
 {
     public function __construct(
-        private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
-        private ApplicationInstallationRepositoryInterface $applicationInstallationRepository,
+        private Bitrix24AccountRepositoryInterface  $bitrix24AccountRepository,
+        private ApplicationInstallationRepositoryInterface  $applicationInstallationRepository,
         private Flusher $flusher,
         private LoggerInterface $logger
     ) {
