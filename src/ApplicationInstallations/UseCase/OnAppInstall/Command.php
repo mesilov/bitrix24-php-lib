@@ -7,9 +7,9 @@ namespace Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall;
 use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
 
 /**
- * Команда вызывается в тех случаях если установка происходит с помощью UI.
- * Bitrix24 отправляет событие ONAPPINSTALL на /event-handler.php и передает application_token.
- * Цель этого события донести токен приложения.
+ * Command is called when installation occurs through UI.
+ * Bitrix24 sends ONAPPINSTALL event to /event-handler.php and passes application_token.
+ * The purpose of this event is to deliver the application token.
  */
 readonly class Command
 {

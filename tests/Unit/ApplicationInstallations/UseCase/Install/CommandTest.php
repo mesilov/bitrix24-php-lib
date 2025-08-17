@@ -54,26 +54,26 @@ class CommandTest extends TestCase
         }
 
         $command = new Command(
+            $memberId,
+            $domain,
+            $authToken,
+            $applicationVersion,
+            $applicationScope,
+            $bitrix24UserId,
+            $isBitrix24UserAdmin,
             $applicationStatus,
             $portalLicenseFamily,
+            $applicationToken,
             $portalUsersCount,
             $contactPersonId,
             $bitrix24PartnerContactPersonId,
             $bitrix24PartnerId,
             $externalId,
             $comment,
-            $bitrix24UserId,
-            $isBitrix24UserAdmin,
-            $memberId,
-            $domain,
-            $authToken,
-            $applicationVersion,
-            $applicationScope,
-            $applicationToken,
         );
 
         if (null === $expectedException) {
-            // Проверяем, что объект создан и является экземпляром нужного класса
+            // Check that object is created and is instance of required class
             $this->assertInstanceOf(Command::class, $command);
         }
     }
@@ -190,7 +190,7 @@ class CommandTest extends TestCase
             InvalidArgumentException::class,
         ];
 
-        // Пустой memberId
+        // Empty memberId
         yield 'emptyMemberId' => [
             $applicationInstallationBuilder->getApplicationStatus(),
             $applicationInstallationBuilder->getPortalLicenseFamily(),
@@ -211,7 +211,7 @@ class CommandTest extends TestCase
             InvalidArgumentException::class,
         ];
 
-        // Некорректная версия приложения
+        // Invalid application version
         yield 'invalidApplicationVersion' => [
             $applicationInstallationBuilder->getApplicationStatus(),
             $applicationInstallationBuilder->getPortalLicenseFamily(),

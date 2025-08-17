@@ -358,7 +358,7 @@ class Bitrix24Account extends AggregateRoot implements Bitrix24AccountInterface
     private function addAccountCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
     {
         if ($isEmitCreatedEvent) {
-            // Создание события и добавление его в массив событий
+            // Create event and add it to events array
             $this->events[] = new Bitrix24AccountCreatedEvent(
                 $this->id,
                 $this->createdAt
