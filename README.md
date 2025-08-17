@@ -66,6 +66,35 @@ src/
 ```
 
 
+## Quick Start
+
+### Prerequisites
+- Docker and Docker Compose
+- Make
+
+### Running Tests
+```bash
+# Initialize and start services
+make up
+
+# Run functional tests (uses default database configuration)
+make test-run-functional
+
+# Run linters
+make lint-phpstan
+make lint-cs-fixer
+make lint-rector
+```
+
+### Database Configuration
+Default database credentials are pre-configured in `.env`:
+- Host: `database` (Docker service)
+- Database: `b24phpLibTest`
+- User: `b24phpLibTest`
+- Password: `b24phpLibTest`
+
+No additional configuration needed for running tests.
+
 ## Infrastructure
 - library is made cloud-agnostic
 

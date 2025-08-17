@@ -112,3 +112,13 @@ src/
 
 ## Environment Variables
 Located in `.env` and `.env.local` files for database configuration.
+
+### Default Configuration for Functional Tests
+The `.env` file contains default values that work out-of-the-box with Docker Compose:
+- `DATABASE_HOST=database` (Docker service name)
+- `DATABASE_USER=b24phpLibTest`
+- `DATABASE_PASSWORD=b24phpLibTest`
+- `DATABASE_NAME=b24phpLibTest`
+- `POSTGRES_VERSION=16`
+
+These defaults allow running functional tests immediately after `make up` without additional configuration.
