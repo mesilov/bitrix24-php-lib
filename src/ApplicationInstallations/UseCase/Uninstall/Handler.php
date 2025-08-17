@@ -13,17 +13,17 @@ use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterfac
 use Psr\Log\LoggerInterface;
 
 /**
- * Обработчик сценария деинсталляции приложения.
+ * Handler for application uninstallation scenario.
  *
- * Важно: Сценарий рассчитан на идеальные условия и может не учитывать случаи, когда:
- * 1) В базе данных кто-то вручную удалил или деактивировал запись о деинсталляции, а затем вызвал этот обработчик.
- * 2) Токен удаления поступает с задержкой (например, при быстрой установке и удалении приложения).
- * 3) В системе может существовать несколько аккаунтов, однако деинсталляция на портале выполняется только один раз.
- * 4) Для остальных аккаунтов деинсталляция невозможна — они используются только для авторизации и доступа.
+ * Important: This scenario is designed for ideal conditions and may not account for cases when:
+ * 1) Someone manually deleted or deactivated the uninstallation record in the database, then called this handler.
+ * 2) The uninstall token arrives with a delay (e.g., during rapid installation and removal of the application).
+ * 3) Multiple accounts may exist in the system, but uninstallation on the portal is performed only once.
+ * 4) For other accounts, uninstallation is impossible — they are used only for authorization and access.
  *
- * Возможные ограничения:
- * 1) Если установка приложения производилась по событию, которое не произошло, токен может не сохраниться, что приведет к спорным ситуациям при деинсталляции.
- * 2) Используйте этот обработчик только при уверенности в целостности данных и корректности порядка событий.
+ * Possible limitations:
+ * 1) If application installation was performed by an event that did not occur, the token may not be saved, leading to disputed situations during uninstallation.
+ * 2) Use this handler only when confident in data integrity and correct event order.
  */
 readonly class Handler
 {

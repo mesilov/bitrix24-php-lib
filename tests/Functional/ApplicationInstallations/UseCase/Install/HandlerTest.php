@@ -223,7 +223,7 @@ class HandlerTest extends TestCase
 
         $memberId = Uuid::v4()->toRfc4122();
 
-        //Загружаем в базу данных аккаунт и установку приложения для тестирования переустановки.
+        // Load account and application installation into database for reinstallation testing.
         $applicationToken = Uuid::v7()->toRfc4122();
         $currentBitrix24Account = (new Bitrix24AccountBuilder())
             ->withApplicationScope(new Scope(['crm']))
@@ -292,7 +292,7 @@ class HandlerTest extends TestCase
 
         $memberId = Uuid::v4()->toRfc4122();
 
-        //Загружаем в базу данных аккаунт и установку приложения для тестирования переустановки.
+        // Load account and application installation into database for reinstallation testing.
         $applicationToken = Uuid::v7()->toRfc4122();
         $currentBitrix24Account = (new Bitrix24AccountBuilder())
             ->withApplicationScope(new Scope(['crm']))

@@ -66,11 +66,11 @@ down-clear:
 
 restart: down up
 
-# работа с контейнерами
+# container operations
 php-cli-bash:
 	docker-compose run --rm php-cli sh $(filter-out $@,$(MAKECMDGOALS))
 
-# работа с composer
+# composer operations
 composer-install:
 	@echo "install dependencies…"
 	docker-compose run --rm php-cli composer install
@@ -81,8 +81,8 @@ composer-update:
 
 composer-dumpautoload:
 	docker-compose run --rm php-cli composer dumpautoload
-# вызов composer с любыми параметрами
-# Примеры:
+# composer call with any parameters
+# Examples:
 # make composer install
 # make composer "install --no-dev"
 composer:
@@ -114,7 +114,7 @@ test-run-functional: debug-print-env
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:update --dump-sql
 	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
 
-# Запустить один функциональный тест с дебагером
+# Run one functional test with debugger
 run-one-functional-test: debug-print-env
 	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testChangeDomainUrlWithHappyPath' tests/Functional/Bitrix24Accounts/UseCase/ChangeDomainUrl/HandlerTest.php
 

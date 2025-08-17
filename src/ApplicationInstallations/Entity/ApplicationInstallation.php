@@ -22,15 +22,15 @@ use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Установка может происходить по 2 сценриям.
- * 1) UI - Пользователь запускает установку через интерфейс.
- * Bitrix24 отправляет первичный запрос на /install.php с параметрами:
- * AUTH_ID, REFRESH_ID, member_id в теле запроса. Без application_token
- * Система создаёт Bitrix24Account в статусе new.
- * Bitrix24 отправляет событие ONAPPINSTALL на /event-handler.php и передает application_token
- * Вызывается applicationInstalled($applicationToken) с полученным токеном.
- * 2) Без UI - Установка инициируется прямым POST-запросом с полным набором credentials.
- * Сразу создается Bitrix24Account. У установщика и у аккаунта вызывается метод с переданыым токеном:
+ * Installation can occur in 2 scenarios.
+ * 1) UI - User launches installation through interface.
+ * Bitrix24 sends initial request to /install.php with parameters:
+ * AUTH_ID, REFRESH_ID, member_id in request body. Without application_token
+ * System creates Bitrix24Account with status new.
+ * Bitrix24 sends ONAPPINSTALL event to /event-handler.php and passes application_token
+ * Calls applicationInstalled($applicationToken) with received token.
+ * 2) Without UI - Installation is initiated by direct POST request with full credentials set.
+ * Bitrix24Account is created immediately. Installer and account call method with passed token:
  * $bitrix24Account->applicationInstalled($applicationToken);
  * $applicationInstallation->applicationInstalled($applicationToken);.
  */
@@ -415,7 +415,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     private function addApplicationCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
     {
         if ($isEmitCreatedEvent) {
-            // Создание события и добавление его в массив событий
+            // Create event and add it to events array
             $this->events[] = new ApplicationInstallationCreatedEvent(
                 $this->id,
                 $this->createdAt,

@@ -13,40 +13,41 @@ use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Установка может происходить по 2 сценриям.
- * Если в эту команду передается $applicationToken значит это установка без UI.
- * Иначе это установка с UI и $applicationToken передаваться не должен.
+* Installation can occur in 2 scenes.
+ * If $ ApplicationToken is transferred to this team means this installation without UI.
+ * Otherwise, this installation with UI and $ ApplicationtoKen should not be transmitted.
  *
- * 1) UI - Пользователь запускает установку через интерфейс.
- * Bitrix24 отправляет первичный запрос на /install.php с параметрами:
- * AUTH_ID, REFRESH_ID, member_id в теле запроса. Без application_token
- * Система создаёт Bitrix24Account в статусе new.
- * Bitrix24 отправляет событие ONAPPINSTALL на /event-handler.php и передает application_token
- * Вызывается applicationInstalled($applicationToken) с полученным токеном.
- * 2) Без UI - Установка инициируется прямым POST-запросом с полным набором credentials.
- * Сразу создается Bitrix24Account. У установщика и у аккаунта вызывается метод с переданыым токеном:
- * $bitrix24Account->applicationInstalled($applicationToken);
- * $applicationInstallation->applicationInstalled($applicationToken);.
+ * 1) UI - the user launches the installation through the interface.
+ * Bitrix24 sends the initial request to /install.php with parameters:
+ * Auth_id, refresh_id, member_id in the body of the request. Without application_token
+ * The system creates Bitrix24ACCOUNT in the status of New.
+ * Bitrix24 sends the OnppinStall event to /Event-handler.php and transfers Application_Token
+ * ApplicationInstalled ($ applicationToken) is called up with the resulting token.
+ * 2) Without UI - the installation is initiated by a direct post -call with a full set of Credentials.
+ * Bitrix24ACCOUNT is immediately created. In the installer and in the account, the method with the transferred token is called:
+ * $ BITRIX24ACCOUNT-> ApplicationInstalled ($ applicationToken);
+ * $ ApplicationinStallation-> ApplicationInstalled ($ applicationToken);
  */
 readonly class Command
 {
     public function __construct(
+        public string $memberId,
+        public Domain $domain,
+        public AuthToken $authToken,
+        public int $applicationVersion,
+        public Scope $applicationScope,
+        public int $bitrix24UserId,
+        public bool $isBitrix24UserAdmin,
         public ApplicationStatus $applicationStatus,
         public PortalLicenseFamily $portalLicenseFamily,
+        public ?string $applicationToken = null,
         public ?int $portalUsersCount,
         public ?Uuid $contactPersonId,
         public ?Uuid $bitrix24PartnerContactPersonId,
         public ?Uuid $bitrix24PartnerId,
         public ?string $externalId,
         public ?string $comment,
-        public int $bitrix24UserId,
-        public bool $isBitrix24UserAdmin,
-        public string $memberId,
-        public Domain $domain,
-        public AuthToken $authToken,
-        public int $applicationVersion,
-        public Scope $applicationScope,
-        public ?string $applicationToken = null,
+
     ) {
         $this->validate();
     }

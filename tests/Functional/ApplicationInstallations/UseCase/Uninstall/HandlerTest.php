@@ -85,7 +85,7 @@ class HandlerTest extends TestCase
     #[Test]
     public function testUninstall(): void
     {
-        //Загружаем в базу данных аккаунт и установку приложения для их деинсталяции.
+        // Load account and application installation into database for uninstallation.
         $applicationToken = Uuid::v7()->toRfc4122();
         $oldBitrix24Account = (new Bitrix24AccountBuilder())
             ->withApplicationScope(new Scope(['crm']))
@@ -177,7 +177,7 @@ class HandlerTest extends TestCase
     public function testUninstallWithFewAccount(): void
     {
         $memberId = Uuid::v4()->toRfc4122();
-        //Загружаем в базу данных аккаунт и установку приложения для их деинсталяции.
+        // Load account and application installation into database for uninstallation.
         $applicationToken = Uuid::v7()->toRfc4122();
         $oldBitrix24Account = (new Bitrix24AccountBuilder())
             ->withApplicationScope(new Scope(['crm']))
@@ -232,7 +232,7 @@ class HandlerTest extends TestCase
             $this->assertSame(
                 Bitrix24AccountStatus::deleted,
                 $bitrix24Account->getStatus(),
-                sprintf('Account %s не в статусе "удалён"', $bitrix24Account->getId())
+                sprintf('Account %s is not in "deleted" status', $bitrix24Account->getId())
             );
         }
     }

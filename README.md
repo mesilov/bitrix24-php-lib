@@ -2,50 +2,50 @@
 
 PHP lib for Bitrix24 application development
 
-## Область применения
+## Application Domain
 
-Библиотека предназначена для быстрой разработки приложений для Битркис24. Предоставляет слой хранения данных в СУБД
-[PostgreSQL](https://www.postgresql.org/), использует [Doctrine ORM](https://www.doctrine-project.org/).
+The library is designed for rapid development of Bitrix24 applications. Provides data storage layer in
+[PostgreSQL](https://www.postgresql.org/) database using [Doctrine ORM](https://www.doctrine-project.org/).
 
-Реализует [контракты](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts) из
+Implements [contracts](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts) from
 bitrix24-php-sdk.
 
-## Поддерживаемые контракты
+## Supported Contracts
 
 ### Bitrix24Accounts
 
-Отвечает за
-хранение [аккаунтов Битрикс24](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts/Bitrix24Accounts)
-с токенами доступа к порталу.
+Responsible for
+storing [Bitrix24 accounts](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts/Bitrix24Accounts)
+with portal access tokens.
 
 ### ApplicationInstallations
 
-Отвечает за
-хранение [фактов установок](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts/ApplicationInstallations)
-приложения на конкретный портал Битркис24
+Responsible for
+storing [installation facts](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts/ApplicationInstallations)
+of applications on specific Bitrix24 portals
 
 ### ContactPersons
 
-Отвечает за
-хранение [контактных лиц](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts/ContactPersons),
-которые произвели установку приложения
+Responsible for
+storing [contact persons](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts/ContactPersons)
+who performed application installation
 
 ### Bitrix24Partners
 
-Отвечает за
-хранение [партнёра](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts/Bitrix24Partners) Битрикс24, который произвёл установку или обслуживает портал
+Responsible for
+storing [Bitrix24 partners](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts/Bitrix24Partners) who performed installation or service the portal
 
-## Архитектура
+## Architecture
 
-### Слои и уровни абстракции
+### Layers and Abstraction Levels
 ```
-bitrix24-app-laravel-skeleton – шаблон приложения на Laravel
-bitrix24-app-symfony-skeleton – шаблон приложения на Symfony    
-bitrix24-php-lib – работа с сущностями приложения и их хранение в СУБД
-bitrix24-php-sdk – транспортный слой + события транспорта (протух токен, переименовали портал)
+bitrix24-app-laravel-skeleton – Laravel application template
+bitrix24-app-symfony-skeleton – Symfony application template    
+bitrix24-php-lib – application entities work and their storage in database
+bitrix24-php-sdk – transport layer + transport events (expired token, portal renamed)
 ```
 
-### Структура папок bounded context
+### Bounded Context Folder Structure
 ```
 src/
     Bitrix24Accounts
@@ -66,13 +66,13 @@ src/
 ```
 
 
-## Инфраструктура
-- библиотека делается cloud-agnostic
+## Infrastructure
+- library is made cloud-agnostic
 
 
-## Правила разработки
-1. Используем линтеры
-2. Библиотека покрыта тестами
-3. Вся работа строится через issues
-4. Процессы разработки - remote first
-5. Думаем и обсуждаем — потом пишем
+## Development Rules
+1. We use linters
+2. Library is covered with tests
+3. All work is organized through issues
+4. Development processes are remote first
+5. Think and discuss — then write

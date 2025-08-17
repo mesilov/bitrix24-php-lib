@@ -72,7 +72,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
     }
 
     #[\Override]
-    // У нас в установке аккаунтId это констрейнт, так что возращать мы должны сущность.
+    // In our installation, accountId is a constraint, so we must return an entity.
     public function findByBitrix24AccountId(Uuid $uuid): ?ApplicationInstallationInterface
     {
         return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
@@ -139,7 +139,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
     }
 
     /**
-     * Получаем активную установку приложения с помощью аккаунта.
+     * Get active application installation using account.
      *
      * @return null|ApplicationInstallation
      */

@@ -32,7 +32,7 @@ readonly class Handler
             $this->bitrix24AccountRepository->save($account);
         }
 
-        // используется как оператор распаковки (splat operator) для передачи массива как отдельных аргументов:
+        // Used as unpacking operator (splat operator) to pass array as separate arguments:
         $this->flusher->flush(...$accounts);
 
         $this->logger->info(
