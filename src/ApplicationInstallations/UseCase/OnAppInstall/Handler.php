@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall;
 
-use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationInstallationRepository;
-use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\ApplicationStatus;
-use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\ApplicationInstallationRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Psr\Log\LoggerInterface;
@@ -18,8 +17,8 @@ use Psr\Log\LoggerInterface;
 readonly class Handler
 {
     public function __construct(
-        private Bitrix24AccountRepository $bitrix24AccountRepository,
-        private ApplicationInstallationRepository $applicationInstallationRepository,
+        private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
+        private ApplicationInstallationRepositoryInterface $applicationInstallationRepository,
         private Flusher $flusher,
         private LoggerInterface $logger
     ) {}

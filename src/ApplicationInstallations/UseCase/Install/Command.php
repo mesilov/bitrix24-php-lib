@@ -13,7 +13,7 @@ use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
 /**
-* Installation can occur in 2 scenes.
+ * Installation can occur in 2 scenes.
  * If $ ApplicationToken is transferred to this team means this installation without UI.
  * Otherwise, this installation with UI and $ ApplicationtoKen should not be transmitted.
  *
@@ -41,13 +41,12 @@ readonly class Command
         public ApplicationStatus $applicationStatus,
         public PortalLicenseFamily $portalLicenseFamily,
         public ?string $applicationToken = null,
-        public ?int $portalUsersCount,
-        public ?Uuid $contactPersonId,
-        public ?Uuid $bitrix24PartnerContactPersonId,
-        public ?Uuid $bitrix24PartnerId,
-        public ?string $externalId,
-        public ?string $comment,
-
+        public ?int $portalUsersCount = null,
+        public ?Uuid $contactPersonId = null,
+        public ?Uuid $bitrix24PartnerContactPersonId = null,
+        public ?Uuid $bitrix24PartnerId = null,
+        public ?string $externalId = null,
+        public ?string $comment = null,
     ) {
         $this->validate();
     }

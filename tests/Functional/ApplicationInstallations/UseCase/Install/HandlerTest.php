@@ -99,21 +99,22 @@ class HandlerTest extends TestCase
 
         $this->handler->handle(
             new ApplicationInstallations\UseCase\Install\Command(
+                $bitrix24AccountBuilder->getMemberId(),
+                new Domain($bitrix24AccountBuilder->getDomainUrl()),
+                $bitrix24AccountBuilder->getAuthToken(),
+                $bitrix24AccountBuilder->getApplicationVersion(),
+                $bitrix24AccountBuilder->getApplicationScope(),
+                $bitrix24AccountBuilder->getBitrix24UserId(),
+                $bitrix24AccountBuilder->isBitrix24UserAdmin(),
                 $applicationInstallationBuilder->getApplicationStatus(),
                 $applicationInstallationBuilder->getPortalLicenseFamily(),
+                null, // applicationToken
                 $applicationInstallationBuilder->getPortalUsersCount(),
                 $applicationInstallationBuilder->getContactPersonId(),
                 $applicationInstallationBuilder->getBitrix24PartnerContactPersonId(),
                 $applicationInstallationBuilder->getBitrix24PartnerId(),
                 $applicationInstallationBuilder->getExternalId(),
-                $applicationInstallationBuilder->getComment(),
-                $bitrix24AccountBuilder->getBitrix24UserId(),
-                $bitrix24AccountBuilder->isBitrix24UserAdmin(),
-                $bitrix24AccountBuilder->getMemberId(),
-                new Domain($bitrix24AccountBuilder->getDomainUrl()),
-                $bitrix24AccountBuilder->getAuthToken(),
-                $bitrix24AccountBuilder->getApplicationVersion(),
-                $bitrix24AccountBuilder->getApplicationScope()
+                $applicationInstallationBuilder->getComment()
             )
         );
 
@@ -145,22 +146,22 @@ class HandlerTest extends TestCase
 
         $this->handler->handle(
             new ApplicationInstallations\UseCase\Install\Command(
-                $applicationInstallationBuilder->getApplicationStatus(),
-                $applicationInstallationBuilder->getPortalLicenseFamily(),
-                $applicationInstallationBuilder->getPortalUsersCount(),
-                $applicationInstallationBuilder->getContactPersonId(),
-                $applicationInstallationBuilder->getBitrix24PartnerContactPersonId(),
-                $applicationInstallationBuilder->getBitrix24PartnerId(),
-                $applicationInstallationBuilder->getExternalId(),
-                $applicationInstallationBuilder->getComment(),
-                $bitrix24AccountBuilder->getBitrix24UserId(),
-                $bitrix24AccountBuilder->isBitrix24UserAdmin(),
                 $bitrix24AccountBuilder->getMemberId(),
                 new Domain($bitrix24AccountBuilder->getDomainUrl()),
                 $bitrix24AccountBuilder->getAuthToken(),
                 $bitrix24AccountBuilder->getApplicationVersion(),
                 $bitrix24AccountBuilder->getApplicationScope(),
-                $newApplicationToken
+                $bitrix24AccountBuilder->getBitrix24UserId(),
+                $bitrix24AccountBuilder->isBitrix24UserAdmin(),
+                $applicationInstallationBuilder->getApplicationStatus(),
+                $applicationInstallationBuilder->getPortalLicenseFamily(),
+                $newApplicationToken, // applicationToken
+                $applicationInstallationBuilder->getPortalUsersCount(),
+                $applicationInstallationBuilder->getContactPersonId(),
+                $applicationInstallationBuilder->getBitrix24PartnerContactPersonId(),
+                $applicationInstallationBuilder->getBitrix24PartnerId(),
+                $applicationInstallationBuilder->getExternalId(),
+                $applicationInstallationBuilder->getComment()
             )
         );
 
@@ -194,22 +195,22 @@ class HandlerTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->handler->handle(
             new ApplicationInstallations\UseCase\Install\Command(
-                $applicationInstallationBuilder->getApplicationStatus(),
-                $applicationInstallationBuilder->getPortalLicenseFamily(),
-                $applicationInstallationBuilder->getPortalUsersCount(),
-                $applicationInstallationBuilder->getContactPersonId(),
-                $applicationInstallationBuilder->getBitrix24PartnerContactPersonId(),
-                $applicationInstallationBuilder->getBitrix24PartnerId(),
-                $applicationInstallationBuilder->getExternalId(),
-                $applicationInstallationBuilder->getComment(),
-                $bitrix24AccountBuilder->getBitrix24UserId(),
-                $bitrix24AccountBuilder->isBitrix24UserAdmin(),
                 $bitrix24AccountBuilder->getMemberId(),
                 new Domain($bitrix24AccountBuilder->getDomainUrl()),
                 $bitrix24AccountBuilder->getAuthToken(),
                 $bitrix24AccountBuilder->getApplicationVersion(),
                 $bitrix24AccountBuilder->getApplicationScope(),
-                ''
+                $bitrix24AccountBuilder->getBitrix24UserId(),
+                $bitrix24AccountBuilder->isBitrix24UserAdmin(),
+                $applicationInstallationBuilder->getApplicationStatus(),
+                $applicationInstallationBuilder->getPortalLicenseFamily(),
+                '', // applicationToken
+                $applicationInstallationBuilder->getPortalUsersCount(),
+                $applicationInstallationBuilder->getContactPersonId(),
+                $applicationInstallationBuilder->getBitrix24PartnerContactPersonId(),
+                $applicationInstallationBuilder->getBitrix24PartnerId(),
+                $applicationInstallationBuilder->getExternalId(),
+                $applicationInstallationBuilder->getComment()
             )
         );
     }
@@ -257,21 +258,22 @@ class HandlerTest extends TestCase
 
         $this->handler->handle(
             new ApplicationInstallations\UseCase\Install\Command(
+                $bitrix24AccountBuilder->getMemberId(),
+                new Domain($bitrix24AccountBuilder->getDomainUrl()),
+                $bitrix24AccountBuilder->getAuthToken(),
+                $bitrix24AccountBuilder->getApplicationVersion(),
+                $bitrix24AccountBuilder->getApplicationScope(),
+                $bitrix24AccountBuilder->getBitrix24UserId(),
+                $bitrix24AccountBuilder->isBitrix24UserAdmin(),
                 $applicationInstallationBuilder->getApplicationStatus(),
                 $applicationInstallationBuilder->getPortalLicenseFamily(),
+                null, // applicationToken
                 $applicationInstallationBuilder->getPortalUsersCount(),
                 $applicationInstallationBuilder->getContactPersonId(),
                 $applicationInstallationBuilder->getBitrix24PartnerContactPersonId(),
                 $applicationInstallationBuilder->getBitrix24PartnerId(),
                 $applicationInstallationBuilder->getExternalId(),
-                $applicationInstallationBuilder->getComment(),
-                $bitrix24AccountBuilder->getBitrix24UserId(),
-                $bitrix24AccountBuilder->isBitrix24UserAdmin(),
-                $bitrix24AccountBuilder->getMemberId(),
-                new Domain($bitrix24AccountBuilder->getDomainUrl()),
-                $bitrix24AccountBuilder->getAuthToken(),
-                $bitrix24AccountBuilder->getApplicationVersion(),
-                $bitrix24AccountBuilder->getApplicationScope()
+                $applicationInstallationBuilder->getComment()
             )
         );
 
@@ -320,21 +322,22 @@ class HandlerTest extends TestCase
 
         $this->handler->handle(
             new ApplicationInstallations\UseCase\Install\Command(
+                $currentBitrix24Account->getMemberId(),
+                new Domain($currentBitrix24Account->getDomainUrl()),
+                $currentBitrix24Account->getAuthToken(),
+                $currentBitrix24Account->getApplicationVersion(),
+                $currentBitrix24Account->getApplicationScope(),
+                $currentBitrix24Account->getBitrix24UserId(),
+                $currentBitrix24Account->isBitrix24UserAdmin(),
                 $applicationInstallationBuilder->getApplicationStatus(),
                 $applicationInstallationBuilder->getPortalLicenseFamily(),
+                null, // applicationToken
                 $applicationInstallationBuilder->getPortalUsersCount(),
                 $applicationInstallationBuilder->getContactPersonId(),
                 $applicationInstallationBuilder->getBitrix24PartnerContactPersonId(),
                 $applicationInstallationBuilder->getBitrix24PartnerId(),
                 $applicationInstallationBuilder->getExternalId(),
-                $applicationInstallationBuilder->getComment(),
-                $currentBitrix24Account->getBitrix24UserId(),
-                $currentBitrix24Account->isBitrix24UserAdmin(),
-                $currentBitrix24Account->getMemberId(),
-                new Domain($currentBitrix24Account->getDomainUrl()),
-                $currentBitrix24Account->getAuthToken(),
-                $currentBitrix24Account->getApplicationVersion(),
-                $currentBitrix24Account->getApplicationScope()
+                $applicationInstallationBuilder->getComment()
             )
         );
 

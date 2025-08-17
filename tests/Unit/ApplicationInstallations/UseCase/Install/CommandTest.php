@@ -54,22 +54,22 @@ class CommandTest extends TestCase
         }
 
         $command = new Command(
+            $memberId,
+            $domain,
+            $authToken,
+            $applicationVersion,
+            $applicationScope,
+            $bitrix24UserId,
+            $isBitrix24UserAdmin,
             $applicationStatus,
             $portalLicenseFamily,
+            $applicationToken,
             $portalUsersCount,
             $contactPersonId,
             $bitrix24PartnerContactPersonId,
             $bitrix24PartnerId,
             $externalId,
             $comment,
-            $bitrix24UserId,
-            $isBitrix24UserAdmin,
-            $memberId,
-            $domain,
-            $authToken,
-            $applicationVersion,
-            $applicationScope,
-            $applicationToken,
         );
 
         if (null === $expectedException) {
