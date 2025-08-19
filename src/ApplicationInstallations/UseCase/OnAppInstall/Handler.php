@@ -6,6 +6,7 @@ namespace Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall;
 
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\ApplicationStatus;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\ApplicationInstallationRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
