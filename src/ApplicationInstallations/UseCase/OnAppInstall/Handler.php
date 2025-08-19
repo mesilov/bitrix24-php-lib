@@ -13,6 +13,7 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24Accou
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Psr\Log\LoggerInterface;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 
 readonly class Handler
 {
