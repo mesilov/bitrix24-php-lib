@@ -50,22 +50,6 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         return $account;
     }
 
-    public function existsById(Uuid $uuid): bool
-    {
-        $account = $this->getEntityManager()->getRepository(Bitrix24Account::class)
-            ->createQueryBuilder('b24')
-            ->where('b24.id = :id')
-            ->andWhere('b24.status != :status')
-            ->orderBy('b24.createdAt', 'DESC')
-            ->setParameter('id', $uuid)
-            ->setParameter('status', Bitrix24AccountStatus::deleted)
-            ->getQuery()
-            ->getOneOrNullResult()
-        ;
-
-        return (bool) $account;
-    }
-
     #[\Override]
     public function save(Bitrix24AccountInterface $bitrix24Account): void
     {
