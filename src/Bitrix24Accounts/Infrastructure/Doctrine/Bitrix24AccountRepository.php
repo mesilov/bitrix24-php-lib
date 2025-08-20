@@ -57,17 +57,17 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     }
 
     /**
-     * @phpstan-return array<Bitrix24AccountInterface&AggregateRootEventsEmitterInterface>
-     *
+     * @param string $memberId
+     * @param Bitrix24AccountStatus|null $bitrix24AccountStatus
+     * @param int|null $bitrix24UserId
+     * @param bool|null $isAdmin
+     * @param bool|null $isMasterAccount
+     * @return array
      * @throws InvalidArgumentException
      */
     #[\Override]
     public function findByMemberId(
-        string $memberId,
-        ?Bitrix24AccountStatus $bitrix24AccountStatus = null,
-        ?int $bitrix24UserId = null,
-        ?bool $isAdmin = null
-    ): array {
+        string $memberId, ?Bitrix24AccountStatus $bitrix24AccountStatus = null, ?int $bitrix24UserId = null, ?bool $isAdmin = null, ?bool $isMasterAccount = null): array {
         if ('' === trim($memberId)) {
             throw new InvalidArgumentException('memberId cannot be empty');
         }
@@ -85,67 +85,13 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
 
         if (null !== $isAdmin) {
             $criteria['isBitrix24UserAdmin'] = $isAdmin;
+        }
+
+        if (null !== $isMasterAccount) {
+            $criteria['isMasterAccount'] = $isMasterAccount;
         }
 
         return $this->findBy($criteria);
-    }
-
-    /**
-     * @phpstan-return Bitrix24AccountInterface|null
-     *
-     * @throws InvalidArgumentException
-     */
-    public function findMasterByMemberId(
-        string $memberId,
-        ?Bitrix24AccountStatus $bitrix24AccountStatus = null,
-        ?int $bitrix24UserId = null,
-        ?bool $isAdmin = null
-    ): ?Bitrix24AccountInterface {
-        if ('' === trim($memberId)) {
-            throw new InvalidArgumentException('memberId cannot be empty');
-        }
-
-        $criteria = [
-            'memberId' => $memberId,
-            'isMasterAccount' => true,
-        ];
-
-        if ($bitrix24AccountStatus instanceof Bitrix24AccountStatus) {
-            $criteria['status'] = $bitrix24AccountStatus->name;
-        }
-
-        if (null !== $bitrix24UserId) {
-            $criteria['bitrix24UserId'] = $bitrix24UserId;
-        }
-
-        if (null !== $isAdmin) {
-            $criteria['isBitrix24UserAdmin'] = $isAdmin;
-        }
-
-        return $this->findOneBy($criteria);
-    }
-
-    public function findActiveByMemberId(string $memberId): array
-    {
-        if ('' === trim($memberId)) {
-            throw new InvalidArgumentException('memberId cannot be empty');
-        }
-
-        $activeStatuses = [
-            Bitrix24AccountStatus::new,
-            Bitrix24AccountStatus::active,
-        ];
-
-        return $this->getEntityManager()->getRepository(Bitrix24Account::class)
-            ->createQueryBuilder('b24')
-            ->where('b24.memberId = :memberId')
-            ->andWhere('b24.status IN (:statuses)')
-            ->orderBy('b24.createdAt', 'DESC')
-            ->setParameter('memberId', $memberId)
-            ->setParameter('statuses', $activeStatuses)
-            ->getQuery()
-            ->getResult()
-        ;
     }
 
     #[\Override]
@@ -170,18 +116,6 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
         }
 
         $this->save($bitrix24Account);
-    }
-
-    public function findAllActive(?int $limit = null, ?int $offset = null): array
-    {
-        return $this->getEntityManager()->getRepository(Bitrix24Account::class)->findBy(
-            [
-                'status' => Bitrix24AccountStatus::active,
-            ],
-            null,
-            $limit,
-            $offset
-        );
     }
 
     /**

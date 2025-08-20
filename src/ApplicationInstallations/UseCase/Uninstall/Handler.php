@@ -43,7 +43,7 @@ readonly class Handler
         ]);
 
         /** @var AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $activeInstallation */
-        $activeInstallation = $this->applicationInstallationRepository->findActiveByApplicationToken($command->applicationToken);
+        $activeInstallation = $this->applicationInstallationRepository->findByApplicationToken($command->applicationToken);
 
         if (null !== $activeInstallation) {
             $this->logger->info(

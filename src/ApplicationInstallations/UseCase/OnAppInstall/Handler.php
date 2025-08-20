@@ -48,9 +48,12 @@ readonly class Handler
         $this->applicationInstallationRepository->save($applicationInstallation);
 
         /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account */
-        $bitrix24Account = $this->bitrix24AccountRepository->findMasterByMemberId(
+        $bitrix24Account = $this->bitrix24AccountRepository->findByMemberId(
             $command->memberId,
             Bitrix24AccountStatus::active,
+            null,
+            null,
+            true
         );
 
         $bitrix24Account->setApplicationToken($command->applicationToken);

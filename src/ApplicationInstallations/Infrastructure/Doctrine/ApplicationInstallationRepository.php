@@ -102,42 +102,6 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
         ;
     }
 
-    public function findActiveByAccountId(Uuid $uuid): ?ApplicationInstallationInterface
-    {
-        $activeStatuses = [
-            ApplicationInstallationStatus::new,
-            ApplicationInstallationStatus::active,
-        ];
-
-        return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
-            ->createQueryBuilder('applicationInstallation')
-            ->where('applicationInstallation.bitrix24AccountId = :b24AccountId')
-            ->andWhere('applicationInstallation.status IN (:statuses)')
-            ->setParameter('b24AccountId', $uuid)
-            ->setParameter('statuses', $activeStatuses)
-            ->getQuery()
-            ->getOneOrNullResult()
-        ;
-    }
-
-    public function findActiveByApplicationToken(string $applicationToken): ?ApplicationInstallationInterface
-    {
-        $activeStatuses = [
-            ApplicationInstallationStatus::new,
-            ApplicationInstallationStatus::active,
-        ];
-
-        return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
-            ->createQueryBuilder('applicationInstallation')
-            ->where('applicationInstallation.applicationToken = :applicationToken')
-            ->andWhere('applicationInstallation.status IN (:statuses)')
-            ->setParameter('applicationToken', $applicationToken)
-            ->setParameter('statuses', $activeStatuses)
-            ->getQuery()
-            ->getOneOrNullResult()
-        ;
-    }
-
     /**
      * Get active application installation using account.
      *
@@ -161,5 +125,34 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->getQuery()
             ->getOneOrNullResult()
         ;
+    }
+
+    #[\Override]
+    public function findByMemberId(string $memberId): ?ApplicationInstallationInterface
+    {
+
+    }
+
+    #[\Override]
+    public function findByApplicationToken(string $applicationToken): ?ApplicationInstallationInterface
+    {
+        if ('' === trim($applicationToken)){
+            return null;
+        }
+
+        $activeStatuses = [
+            ApplicationInstallationStatus::new,
+            ApplicationInstallationStatus::active,
+        ];
+
+        return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
+            ->createQueryBuilder('applicationInstallation')
+            ->where('applicationInstallation.applicationToken = :applicationToken')
+            ->andWhere('applicationInstallation.status IN (:statuses)')
+            ->setParameter('applicationToken', $applicationToken)
+            ->setParameter('statuses', $activeStatuses)
+            ->getQuery()
+            ->getOneOrNullResult()
+            ;
     }
 }
