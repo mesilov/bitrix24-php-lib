@@ -112,7 +112,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
     #[\Override]
     public function findByApplicationToken(string $applicationToken): ?ApplicationInstallationInterface
     {
-        if ('' === $applicationToken) {
+        if ('' === trim($applicationToken)) {
             throw new InvalidArgumentException('application token cannot be an empty string');
         }
 
@@ -135,7 +135,7 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
     #[\Override]
     public function findByBitrix24AccountMemberId(string $memberId): ?ApplicationInstallationInterface
     {
-        if ('' === $memberId) {
+        if ('' === trim($memberId)) {
             throw new InvalidArgumentException('memberId cannot be an empty string');
         }
 

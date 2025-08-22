@@ -10,6 +10,7 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\Applicati
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\ApplicationInstallationRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\MultipleBitrix24AccountsFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
@@ -71,7 +72,7 @@ readonly class Handler
         );
 
         if ([] === $bitrix24Accounts) {
-            throw new InvalidArgumentException('Bitrix24 account not found for member ID '.$memberId);
+            throw new Bitrix24AccountNotFoundException('Bitrix24 account not found for member ID '.$memberId);
         }
 
         if (1 !== count($bitrix24Accounts)) {
