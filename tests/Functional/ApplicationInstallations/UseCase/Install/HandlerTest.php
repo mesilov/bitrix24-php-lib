@@ -165,6 +165,7 @@ class HandlerTest extends TestCase
             )
         );
 
+
         $activeInstallation = $this->repository->findByApplicationToken($newApplicationToken);
         $this->assertNotNull($activeInstallation);
 

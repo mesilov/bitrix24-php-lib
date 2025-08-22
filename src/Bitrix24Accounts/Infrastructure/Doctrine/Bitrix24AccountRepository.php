@@ -57,17 +57,16 @@ class Bitrix24AccountRepository extends EntityRepository implements Bitrix24Acco
     }
 
     /**
-     * @param string $memberId
-     * @param Bitrix24AccountStatus|null $bitrix24AccountStatus
-     * @param int|null $bitrix24UserId
-     * @param bool|null $isAdmin
-     * @param bool|null $isMasterAccount
-     * @return array
      * @throws InvalidArgumentException
      */
     #[\Override]
     public function findByMemberId(
-        string $memberId, ?Bitrix24AccountStatus $bitrix24AccountStatus = null, ?int $bitrix24UserId = null, ?bool $isAdmin = null, ?bool $isMasterAccount = null): array {
+        string $memberId,
+        ?Bitrix24AccountStatus $bitrix24AccountStatus = null,
+        ?int $bitrix24UserId = null,
+        ?bool $isAdmin = null,
+        ?bool $isMasterAccount = null
+    ): array {
         if ('' === trim($memberId)) {
             throw new InvalidArgumentException('memberId cannot be empty');
         }

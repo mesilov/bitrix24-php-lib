@@ -103,12 +103,42 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
     }
 
     /**
-     * Get active application installation using account.
+     * Find application installation by application token.
      *
-     * @return null|ApplicationInstallation
+     * @param non-empty-string $applicationToken
+     *
+     * @throws InvalidArgumentException
      */
-    public function findActiveInstallationWithAccountByMemberId(string $memberId): ?ApplicationInstallationInterface
+    #[\Override]
+    public function findByApplicationToken(string $applicationToken): ?ApplicationInstallationInterface
     {
+        if ('' === $applicationToken) {
+            throw new InvalidArgumentException('application token cannot be an empty string');
+        }
+
+        $activeStatuses = [
+            ApplicationInstallationStatus::new,
+            ApplicationInstallationStatus::active,
+        ];
+
+        return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
+            ->createQueryBuilder('applicationInstallation')
+            ->where('applicationInstallation.applicationToken = :applicationToken')
+            ->andWhere('applicationInstallation.status IN (:statuses)')
+            ->setParameter('applicationToken', $applicationToken)
+            ->setParameter('statuses', $activeStatuses)
+            ->getQuery()
+            ->getOneOrNullResult()
+        ;
+    }
+
+    #[\Override]
+    public function findByBitrix24AccountMemberId(string $memberId): ?ApplicationInstallationInterface
+    {
+        if ('' === $memberId) {
+            throw new InvalidArgumentException('memberId cannot be an empty string');
+        }
+
         $queryBuilder = $this->createQueryBuilder('ai');
 
         return $queryBuilder->leftJoin(
@@ -125,34 +155,5 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->getQuery()
             ->getOneOrNullResult()
         ;
-    }
-
-    #[\Override]
-    public function findByMemberId(string $memberId): ?ApplicationInstallationInterface
-    {
-
-    }
-
-    #[\Override]
-    public function findByApplicationToken(string $applicationToken): ?ApplicationInstallationInterface
-    {
-        if ('' === trim($applicationToken)){
-            return null;
-        }
-
-        $activeStatuses = [
-            ApplicationInstallationStatus::new,
-            ApplicationInstallationStatus::active,
-        ];
-
-        return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
-            ->createQueryBuilder('applicationInstallation')
-            ->where('applicationInstallation.applicationToken = :applicationToken')
-            ->andWhere('applicationInstallation.status IN (:statuses)')
-            ->setParameter('applicationToken', $applicationToken)
-            ->setParameter('statuses', $activeStatuses)
-            ->getQuery()
-            ->getOneOrNullResult()
-            ;
     }
 }
