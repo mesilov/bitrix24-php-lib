@@ -2,38 +2,50 @@
 
 PHP lib for Bitrix24 application development
 
+## Build status
+
+| CI\CD [status](https://github.com/mesilov/bitrix24-php-lib/actions) on `master`                                                                                                                          | 
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| 
+| [![allowed licenses check](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/license-check.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/license-check.yml)  | 
+| [![php-cs-fixer check](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-cs-fixer.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-cs-fixer.yml)      |
+| [![phpstan check](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-phpstan.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-phpstan.yml)             | 
+| [![rector check](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-rector.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-rector.yml)                |  
+| [![unit-tests status](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/tests-unit.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/tests-unit.yml)             | 
+| [![functional-tests status](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/tests-functional.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/tests-functional.yml) | 
+
+
 ## Application Domain
 
 The library is designed for rapid development of Bitrix24 applications. Provides data storage layer in
 [PostgreSQL](https://www.postgresql.org/) database using [Doctrine ORM](https://www.doctrine-project.org/).
 
-Implements [contracts](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts) from
+Implements [contracts](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts) from
 bitrix24-php-sdk.
 
 ## Supported Contracts
 
-### Bitrix24Accounts
+### Bitrix24Accounts — ✅
 
 Responsible for
-storing [Bitrix24 accounts](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts/Bitrix24Accounts)
+storing [Bitrix24 accounts](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts/Bitrix24Accounts)
 with portal access tokens.
 
-### ApplicationInstallations
+### ApplicationInstallations — ✅
 
 Responsible for
-storing [installation facts](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts/ApplicationInstallations)
+storing [installation facts](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts/ApplicationInstallations)
 of applications on specific Bitrix24 portals
 
-### ContactPersons
+### ContactPersons — ⏳ work in progress
 
 Responsible for
-storing [contact persons](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts/ContactPersons)
+storing [contact persons](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts/ContactPersons)
 who performed application installation
 
-### Bitrix24Partners
+### Bitrix24Partners — ⏳ work in progress
 
 Responsible for
-storing [Bitrix24 partners](https://github.com/mesilov/bitrix24-php-sdk/tree/master/src/Application/Contracts/Bitrix24Partners) who performed installation or service the portal
+storing [Bitrix24 partners](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts/Bitrix24Partners) who performed installation or service the portal
 
 ## Architecture
 
