@@ -1,4 +1,4 @@
-FROM php:8.3-cli-alpine
+FROM php:8.4-cli-alpine
 
 RUN apk add unzip libpq-dev git icu-dev autoconf build-base linux-headers \
     && docker-php-ext-install bcmath pdo pdo_pgsql intl \

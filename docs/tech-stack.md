@@ -1,11 +1,11 @@
-# Технический стек
-Что нужно знать для работы с Библиотекой, содержит ссылки на must-read документацию и книги
+# Technical Stack
+What you need to know to work with the Library, contains links to must-read documentation and books
 
 ## DDD
 ### EventStorming
 
-## Архитектура
-### Паттерны проектирования
+## Architecture
+### Design Patterns
 
 ## Docker
 ## PostgreSQL
@@ -20,12 +20,9 @@
 
 ## Bitrix24
 
-## Очереди
+## Queues
 - rabbitMQ 
 
 
 ## GitHub Actions
-- документация по GitHub Actions
-
-## Cloud провайдер — Яндекс.Облако
-
+- GitHub Actions documentation

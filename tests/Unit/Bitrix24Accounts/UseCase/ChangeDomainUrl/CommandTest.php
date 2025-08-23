@@ -88,42 +88,42 @@ class CommandTest extends TestCase
     public static function dataForValidateInvalidDomain(): \Generator
     {
         yield 'invalidDomain1' => [
-            'invalid_domain.com', // Неправильный формат (подчеркивание)
+            'invalid_domain.com', // Invalid format (underscore)
             'valid.com',
             \InvalidArgumentException::class,
             sprintf('Invalid domain: %s', 'invalid_domain.com')
         ];
 
         yield 'invalidDomain2' => [
-            '-invalid.com', // Домен не может начинаться с дефиса
+            '-invalid.com', // Domain cannot start with hyphen
             'valid.com',
             \InvalidArgumentException::class,
             sprintf('Invalid domain: %s', '-invalid.com')
         ];
 
         yield 'invalidDomain3' => [
-            'invalid-.com', // Домен не может заканчиваться на дефис
+            'invalid-.com', // Domain cannot end with hyphen
             'valid.com',
             \InvalidArgumentException::class,
             sprintf('Invalid domain: %s', 'invalid-.com')
         ];
 
         yield 'invalidDomain4' => [
-            '123.456.789.0', // Неправильный формат (IP-адрес)
+            '123.456.789.0', // Invalid format (IP address)
             'valid.com',
             \InvalidArgumentException::class,
               sprintf('Invalid domain: %s', '123.456.789.0')
         ];
 
         yield 'invalidDomain5' => [
-            'example..com', // Два подряд идущих точки
+            'example..com', // Two consecutive dots
             'valid.com',
             \InvalidArgumentException::class,
             sprintf('Invalid domain: %s', 'example..com')
         ];
 
         yield 'invalidDomain6' => [
-            'example.c', // Слишком короткая доменная зона
+            'example.c', // Domain zone too short
             'valid.com',
             \InvalidArgumentException::class,
             sprintf('Invalid domain: %s', 'example.c')

@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\ApplicationInstallations\UseCase\Install;
 
 use Bitrix24\Lib\ApplicationInstallations\Entity\ApplicationInstallation;
-use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationInstallationRepository;
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
-use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\ApplicationInstallationRepositoryInterface;
@@ -25,8 +23,7 @@ readonly class Handler
         private ApplicationInstallationRepositoryInterface $applicationInstallationRepository,
         private Flusher $flusher,
         private LoggerInterface $logger
-    ) {
-    }
+    ) {}
 
     /**
      * At the moment, several scenarios may not be processed.
@@ -47,7 +44,7 @@ readonly class Handler
         ]);
 
         /** @var null|AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $activeInstallation */
-        $activeInstallation = $this->applicationInstallationRepository->findActiveInstallationWithAccountByMemberId($command->memberId);
+        $activeInstallation = $this->applicationInstallationRepository->findByBitrix24AccountMemberId($command->memberId);
 
         if (null !== $activeInstallation) {
             $entitiesToFlush = [];
@@ -74,7 +71,7 @@ readonly class Handler
             and it was better to at first to deal with accounts and installers
             which need to be deactivated, and then we are already working with new entities.
            */
-            $this->flusher->flush(...$entitiesToFlush);
+            $this->flusher->flush(...array_filter($entitiesToFlush, fn ($entity): bool => $entity instanceof AggregateRootEventsEmitterInterface));
         }
 
         $uuidV7 = Uuid::v7();

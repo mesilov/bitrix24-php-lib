@@ -56,7 +56,7 @@ class CommandTest extends TestCase
             ->withStatus(Bitrix24AccountStatus::active)
             ->build();
 
-        // Валидный кейс
+        // Valid case
         yield 'validCommand' => [
             $bitrix24AccountBuilder->getMemberId(),
             new Domain($bitrix24AccountBuilder->getDomainUrl()),
@@ -64,7 +64,7 @@ class CommandTest extends TestCase
             null,
         ];
 
-        // Пустой memberId
+        // Empty memberId
         yield 'emptyMemberId' => [
             '',
             new Domain($bitrix24AccountBuilder->getDomainUrl()),
@@ -72,7 +72,7 @@ class CommandTest extends TestCase
             \InvalidArgumentException::class,
         ];
 
-        // Пустой applicationToken
+        // Empty applicationToken
         yield 'emptyApplicationToken' => [
             $bitrix24AccountBuilder->getMemberId(),
             new Domain($bitrix24AccountBuilder->getDomainUrl()),
