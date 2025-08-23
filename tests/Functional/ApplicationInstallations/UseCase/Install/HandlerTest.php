@@ -165,7 +165,8 @@ class HandlerTest extends TestCase
             )
         );
 
-        $activeInstallation = $this->repository->findActiveByApplicationToken($newApplicationToken);
+
+        $activeInstallation = $this->repository->findByApplicationToken($newApplicationToken);
         $this->assertNotNull($activeInstallation);
 
         $dispatchedEvents = $this->eventDispatcher->getOrphanedEvents();

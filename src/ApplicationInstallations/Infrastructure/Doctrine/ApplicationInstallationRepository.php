@@ -102,26 +102,20 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
         ;
     }
 
-    public function findActiveByAccountId(Uuid $uuid): ?ApplicationInstallationInterface
+    /**
+     * Find application installation by application token.
+     *
+     * @param non-empty-string $applicationToken
+     *
+     * @throws InvalidArgumentException
+     */
+    #[\Override]
+    public function findByApplicationToken(string $applicationToken): ?ApplicationInstallationInterface
     {
-        $activeStatuses = [
-            ApplicationInstallationStatus::new,
-            ApplicationInstallationStatus::active,
-        ];
+        if ('' === trim($applicationToken)) {
+            throw new InvalidArgumentException('application token cannot be an empty string');
+        }
 
-        return $this->getEntityManager()->getRepository(ApplicationInstallation::class)
-            ->createQueryBuilder('applicationInstallation')
-            ->where('applicationInstallation.bitrix24AccountId = :b24AccountId')
-            ->andWhere('applicationInstallation.status IN (:statuses)')
-            ->setParameter('b24AccountId', $uuid)
-            ->setParameter('statuses', $activeStatuses)
-            ->getQuery()
-            ->getOneOrNullResult()
-        ;
-    }
-
-    public function findActiveByApplicationToken(string $applicationToken): ?ApplicationInstallationInterface
-    {
         $activeStatuses = [
             ApplicationInstallationStatus::new,
             ApplicationInstallationStatus::active,
@@ -138,13 +132,13 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
         ;
     }
 
-    /**
-     * Get active application installation using account.
-     *
-     * @return null|ApplicationInstallation
-     */
-    public function findActiveInstallationWithAccountByMemberId(string $memberId): ?ApplicationInstallationInterface
+    #[\Override]
+    public function findByBitrix24AccountMemberId(string $memberId): ?ApplicationInstallationInterface
     {
+        if ('' === trim($memberId)) {
+            throw new InvalidArgumentException('memberId cannot be an empty string');
+        }
+
         $queryBuilder = $this->createQueryBuilder('ai');
 
         return $queryBuilder->leftJoin(

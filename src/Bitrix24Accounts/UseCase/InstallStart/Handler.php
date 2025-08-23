@@ -6,9 +6,9 @@ namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallStart;
 
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Services\Flusher;
-use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Exceptions\Bitrix24AccountNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Uid\Uuid;
 
 readonly class Handler
 {
@@ -21,13 +21,14 @@ readonly class Handler
     public function handle(Command $command): void
     {
         $this->logger->info('Bitrix24Accounts.InstallStart.start', [
-            'id' => $command->uuid->toRfc4122(),
             'domain' => $command->domain,
             'member_id' => $command->memberId,
         ]);
 
+        $uuidV7 = Uuid::v7();
+
         $bitrix24Account = new Bitrix24Account(
-            $command->uuid,
+            $uuidV7,
             $command->bitrix24UserId,
             $command->isBitrix24UserAdmin,
             $command->memberId,
@@ -39,33 +40,15 @@ readonly class Handler
             true
         );
 
-        $isAccountExists = $this->bitrix24AccountRepository->existsById($bitrix24Account->getId());
+        $this->bitrix24AccountRepository->save($bitrix24Account);
+        $this->flusher->flush($bitrix24Account);
 
-        if (!$isAccountExists) {
-            $this->bitrix24AccountRepository->save($bitrix24Account);
-            $this->flusher->flush($bitrix24Account);
-
-            $this->logger->info(
-                'Bitrix24Accounts.InstallStart.Finish',
-                [
-                    'id' => $command->uuid->toRfc4122(),
-                    'domain_url' => $command->domain,
-                    'member_id' => $command->memberId,
-                ]
-            );
-        } else {
-            $this->logger->info(
-                'Bitrix24Accounts.InstallStart.AlreadyExists',
-                [
-                    'id' => $command->uuid->toRfc4122(),
-                    'domain' => $command->domain,
-                    'member_id' => $command->memberId,
-                ]
-            );
-
-            throw new Bitrix24AccountNotFoundException(
-                sprintf('bitrix24account with uuid "%s" already exists', $command->uuid->toRfc4122())
-            );
-        }
+        $this->logger->info(
+            'Bitrix24Accounts.InstallStart.Finish',
+            [
+                'domain_url' => $command->domain,
+                'member_id' => $command->memberId,
+            ]
+        );
     }
 }

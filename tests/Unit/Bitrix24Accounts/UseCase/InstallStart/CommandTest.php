@@ -26,7 +26,6 @@ class CommandTest extends TestCase
     #[Test]
     #[DataProvider('dataForCommand')]
     public function testValidCommand(
-        Uuid      $uuid,
         int       $bitrix24UserId,
         bool      $isBitrix24UserAdmin,
         string    $memberId,
@@ -49,7 +48,6 @@ class CommandTest extends TestCase
         $domain = new Domain($domainUrl);
 
         new Command(
-            $uuid,
             $bitrix24UserId,
             $isBitrix24UserAdmin,
             $memberId,
@@ -68,7 +66,6 @@ class CommandTest extends TestCase
             ->build();
 
         yield 'emptyMemberId' => [
-            $bitrix24Account->getId(),
             $bitrix24Account->getBitrix24UserId(),
             $bitrix24Account->isBitrix24UserAdmin(),
             '',
@@ -81,7 +78,6 @@ class CommandTest extends TestCase
         ];
 
         yield 'emptyDomainUrl' => [
-            $bitrix24Account->getId(),
             $bitrix24Account->getBitrix24UserId(),
             $bitrix24Account->isBitrix24UserAdmin(),
             $bitrix24Account->getMemberId(),
@@ -94,7 +90,6 @@ class CommandTest extends TestCase
         ];
 
         yield 'invalidBitrix24UserId' => [
-            $bitrix24Account->getId(),
             0,
             $bitrix24Account->isBitrix24UserAdmin(),
             $bitrix24Account->getMemberId(),
@@ -107,7 +102,6 @@ class CommandTest extends TestCase
         ];
 
         yield 'invalidApplicationVersion' => [
-            $bitrix24Account->getId(),
             $bitrix24Account->getBitrix24UserId(),
             $bitrix24Account->isBitrix24UserAdmin(),
             $bitrix24Account->getMemberId(),

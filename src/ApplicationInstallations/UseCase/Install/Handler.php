@@ -44,7 +44,7 @@ readonly class Handler
         ]);
 
         /** @var null|AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $activeInstallation */
-        $activeInstallation = $this->applicationInstallationRepository->findActiveInstallationWithAccountByMemberId($command->memberId);
+        $activeInstallation = $this->applicationInstallationRepository->findByBitrix24AccountMemberId($command->memberId);
 
         if (null !== $activeInstallation) {
             $entitiesToFlush = [];
