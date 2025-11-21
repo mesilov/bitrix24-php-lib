@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests;
 
+use Bitrix24\Lib\Infrastructure\Doctrine\PhoneNumberType;
 use Bitrix24\SDK\Core\Exceptions\WrongConfigurationException;
 use Carbon\Doctrine\CarbonImmutableType;
 use Doctrine\DBAL\DriverManager;
@@ -64,6 +65,10 @@ class EntityManagerFactory
 
             if (!Type::hasType('carbon_immutable')) {
                 Type::addType('carbon_immutable', CarbonImmutableType::class);
+            }
+
+            if (!Type::hasType(PhoneNumberType::NAME)) {
+                Type::addType(PhoneNumberType::NAME, PhoneNumberType::class);
             }
 
             $configuration = ORMSetup::createXMLMetadataConfiguration($paths, $isDevMode);
