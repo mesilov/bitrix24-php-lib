@@ -1,0 +1,281 @@
+{% extends '@Journal/layout.html.twig' %}
+
+{% block title %}Запись журнала {{ item.id }} - Технологический журнал{% endblock %}
+
+{% block breadcrumb %}
+    <div class="breadcrumb">
+        <a href="{{ path('journal_admin_list') }}">Журнал</a> /
+        <span>Запись {{ item.id.toRfc4122|slice(0, 8) }}...</span>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .detail-header h2 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .level-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 14px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .level-emergency, .level-alert, .level-critical { background: #e74c3c; color: #fff; }
+        .level-error { background: #e67e22; color: #fff; }
+        .level-warning { background: #f39c12; color: #fff; }
+        .level-notice { background: #3498db; color: #fff; }
+        .level-info { background: #1abc9c; color: #fff; }
+        .level-debug { background: #95a5a6; color: #fff; }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .info-value {
+            color: #2c3e50;
+            font-size: 14px;
+            word-break: break-word;
+        }
+
+        .info-value code {
+            background: #ecf0f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .message-box {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .message-box h3 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .message-content {
+            color: #34495e;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .payload-box {
+            margin-top: 20px;
+        }
+
+        .payload-box h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .json-viewer {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .json-key {
+            color: #3498db;
+        }
+
+        .json-string {
+            color: #2ecc71;
+        }
+
+        .json-number {
+            color: #e67e22;
+        }
+
+        .json-boolean {
+            color: #9b59b6;
+        }
+
+        .json-null {
+            color: #95a5a6;
+        }
+
+        .label-tag {
+            display: inline-block;
+            padding: 5px 12px;
+            background: #3498db;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .empty-value {
+            color: #bdc3c7;
+            font-style: italic;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="card">
+        <div class="detail-header">
+            <h2>Детальная информация о записи</h2>
+            <span class="level-badge level-{{ item.level.value }}">
+                {{ item.level.value }}
+            </span>
+        </div>
+
+        <div class="section">
+            <div class="info-grid">
+                <div class="info-label">ID записи:</div>
+                <div class="info-value">
+                    <code>{{ item.id.toRfc4122 }}</code>
+                </div>
+
+                <div class="info-label">ID инсталляции:</div>
+                <div class="info-value">
+                    <code>{{ item.applicationInstallationId.toRfc4122 }}</code>
+                </div>
+
+                <div class="info-label">Дата и время:</div>
+                <div class="info-value">
+                    {{ item.createdAt.format('d.m.Y H:i:s') }} UTC
+                    <span style="color: #95a5a6; font-size: 12px;">
+                        ({{ item.createdAt.diffForHumans }})
+                    </span>
+                </div>
+
+                <div class="info-label">Уровень:</div>
+                <div class="info-value">
+                    {{ item.level.value|upper }}
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3 class="section-title">Сообщение</h3>
+            <div class="message-box">
+                <div class="message-content">{{ item.message }}</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3 class="section-title">Контекст</h3>
+            <div class="info-grid">
+                <div class="info-label">Метка:</div>
+                <div class="info-value">
+                    {% if item.context.label %}
+                        <span class="label-tag">{{ item.context.label }}</span>
+                    {% else %}
+                        <span class="empty-value">Не указана</span>
+                    {% endif %}
+                </div>
+
+                <div class="info-label">User ID:</div>
+                <div class="info-value">
+                    {% if item.context.bitrix24UserId %}
+                        {{ item.context.bitrix24UserId }}
+                    {% else %}
+                        <span class="empty-value">Не указан</span>
+                    {% endif %}
+                </div>
+
+                <div class="info-label">IP адрес:</div>
+                <div class="info-value">
+                    {% if item.context.ipAddress %}
+                        <code>{{ item.context.ipAddress.compactedAddress }}</code>
+                    {% else %}
+                        <span class="empty-value">Не указан</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if item.context.payload %}
+            <div class="section">
+                <h3 class="section-title">Payload (данные события)</h3>
+                <div class="json-viewer">
+                    <pre>{{ item.context.payload|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES')) }}</pre>
+                </div>
+            </div>
+        {% endif %}
+
+        <div style="margin-top: 30px;">
+            <a href="{{ path('journal_admin_list') }}" class="btn btn-secondary">
+                ← Вернуться к списку
+            </a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+        // Highlight JSON syntax
+        document.addEventListener('DOMContentLoaded', function() {
+            const jsonViewer = document.querySelector('.json-viewer pre');
+            if (jsonViewer) {
+                let html = jsonViewer.innerHTML;
+
+                // Highlight keys
+                html = html.replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:');
+
+                // Highlight strings
+                html = html.replace(/: "([^"]*)"/g, ': <span class="json-string">"$1"</span>');
+
+                // Highlight numbers
+                html = html.replace(/: (-?\d+\.?\d*)/g, ': <span class="json-number">$1</span>');
+
+                // Highlight booleans
+                html = html.replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>');
+
+                // Highlight null
+                html = html.replace(/: (null)/g, ': <span class="json-null">$1</span>');
+
+                jsonViewer.innerHTML = html;
+            }
+        });
+    </script>
+{% endblock %}
