@@ -3,284 +3,187 @@
 {% block title %}Список записей журнала - Технологический журнал{% endblock %}
 
 {% block breadcrumb %}
-    <div class="breadcrumb">
-        <a href="{{ path('journal_admin_list') }}">Журнал</a> / Список записей
-    </div>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ path('journal_admin_list') }}">Журнал</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Список записей</li>
+        </ol>
+    </nav>
 {% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
     <style>
-        .filters {
-            background: #ecf0f1;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-
-        .filter-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group label {
-            font-weight: 600;
-            margin-bottom: 5px;
-            font-size: 14px;
-            color: #2c3e50;
-        }
-
-        .form-group select,
-        .form-group input {
-            padding: 8px 12px;
-            border: 1px solid #bdc3c7;
-            border-radius: 4px;
-            font-size: 14px;
-            background: #fff;
-        }
-
-        .filter-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #fff;
-        }
-
-        thead {
-            background: #34495e;
-            color: #fff;
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ecf0f1;
-        }
-
-        th {
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        td {
-            font-size: 13px;
-        }
-
-        tbody tr:hover {
-            background: #f8f9fa;
-        }
-
-        .level-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .level-emergency, .level-alert, .level-critical { background: #e74c3c; color: #fff; }
-        .level-error { background: #e67e22; color: #fff; }
-        .level-warning { background: #f39c12; color: #fff; }
-        .level-notice { background: #3498db; color: #fff; }
-        .level-info { background: #1abc9c; color: #fff; }
-        .level-debug { background: #95a5a6; color: #fff; }
-
-        .label-tag {
-            display: inline-block;
-            padding: 3px 8px;
-            background: #ecf0f1;
-            border-radius: 3px;
-            font-size: 12px;
-            color: #7f8c8d;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-top: 20px;
-            padding: 20px 0;
-        }
-
-        .pagination a,
-        .pagination span {
-            padding: 8px 12px;
-            border: 1px solid #bdc3c7;
-            border-radius: 4px;
-            text-decoration: none;
-            color: #2c3e50;
-        }
-
-        .pagination a:hover {
-            background: #3498db;
-            color: #fff;
-            border-color: #3498db;
-        }
-
-        .pagination .current {
-            background: #3498db;
-            color: #fff;
-            border-color: #3498db;
-            font-weight: 600;
-        }
-
-        .view-link {
-            color: #3498db;
-            text-decoration: none;
-        }
-
-        .view-link:hover {
-            text-decoration: underline;
-        }
-
-        .no-results {
-            text-align: center;
-            padding: 40px;
-            color: #7f8c8d;
-            font-size: 16px;
-        }
-
-        .stats {
-            margin-bottom: 15px;
-            color: #7f8c8d;
-            font-size: 14px;
-        }
+        .level-emergency, .level-alert, .level-critical { background-color: #dc3545 !important; }
+        .level-error { background-color: #fd7e14 !important; }
+        .level-warning { background-color: #ffc107 !important; color: #000 !important; }
+        .level-notice { background-color: #0dcaf0 !important; }
+        .level-info { background-color: #198754 !important; }
+        .level-debug { background-color: #6c757d !important; }
     </style>
 {% endblock %}
 
 {% block body %}
-    <div class="card">
-        <h2>Фильтры</h2>
-        <form method="get" action="{{ path('journal_admin_list') }}" class="filters">
-            <div class="filter-row">
-                <div class="form-group">
-                    <label for="domain">Домен портала</label>
-                    <select name="domain" id="domain">
-                        <option value="">Все домены</option>
-                        {% for domain in availableDomains %}
-                            <option value="{{ domain }}" {% if currentFilters.domain == domain %}selected{% endif %}>
-                                {{ domain }}
-                            </option>
-                        {% endfor %}
-                    </select>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Фильтры</h5>
+        </div>
+        <div class="card-body bg-light">
+            <form method="get" action="{{ path('journal_admin_list') }}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="domain" class="form-label fw-semibold">Домен портала</label>
+                        <select name="domain" id="domain" class="form-select">
+                            <option value="">Все домены</option>
+                            {% for domain in availableDomains %}
+                                <option value="{{ domain }}" {% if currentFilters.domain == domain %}selected{% endif %}>
+                                    {{ domain }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="level" class="form-label fw-semibold">Уровень</label>
+                        <select name="level" id="level" class="form-select">
+                            <option value="">Все уровни</option>
+                            {% for logLevel in logLevels %}
+                                <option value="{{ logLevel.value }}" {% if currentFilters.level == logLevel.value %}selected{% endif %}>
+                                    {{ logLevel.value|upper }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="label" class="form-label fw-semibold">Метка</label>
+                        <select name="label" id="label" class="form-select">
+                            <option value="">Все метки</option>
+                            {% for availableLabel in availableLabels %}
+                                <option value="{{ availableLabel }}" {% if currentFilters.label == availableLabel %}selected{% endif %}>
+                                    {{ availableLabel }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="level">Уровень</label>
-                    <select name="level" id="level">
-                        <option value="">Все уровни</option>
-                        {% for logLevel in logLevels %}
-                            <option value="{{ logLevel.value }}" {% if currentFilters.level == logLevel.value %}selected{% endif %}>
-                                {{ logLevel.value|upper }}
-                            </option>
-                        {% endfor %}
-                    </select>
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel"></i> Применить фильтры
+                    </button>
+                    <a href="{{ path('journal_admin_list') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Сбросить
+                    </a>
                 </div>
-
-                <div class="form-group">
-                    <label for="label">Метка</label>
-                    <select name="label" id="label">
-                        <option value="">Все метки</option>
-                        {% for availableLabel in availableLabels %}
-                            <option value="{{ availableLabel }}" {% if currentFilters.label == availableLabel %}selected{% endif %}>
-                                {{ availableLabel }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-
-            <div class="filter-actions">
-                <button type="submit" class="btn">Применить фильтры</button>
-                <a href="{{ path('journal_admin_list') }}" class="btn btn-secondary">Сбросить</a>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 
-    <div class="card">
-        <div class="stats">
-            Всего записей: {{ pagination.getTotalItemCount }} |
-            Страница {{ pagination.getCurrentPageNumber }} из {{ pagination.getPageCount }}
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Записи журнала</h5>
+            <span class="badge bg-secondary">
+                Всего: {{ pagination.getTotalItemCount }} | Страница {{ pagination.getCurrentPageNumber }} из {{ pagination.getPageCount }}
+            </span>
         </div>
+        <div class="card-body p-0">
+            {% if pagination.getTotalItemCount > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Дата и время</th>
+                                <th>Уровень</th>
+                                <th>Сообщение</th>
+                                <th>Метка</th>
+                                <th>User ID</th>
+                                <th>IP</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in pagination %}
+                                <tr>
+                                    <td class="text-nowrap">
+                                        <small>{{ item.createdAt.format('Y-m-d H:i:s') }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge level-{{ item.level.value }}">
+                                            {{ item.level.value }}
+                                        </span>
+                                    </td>
+                                    <td>{{ item.message|length > 100 ? item.message|slice(0, 100) ~ '...' : item.message }}</td>
+                                    <td>
+                                        {% if item.context.label %}
+                                            <span class="badge bg-light text-dark border">{{ item.context.label }}</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.context.bitrix24UserId ?? '—' }}</td>
+                                    <td><small>{{ item.context.ipAddress ? item.context.ipAddress.compactedAddress : '—' }}</small></td>
+                                    <td>
+                                        <a href="{{ path('journal_admin_show', {id: item.id}) }}" class="btn btn-sm btn-outline-primary">
+                                            Просмотр
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
 
-        {% if pagination.getTotalItemCount > 0 %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Дата и время</th>
-                        <th>Уровень</th>
-                        <th>Сообщение</th>
-                        <th>Метка</th>
-                        <th>User ID</th>
-                        <th>IP</th>
-                        <th>Действия</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in pagination %}
-                        <tr>
-                            <td>{{ item.createdAt.format('Y-m-d H:i:s') }}</td>
-                            <td>
-                                <span class="level-badge level-{{ item.level.value }}">
-                                    {{ item.level.value }}
-                                </span>
-                            </td>
-                            <td>{{ item.message|length > 100 ? item.message|slice(0, 100) ~ '...' : item.message }}</td>
-                            <td>
-                                {% if item.context.label %}
-                                    <span class="label-tag">{{ item.context.label }}</span>
-                                {% else %}
-                                    <span style="color: #bdc3c7;">—</span>
+                {% if pagination.getPageCount > 1 %}
+                    <nav aria-label="Навигация по страницам" class="mt-3 px-3 pb-3">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if pagination.getCurrentPageNumber > 1 %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ path('journal_admin_list', currentFilters|merge({page: 1})) }}">
+                                        « Первая
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ path('journal_admin_list', currentFilters|merge({page: pagination.getCurrentPageNumber - 1})) }}">
+                                        ‹ Предыдущая
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for page in 1..pagination.getPageCount %}
+                                {% if page == pagination.getCurrentPageNumber %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page }}</span>
+                                    </li>
+                                {% elseif page >= pagination.getCurrentPageNumber - 2 and page <= pagination.getCurrentPageNumber + 2 %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ path('journal_admin_list', currentFilters|merge({page: page})) }}">
+                                            {{ page }}
+                                        </a>
+                                    </li>
                                 {% endif %}
-                            </td>
-                            <td>{{ item.context.bitrix24UserId ?? '—' }}</td>
-                            <td>{{ item.context.ipAddress ? item.context.ipAddress.compactedAddress : '—' }}</td>
-                            <td>
-                                <a href="{{ path('journal_admin_show', {id: item.id}) }}" class="view-link">
-                                    Просмотр
-                                </a>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            {% endfor %}
 
-            <div class="pagination">
-                {% if pagination.getCurrentPageNumber > 1 %}
-                    <a href="{{ path('journal_admin_list', currentFilters|merge({page: 1})) }}">« Первая</a>
-                    <a href="{{ path('journal_admin_list', currentFilters|merge({page: pagination.getCurrentPageNumber - 1})) }}">‹ Предыдущая</a>
+                            {% if pagination.getCurrentPageNumber < pagination.getPageCount %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ path('journal_admin_list', currentFilters|merge({page: pagination.getCurrentPageNumber + 1})) }}">
+                                        Следующая ›
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ path('journal_admin_list', currentFilters|merge({page: pagination.getPageCount})) }}">
+                                        Последняя »
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
                 {% endif %}
-
-                {% for page in 1..pagination.getPageCount %}
-                    {% if page == pagination.getCurrentPageNumber %}
-                        <span class="current">{{ page }}</span>
-                    {% elseif page >= pagination.getCurrentPageNumber - 2 and page <= pagination.getCurrentPageNumber + 2 %}
-                        <a href="{{ path('journal_admin_list', currentFilters|merge({page: page})) }}">{{ page }}</a>
-                    {% endif %}
-                {% endfor %}
-
-                {% if pagination.getCurrentPageNumber < pagination.getPageCount %}
-                    <a href="{{ path('journal_admin_list', currentFilters|merge({page: pagination.getCurrentPageNumber + 1})) }}">Следующая ›</a>
-                    <a href="{{ path('journal_admin_list', currentFilters|merge({page: pagination.getPageCount})) }}">Последняя »</a>
-                {% endif %}
-            </div>
-        {% else %}
-            <div class="no-results">
-                Записи не найдены. Попробуйте изменить параметры фильтрации.
-            </div>
-        {% endif %}
+            {% else %}
+                <div class="alert alert-info m-3 text-center">
+                    <i class="bi bi-info-circle"></i> Записи не найдены. Попробуйте изменить параметры фильтрации.
+                </div>
+            {% endif %}
+        </div>
     </div>
 {% endblock %}
