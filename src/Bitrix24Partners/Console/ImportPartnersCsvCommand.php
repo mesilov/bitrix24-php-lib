@@ -117,17 +117,27 @@ class ImportPartnersCsvCommand extends Command
                 }
 
                 // Parse row data
-                $title = trim($row[0] ?? '');
-                $site = !empty($row[1] ?? '') ? trim($row[1]) : null;
-                $phoneString = !empty($row[2] ?? '') ? trim($row[2]) : null;
-                $email = !empty($row[3] ?? '') ? trim($row[3]) : null;
-                $bitrix24PartnerId = !empty($row[4] ?? '') ? (int) $row[4] : null;
-                $openLineId = !empty($row[5] ?? '') ? trim($row[5]) : null;
-                $externalId = !empty($row[6] ?? '') ? trim($row[6]) : null;
+                $title = isset($row[0]) ? trim($row[0]) : '';
+                $siteRaw = isset($row[1]) ? trim($row[1]) : '';
+                $site = '' !== $siteRaw ? $siteRaw : null;
+                $phoneStringRaw = isset($row[2]) ? trim($row[2]) : '';
+                $phoneString = '' !== $phoneStringRaw ? $phoneStringRaw : null;
+                $emailRaw = isset($row[3]) ? trim($row[3]) : '';
+                $email = '' !== $emailRaw ? $emailRaw : null;
+                $bitrix24PartnerIdRaw = isset($row[4]) ? trim($row[4]) : '';
+                $bitrix24PartnerId = '' !== $bitrix24PartnerIdRaw ? (int) $bitrix24PartnerIdRaw : null;
+                $openLineIdRaw = isset($row[5]) ? trim($row[5]) : '';
+                $openLineId = '' !== $openLineIdRaw ? $openLineIdRaw : null;
+                $externalIdRaw = isset($row[6]) ? trim($row[6]) : '';
+                $externalId = '' !== $externalIdRaw ? $externalIdRaw : null;
 
                 // Validate required fields
-                if (empty($title)) {
+                if ('' === $title) {
                     throw new \InvalidArgumentException('Title is required');
+                }
+
+                if (null === $bitrix24PartnerId) {
+                    throw new \InvalidArgumentException('Bitrix24 Partner ID is required');
                 }
 
                 // Parse phone number
@@ -151,10 +161,10 @@ class ImportPartnersCsvCommand extends Command
                 // Create partner
                 $command = new CreateCommand(
                     $title,
+                    $bitrix24PartnerId,
                     $site,
                     $phone,
                     $email,
-                    $bitrix24PartnerId,
                     $openLineId,
                     $externalId
                 );

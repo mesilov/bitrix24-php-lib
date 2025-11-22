@@ -34,25 +34,28 @@ use Symfony\Component\Uid\Uuid;
 
 class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
 {
+    private readonly Uuid $id;
     private readonly CarbonImmutable $createdAt;
     private CarbonImmutable $updatedAt;
     private Bitrix24PartnerStatus $status = Bitrix24PartnerStatus::active;
     private ?string $comment = null;
 
     public function __construct(
-        private readonly Uuid $id,
         private string $title,
+        private int $bitrix24PartnerId,
         private ?string $site = null,
         private ?PhoneNumber $phone = null,
         private ?string $email = null,
-        private ?int $bitrix24PartnerId = null,
         private ?string $openLineId = null,
-        private ?string $externalId = null,
-        private bool $isEmitBitrix24PartnerCreatedEvent = false
+        private ?string $externalId = null
     ) {
+        $this->id = Uuid::v7();
         $this->createdAt = new CarbonImmutable();
         $this->updatedAt = new CarbonImmutable();
-        $this->addPartnerCreatedEventIfNeeded($this->isEmitBitrix24PartnerCreatedEvent);
+        $this->events[] = new Bitrix24PartnerCreatedEvent(
+            $this->id,
+            $this->createdAt
+        );
     }
 
     #[\Override]
@@ -144,13 +147,20 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
     #[\Override]
     public function setPhone(?PhoneNumber $phone): void
     {
+        $oldPhone = $this->phone;
         $this->phone = $phone;
         $this->updatedAt = new CarbonImmutable();
 
-        $this->events[] = new Bitrix24PartnerPhoneChangedEvent(
-            $this->id,
-            new CarbonImmutable()
-        );
+        // Compare phone numbers - both null, or both equal
+        $isChanged = !($oldPhone === null && $phone === null)
+            && !($oldPhone !== null && $phone !== null && $oldPhone->equals($phone));
+
+        if ($isChanged) {
+            $this->events[] = new Bitrix24PartnerPhoneChangedEvent(
+                $this->id,
+                new CarbonImmutable()
+            );
+        }
     }
 
     #[\Override]
@@ -188,7 +198,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
     }
 
     #[\Override]
-    public function getBitrix24PartnerId(): ?int
+    public function getBitrix24PartnerId(): int
     {
         return $this->bitrix24PartnerId;
     }
@@ -199,8 +209,8 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
     #[\Override]
     public function setBitrix24PartnerId(?int $bitrix24PartnerId): void
     {
-        if (null !== $bitrix24PartnerId && $bitrix24PartnerId < 0) {
-            throw new InvalidArgumentException('bitrix24PartnerId cannot be negative');
+        if (null === $bitrix24PartnerId || $bitrix24PartnerId < 0) {
+            throw new InvalidArgumentException('bitrix24PartnerId cannot be null or negative');
         }
 
         $oldId = $this->bitrix24PartnerId;
@@ -339,13 +349,4 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         );
     }
 
-    private function addPartnerCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
-    {
-        if ($isEmitCreatedEvent) {
-            $this->events[] = new Bitrix24PartnerCreatedEvent(
-                $this->id,
-                $this->createdAt
-            );
-        }
-    }
 }

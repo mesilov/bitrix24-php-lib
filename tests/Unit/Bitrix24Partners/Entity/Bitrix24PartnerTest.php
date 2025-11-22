@@ -37,13 +37,14 @@ class Bitrix24PartnerTest extends Bitrix24PartnerInterfaceTest
         ?string $openLineId = null,
         ?string $externalId = null
     ): Bitrix24PartnerInterface {
+        // UUID parameter is ignored as it's generated internally
+        // bitrix24PartnerId is required in our implementation, use default if null
         return new Bitrix24Partner(
-            $uuid,
             $title,
+            $bitrix24PartnerId ?? 1,
             $site,
             $phone,
             $email,
-            $bitrix24PartnerId,
             $openLineId,
             $externalId
         );
