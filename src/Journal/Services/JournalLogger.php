@@ -16,6 +16,8 @@ namespace Bitrix24\Lib\Journal\Services;
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Bitrix24\Lib\Journal\Infrastructure\JournalItemRepositoryInterface;
+use Bitrix24\Lib\Journal\ValueObjects\JournalContext;
+use Darsyn\IP\Version\Multi as IP;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LoggerTrait;
@@ -47,12 +49,13 @@ class JournalLogger implements LoggerInterface
     public function log($level, string|\Stringable $message, array $context = []): void
     {
         $logLevel = $this->convertLevel($level);
+        $journalContext = $this->createContext($context);
 
         $journalItem = JournalItem::create(
             applicationInstallationId: $this->applicationInstallationId,
             level: $logLevel,
             message: (string) $message,
-            context: $context
+            context: $journalContext
         );
 
         $this->repository->save($journalItem);
@@ -74,6 +77,30 @@ class JournalLogger implements LoggerInterface
 
         throw new \InvalidArgumentException(
             sprintf('Invalid log level type: %s', get_debug_type($level))
+        );
+    }
+
+    /**
+     * Create JournalContext from PSR-3 context array
+     */
+    private function createContext(array $context): JournalContext
+    {
+        $label = $context['label'] ?? 'application.log';
+
+        $ipAddress = null;
+        if (isset($context['ipAddress']) && is_string($context['ipAddress'])) {
+            try {
+                $ipAddress = IP::factory($context['ipAddress']);
+            } catch (\Throwable) {
+                // Ignore invalid IP addresses
+            }
+        }
+
+        return new JournalContext(
+            label: $label,
+            payload: $context['payload'] ?? null,
+            bitrix24UserId: isset($context['bitrix24UserId']) ? (int) $context['bitrix24UserId'] : null,
+            ipAddress: $ipAddress
         );
     }
 }

@@ -33,23 +33,4 @@ interface JournalItemInterface
     public function getMessage(): string;
 
     public function getContext(): JournalContext;
-
-    /**
-     * PSR-3 compatible factory methods
-     */
-    public static function emergency(Uuid $applicationInstallationId, string $message, array $context = []): self;
-
-    public static function alert(Uuid $applicationInstallationId, string $message, array $context = []): self;
-
-    public static function critical(Uuid $applicationInstallationId, string $message, array $context = []): self;
-
-    public static function error(Uuid $applicationInstallationId, string $message, array $context = []): self;
-
-    public static function warning(Uuid $applicationInstallationId, string $message, array $context = []): self;
-
-    public static function notice(Uuid $applicationInstallationId, string $message, array $context = []): self;
-
-    public static function info(Uuid $applicationInstallationId, string $message, array $context = []): self;
-
-    public static function debug(Uuid $applicationInstallationId, string $message, array $context = []): self;
 }

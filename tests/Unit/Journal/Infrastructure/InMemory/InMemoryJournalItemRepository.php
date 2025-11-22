@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Journal\Infrastructure\InMemory;
+namespace Bitrix24\Lib\Tests\Unit\Journal\Infrastructure\InMemory;
 
 use Bitrix24\Lib\Journal\Entity\JournalItemInterface;
 use Bitrix24\Lib\Journal\Entity\LogLevel;

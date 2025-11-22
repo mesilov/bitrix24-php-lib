@@ -18,13 +18,12 @@ use Bitrix24\Lib\Journal\ReadModel\JournalItemReadRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * Admin controller for journal management
+ * Developer should configure routes in their application
  */
-#[Route('/admin/journal', name: 'journal_admin_')]
 class JournalAdminController extends AbstractController
 {
     public function __construct(
@@ -35,7 +34,6 @@ class JournalAdminController extends AbstractController
     /**
      * List journal items with filters and pagination
      */
-    #[Route('', name: 'list', methods: ['GET'])]
     public function list(Request $request): Response
     {
         $page = max(1, $request->query->getInt('page', 1));
@@ -75,7 +73,6 @@ class JournalAdminController extends AbstractController
     /**
      * Show journal item details
      */
-    #[Route('/{id}', name: 'show', methods: ['GET'])]
     public function show(string $id): Response
     {
         try {

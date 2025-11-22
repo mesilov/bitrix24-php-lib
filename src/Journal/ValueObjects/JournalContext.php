@@ -21,14 +21,14 @@ use Darsyn\IP\Version\Multi as IP;
 readonly class JournalContext
 {
     public function __construct(
-        private ?string $label = null,
+        private string $label,
         private ?array $payload = null,
         private ?int $bitrix24UserId = null,
         private ?IP $ipAddress = null
     ) {
     }
 
-    public function getLabel(): ?string
+    public function getLabel(): string
     {
         return $this->label;
     }
@@ -46,28 +46,6 @@ readonly class JournalContext
     public function getIpAddress(): ?IP
     {
         return $this->ipAddress;
-    }
-
-    /**
-     * Create JournalContext from array
-     */
-    public static function fromArray(array $context): self
-    {
-        $ipAddress = null;
-        if (isset($context['ipAddress']) && is_string($context['ipAddress'])) {
-            try {
-                $ipAddress = IP::factory($context['ipAddress']);
-            } catch (\Throwable) {
-                // Ignore invalid IP addresses
-            }
-        }
-
-        return new self(
-            label: $context['label'] ?? null,
-            payload: $context['payload'] ?? null,
-            bitrix24UserId: isset($context['bitrix24UserId']) ? (int) $context['bitrix24UserId'] : null,
-            ipAddress: $ipAddress
-        );
     }
 
     /**

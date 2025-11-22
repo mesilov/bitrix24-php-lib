@@ -25,23 +25,22 @@ use Symfony\Component\Uid\Uuid;
  */
 class JournalItem extends AggregateRoot implements JournalItemInterface
 {
+    private readonly Uuid $id;
+
     private readonly CarbonImmutable $createdAt;
 
-    private JournalContext $context;
-
-    private function __construct(
-        private readonly Uuid $id,
-        private readonly Uuid $applicationInstallationId,
-        private readonly LogLevel $level,
-        private readonly string $message,
-        array $context = []
+    public function __construct(
+        private Uuid $applicationInstallationId,
+        private LogLevel $level,
+        private string $message,
+        private JournalContext $context
     ) {
         if ('' === trim($this->message)) {
             throw new InvalidArgumentException('Journal message cannot be empty');
         }
 
+        $this->id = Uuid::v7();
         $this->createdAt = new CarbonImmutable();
-        $this->context = JournalContext::fromArray($context);
     }
 
     #[\Override]
@@ -87,10 +86,9 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
         Uuid $applicationInstallationId,
         LogLevel $level,
         string $message,
-        array $context = []
+        JournalContext $context
     ): self {
         return new self(
-            id: Uuid::v7(),
             applicationInstallationId: $applicationInstallationId,
             level: $level,
             message: $message,
@@ -101,50 +99,42 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     /**
      * PSR-3 compatible factory methods
      */
-    #[\Override]
-    public static function emergency(Uuid $applicationInstallationId, string $message, array $context = []): self
+    public static function emergency(Uuid $applicationInstallationId, string $message, JournalContext $context): self
     {
         return self::create($applicationInstallationId, LogLevel::emergency, $message, $context);
     }
 
-    #[\Override]
-    public static function alert(Uuid $applicationInstallationId, string $message, array $context = []): self
+    public static function alert(Uuid $applicationInstallationId, string $message, JournalContext $context): self
     {
         return self::create($applicationInstallationId, LogLevel::alert, $message, $context);
     }
 
-    #[\Override]
-    public static function critical(Uuid $applicationInstallationId, string $message, array $context = []): self
+    public static function critical(Uuid $applicationInstallationId, string $message, JournalContext $context): self
     {
         return self::create($applicationInstallationId, LogLevel::critical, $message, $context);
     }
 
-    #[\Override]
-    public static function error(Uuid $applicationInstallationId, string $message, array $context = []): self
+    public static function error(Uuid $applicationInstallationId, string $message, JournalContext $context): self
     {
         return self::create($applicationInstallationId, LogLevel::error, $message, $context);
     }
 
-    #[\Override]
-    public static function warning(Uuid $applicationInstallationId, string $message, array $context = []): self
+    public static function warning(Uuid $applicationInstallationId, string $message, JournalContext $context): self
     {
         return self::create($applicationInstallationId, LogLevel::warning, $message, $context);
     }
 
-    #[\Override]
-    public static function notice(Uuid $applicationInstallationId, string $message, array $context = []): self
+    public static function notice(Uuid $applicationInstallationId, string $message, JournalContext $context): self
     {
         return self::create($applicationInstallationId, LogLevel::notice, $message, $context);
     }
 
-    #[\Override]
-    public static function info(Uuid $applicationInstallationId, string $message, array $context = []): self
+    public static function info(Uuid $applicationInstallationId, string $message, JournalContext $context): self
     {
         return self::create($applicationInstallationId, LogLevel::info, $message, $context);
     }
 
-    #[\Override]
-    public static function debug(Uuid $applicationInstallationId, string $message, array $context = []): self
+    public static function debug(Uuid $applicationInstallationId, string $message, JournalContext $context): self
     {
         return self::create($applicationInstallationId, LogLevel::debug, $message, $context);
     }
