@@ -10,6 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 #[AsCommand(
     name: 'bitrix24:partners:scrape',
@@ -17,6 +18,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ScrapePartnersCommand extends Command
 {
+    public function __construct(
+        private readonly HttpClientInterface $httpClient
+    ) {
+        parent::__construct();
+    }
+
     #[\Override]
     protected function configure(): void
     {
@@ -76,22 +83,22 @@ class ScrapePartnersCommand extends Command
 
     private function fetchUrl(string $url): string
     {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+        $response = $this->httpClient->request('GET', $url, [
+            'headers' => [
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            ],
+            'max_redirects' => 5,
+            'verify_peer' => false,
+            'verify_host' => false,
+        ]);
 
-        $html = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        $statusCode = $response->getStatusCode();
 
-        if (false === $html || 200 !== $httpCode) {
-            throw new \RuntimeException(sprintf('Failed to fetch URL: HTTP %d', $httpCode));
+        if (200 !== $statusCode) {
+            throw new \RuntimeException(sprintf('Failed to fetch URL: HTTP %d', $statusCode));
         }
 
-        return $html;
+        return $response->getContent();
     }
 
     /**

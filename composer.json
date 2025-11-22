@@ -51,6 +51,7 @@
     "doctrine/doctrine-migrations-bundle": "*",
     "knplabs/knp-paginator-bundle": "^6",
     "symfony/event-dispatcher": "^7",
+    "symfony/http-client": "^7",
     "symfony/serializer": "^7",
     "symfony/uid": "^7",
     "symfony/yaml": "^7",
