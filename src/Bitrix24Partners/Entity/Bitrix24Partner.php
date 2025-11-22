@@ -204,6 +204,10 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
     }
 
     /**
+     * @deprecated This method is deprecated and should not be used. Bitrix24PartnerId is immutable.
+     *
+     * @todo Create issue in https://github.com/bitrix24/b24phpsdk to remove this method from interface
+     *
      * @throws InvalidArgumentException
      */
     #[\Override]

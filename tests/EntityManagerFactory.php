@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests;
 
-use Bitrix24\Lib\Infrastructure\Doctrine\PhoneNumberType;
 use Bitrix24\SDK\Core\Exceptions\WrongConfigurationException;
 use Carbon\Doctrine\CarbonImmutableType;
 use Doctrine\DBAL\DriverManager;
@@ -15,6 +14,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Exception\ORMException;
 use Doctrine\ORM\OptimisticLockException;
 use Doctrine\ORM\ORMSetup;
+use Misd\PhoneNumberBundle\Doctrine\DBAL\Types\PhoneNumberType;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 
 class EntityManagerFactory

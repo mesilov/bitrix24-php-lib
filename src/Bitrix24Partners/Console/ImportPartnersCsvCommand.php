@@ -6,10 +6,13 @@ namespace Bitrix24\Lib\Bitrix24Partners\Console;
 
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Create\Command as CreateCommand;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Create\Handler as CreateHandler;
+use League\Csv\Reader;
+use League\Csv\Statement;
 use libphonenumber\NumberParseException;
 use libphonenumber\PhoneNumberUtil;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -63,7 +66,7 @@ class ImportPartnersCsvCommand extends Command
         $io->info(sprintf('Reading file: %s', $file));
 
         try {
-            $imported = $this->importFromCsv($file, $skipErrors, $io);
+            $imported = $this->importFromCsv($file, $skipErrors, $io, $output);
 
             $io->success(sprintf('Successfully imported %d partners', $imported));
 
@@ -75,60 +78,69 @@ class ImportPartnersCsvCommand extends Command
         }
     }
 
-    private function importFromCsv(string $file, bool $skipErrors, SymfonyStyle $io): int
+    private function importFromCsv(string $file, bool $skipErrors, SymfonyStyle $io, OutputInterface $output): int
     {
-        $fp = fopen($file, 'r');
-        if (false === $fp) {
-            throw new \RuntimeException(sprintf('Cannot open file: %s', $file));
-        }
+        $csv = Reader::createFromPath($file, 'r');
+        $csv->setHeaderOffset(0);
 
         $phoneUtil = PhoneNumberUtil::getInstance();
         $imported = 0;
         $skipped = 0;
-        $lineNumber = 0;
-
-        // Read header
-        $header = fgetcsv($fp);
-        if (false === $header) {
-            fclose($fp);
-            throw new \RuntimeException('CSV file is empty');
-        }
-
-        $lineNumber++;
 
         // Validate header
         $expectedHeaders = ['title', 'site', 'phone', 'email', 'bitrix24_partner_id', 'open_line_id', 'external_id'];
-        if ($header !== $expectedHeaders) {
+        $actualHeaders = $csv->getHeader();
+        if ($actualHeaders !== $expectedHeaders) {
             $io->warning(sprintf(
                 'CSV header mismatch. Expected: %s, Got: %s',
                 implode(', ', $expectedHeaders),
-                implode(', ', $header)
+                implode(', ', $actualHeaders)
             ));
         }
 
-        // Process rows
-        while (false !== ($row = fgetcsv($fp))) {
+        // Get records
+        $records = Statement::create()->process($csv);
+        $totalRecords = iterator_count($records);
+
+        if (0 === $totalRecords) {
+            $io->warning('No records found in CSV file');
+
+            return 0;
+        }
+
+        // Reset iterator
+        $records = Statement::create()->process($csv);
+
+        // Create progress bar
+        $progressBar = new ProgressBar($output, $totalRecords);
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+        $progressBar->start();
+
+        $lineNumber = 1; // Header is line 1
+
+        foreach ($records as $record) {
             $lineNumber++;
+            $progressBar->advance();
 
             try {
                 // Skip empty rows
-                if (empty(array_filter($row))) {
+                if (empty(array_filter($record))) {
                     continue;
                 }
 
                 // Parse row data
-                $title = isset($row[0]) ? trim($row[0]) : '';
-                $siteRaw = isset($row[1]) ? trim($row[1]) : '';
+                $title = isset($record['title']) ? trim($record['title']) : '';
+                $siteRaw = isset($record['site']) ? trim($record['site']) : '';
                 $site = '' !== $siteRaw ? $siteRaw : null;
-                $phoneStringRaw = isset($row[2]) ? trim($row[2]) : '';
+                $phoneStringRaw = isset($record['phone']) ? trim($record['phone']) : '';
                 $phoneString = '' !== $phoneStringRaw ? $phoneStringRaw : null;
-                $emailRaw = isset($row[3]) ? trim($row[3]) : '';
+                $emailRaw = isset($record['email']) ? trim($record['email']) : '';
                 $email = '' !== $emailRaw ? $emailRaw : null;
-                $bitrix24PartnerIdRaw = isset($row[4]) ? trim($row[4]) : '';
+                $bitrix24PartnerIdRaw = isset($record['bitrix24_partner_id']) ? trim($record['bitrix24_partner_id']) : '';
                 $bitrix24PartnerId = '' !== $bitrix24PartnerIdRaw ? (int) $bitrix24PartnerIdRaw : null;
-                $openLineIdRaw = isset($row[5]) ? trim($row[5]) : '';
+                $openLineIdRaw = isset($record['open_line_id']) ? trim($record['open_line_id']) : '';
                 $openLineId = '' !== $openLineIdRaw ? $openLineIdRaw : null;
-                $externalIdRaw = isset($row[6]) ? trim($row[6]) : '';
+                $externalIdRaw = isset($record['external_id']) ? trim($record['external_id']) : '';
                 $externalId = '' !== $externalIdRaw ? $externalIdRaw : null;
 
                 // Validate required fields
@@ -153,7 +165,6 @@ class ImportPartnersCsvCommand extends Command
                                 $e
                             );
                         }
-                        $io->warning(sprintf('Line %d: Invalid phone number "%s", skipping phone', $lineNumber, $phoneString));
                         $phone = null;
                     }
                 }
@@ -171,11 +182,9 @@ class ImportPartnersCsvCommand extends Command
 
                 $this->createHandler->handle($command);
                 $imported++;
-
-                $io->writeln(sprintf('Imported: %s', $title));
             } catch (\Exception $e) {
                 if (!$skipErrors) {
-                    fclose($fp);
+                    $progressBar->finish();
                     throw new \RuntimeException(
                         sprintf('Error on line %d: %s', $lineNumber, $e->getMessage()),
                         0,
@@ -184,11 +193,11 @@ class ImportPartnersCsvCommand extends Command
                 }
 
                 $skipped++;
-                $io->warning(sprintf('Line %d: Skipped due to error: %s', $lineNumber, $e->getMessage()));
             }
         }
 
-        fclose($fp);
+        $progressBar->finish();
+        $io->newLine(2);
 
         if ($skipped > 0) {
             $io->note(sprintf('Skipped %d rows due to errors', $skipped));

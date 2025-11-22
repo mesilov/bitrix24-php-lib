@@ -50,6 +50,8 @@
     "doctrine/doctrine-bundle": "*",
     "doctrine/doctrine-migrations-bundle": "*",
     "knplabs/knp-paginator-bundle": "^6",
+    "league/csv": "^9.0",
+    "odolbeau/phone-number-bundle": "^3.0",
     "symfony/event-dispatcher": "^7",
     "symfony/http-client": "^7",
     "symfony/serializer": "^7",

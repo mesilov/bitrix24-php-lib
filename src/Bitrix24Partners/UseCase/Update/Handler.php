@@ -40,10 +40,6 @@ readonly class Handler
             $partner->setEmail($command->email);
         }
 
-        if (null !== $command->bitrix24PartnerId) {
-            $partner->setBitrix24PartnerId($command->bitrix24PartnerId);
-        }
-
         if (null !== $command->openLineId) {
             $partner->setOpenLineId($command->openLineId);
         }
