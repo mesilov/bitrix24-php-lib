@@ -1,0 +1,35 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xs="https://www.w3.org/2001/XMLSchema"
+                  xmlns:orm="https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="Bitrix24\Lib\Bitrix24Partners\Entity\Bitrix24Partner" table="bitrix24_partners">
+        <id name="id" type="uuid" column="id">
+
+        </id>
+
+        <field name="title" type="string" column="title" nullable="false"/>
+
+        <field name="site" type="string" column="site" nullable="true"/>
+
+        <field name="phone" type="phone_number" column="phone" nullable="true"/>
+
+        <field name="email" type="string" column="email" nullable="true"/>
+
+        <field name="bitrix24PartnerId" type="integer" column="b24_partner_id" nullable="false">
+            <options>
+                <option name="unique">true</option>
+            </options>
+        </field>
+
+        <field name="openLineId" type="string" column="open_line_id" nullable="true"/>
+
+        <field name="externalId" type="string" column="external_id" nullable="true"/>
+
+        <field name="status" enum-type="string" column="status" nullable="false"/>
+
+        <field name="comment" type="text" column="comment" nullable="true"/>
+
+        <field name="createdAt" type="carbon_immutable" column="created_at_utc" precision="3" nullable="false"/>
+
+        <field name="updatedAt" type="carbon_immutable" column="updated_at_utc" precision="3" nullable="false"/>
+    </entity>
+</doctrine-mapping>

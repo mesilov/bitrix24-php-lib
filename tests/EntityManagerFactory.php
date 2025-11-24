@@ -14,6 +14,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Exception\ORMException;
 use Doctrine\ORM\OptimisticLockException;
 use Doctrine\ORM\ORMSetup;
+use Misd\PhoneNumberBundle\Doctrine\DBAL\Types\PhoneNumberType;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 
 class EntityManagerFactory
@@ -64,6 +65,10 @@ class EntityManagerFactory
 
             if (!Type::hasType('carbon_immutable')) {
                 Type::addType('carbon_immutable', CarbonImmutableType::class);
+            }
+
+            if (!Type::hasType(PhoneNumberType::NAME)) {
+                Type::addType(PhoneNumberType::NAME, PhoneNumberType::class);
             }
 
             $configuration = ORMSetup::createXMLMetadataConfiguration($paths, $isDevMode);
