@@ -182,6 +182,7 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
         );
     }
 
+    #[\Override]
     public function isPartner(): bool
     {
         return $this->getBitrix24PartnerId() instanceof Uuid;

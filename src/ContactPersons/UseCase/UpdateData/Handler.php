@@ -9,7 +9,6 @@ use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonInterf
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\FullName;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Repository\ContactPersonRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
-use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use libphonenumber\PhoneNumber;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -35,9 +34,6 @@ readonly class Handler
 
         /** @var AggregateRootEventsEmitterInterface|ContactPersonInterface $contactPerson */
         $contactPerson = $this->contactPersonRepository->getById($command->contactPersonId);
-        if (!$contactPerson) {
-            throw new InvalidArgumentException('Contact person not found.');
-        }
 
         if ($command->fullName instanceof FullName) {
             $contactPerson->changeFullName($command->fullName);

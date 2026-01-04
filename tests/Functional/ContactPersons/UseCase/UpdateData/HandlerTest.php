@@ -121,8 +121,8 @@ class HandlerTest extends TestCase
         $this->assertEquals('Jane Doe', $updatedContactPerson->getFullName()->name);
         $this->assertEquals('jane.doe@example.com', $updatedContactPerson->getEmail());
         $this->assertEquals('+79997654321', $formattedPhone);
-        $this->assertEquals($contactPerson->getExternalId(), $updatedContactPerson->getExternalId());
-        $this->assertEquals($contactPerson->getBitrix24PartnerId(), $updatedContactPerson->getBitrix24PartnerId());
+        $this->assertEquals($externalId, $updatedContactPerson->getExternalId());
+        $this->assertEquals($uuidV7, $updatedContactPerson->getBitrix24PartnerId());
     }
 
     private function createPhoneNumber(string $number): PhoneNumber
