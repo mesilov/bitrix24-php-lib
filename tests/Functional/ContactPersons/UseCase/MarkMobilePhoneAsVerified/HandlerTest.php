@@ -11,10 +11,10 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Tests\Functional\ContactPersons\UseCase\MarkPhoneAsVerified;
+namespace Bitrix24\Lib\Tests\Functional\ContactPersons\UseCase\MarkMobilePhoneAsVerified;
 
-use Bitrix24\Lib\ContactPersons\UseCase\MarkPhoneAsVerified\Handler;
-use Bitrix24\Lib\ContactPersons\UseCase\MarkPhoneAsVerified\Command;
+use Bitrix24\Lib\ContactPersons\UseCase\MarkMobilePhoneAsVerified\Handler;
+use Bitrix24\Lib\ContactPersons\UseCase\MarkMobilePhoneAsVerified\Command;
 use Bitrix24\Lib\ContactPersons\Infrastructure\Doctrine\ContactPersonRepository;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Exceptions\ContactPersonNotFoundException;
@@ -52,9 +52,11 @@ class HandlerTest extends TestCase
         $entityManager = EntityManagerFactory::get();
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $this->repository = new ContactPersonRepository($entityManager);
+        $this->phoneNumberUtil = PhoneNumberUtil::getInstance();
         $this->flusher = new Flusher($entityManager, $this->eventDispatcher);
         $this->handler = new Handler(
             $this->repository,
+            $this->phoneNumberUtil,
             $this->flusher,
             new NullLogger()
         );
@@ -135,8 +137,12 @@ class HandlerTest extends TestCase
         $this->repository->save($contactPerson);
         $this->flusher->flush();
 
-        $this->expectException(\InvalidArgumentException::class);
+        // No exception should be thrown; phone mismatch is only logged
         $this->handler->handle(new Command($contactPerson->getId(), $expectedDifferentPhone));
+
+        // Ensure mobile phone is still not verified
+        $reloaded = $this->repository->getById($contactPerson->getId());
+        $this->assertFalse($reloaded->isMobilePhoneVerified());
     }
 
     private function createPhoneNumber(string $number): PhoneNumber

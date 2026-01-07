@@ -21,8 +21,6 @@ use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Bitrix24\SDK\Core\Exceptions\LogicException;
 use Carbon\CarbonImmutable;
 use libphonenumber\PhoneNumber;
-use libphonenumber\PhoneNumberType;
-use libphonenumber\PhoneNumberUtil;
 use Symfony\Component\Uid\Uuid;
 
 class ContactPerson extends AggregateRoot implements ContactPersonInterface
@@ -194,23 +192,19 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
         return $this->emailVerifiedAt;
     }
 
+    /**
+     * Changes the contact's mobile phone number.
+     *
+     * Note: This method does not validate the phone number.
+     * Make sure to use it through the appropriate use case,
+     * where validation is performed.
+     *
+     * If you use this method outside a use case,
+     * ensure that you pass a valid mobile phone number.
+     */
     #[\Override]
     public function changeMobilePhone(?PhoneNumber $phoneNumber): void
     {
-        if ($phoneNumber instanceof PhoneNumber) {
-            $phoneUtil = PhoneNumberUtil::getInstance();
-            $isValidNumber = $phoneUtil->isValidNumber($phoneNumber);
-
-            if (!$isValidNumber) {
-                throw new InvalidArgumentException('Invalid phone number.');
-            }
-
-            $numberType = $phoneUtil->getNumberType($phoneNumber);
-            if (PhoneNumberType::MOBILE !== $numberType) {
-                throw new InvalidArgumentException('Phone number must be mobile.');
-            }
-        }
-
         $this->mobilePhoneNumber = $phoneNumber;
         $this->updatedAt = new CarbonImmutable();
 

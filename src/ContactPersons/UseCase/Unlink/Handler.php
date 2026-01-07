@@ -50,7 +50,7 @@ readonly class Handler
         $this->contactPersonRepository->save($contactPerson);
         $entitiesToFlush[] = $contactPerson;
 
-        $this->flusher->flush(...array_filter($entitiesToFlush, fn ($entity): bool => $entity instanceof AggregateRootEventsEmitterInterface));
+        $this->flusher->flush(...$entitiesToFlush);
 
         $this->logger->info('ContactPerson.UninstallContactPerson.finish', [
             'contact_person_id' => $command->contactPersonId,

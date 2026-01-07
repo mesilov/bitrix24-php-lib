@@ -138,10 +138,14 @@ class HandlerTest extends TestCase
         $this->repository->save($contactPerson);
         $this->flusher->flush();
 
-        $this->expectException(InvalidArgumentException::class);
+        // Больше не бросаем исключение при несовпадении email — только лог и без изменений
         $this->handler->handle(
             new Command($contactPerson->getId(), 'another.email@example.com')
         );
+
+        // Проверяем, что верификация не произошла
+        $reloaded = $this->repository->getById($contactPerson->getId());
+        $this->assertFalse($reloaded->isEmailVerified());
     }
 
     #[Test]
@@ -163,11 +167,14 @@ class HandlerTest extends TestCase
         $this->repository->save($contactPerson);
         $this->flusher->flush();
 
-        // В обработчик передаём email — ожидаем исключение о несоответствии
-        $this->expectException(InvalidArgumentException::class);
+        // В обработчик передаём email — теперь только лог и выход без изменений
         $this->handler->handle(
             new Command($contactPerson->getId(), 'john.doe@example.com')
         );
+
+        // Проверяем, что верификация не произошла
+        $reloaded = $this->repository->getById($contactPerson->getId());
+        $this->assertFalse($reloaded->isEmailVerified());
     }
 
     #[Test]

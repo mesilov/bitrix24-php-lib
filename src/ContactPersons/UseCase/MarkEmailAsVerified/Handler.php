@@ -6,6 +6,7 @@ namespace Bitrix24\Lib\ContactPersons\UseCase\MarkEmailAsVerified;
 
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonInterface;
+use Bitrix24\SDK\Application\Contracts\ContactPersons\Exceptions\ContactPersonNotFoundException;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Repository\ContactPersonRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Psr\Log\LoggerInterface;
@@ -20,36 +21,48 @@ readonly class Handler
 
     public function handle(Command $command): void
     {
-        $this->logger->info('ContactPerson.ConfirmEmailVerification.start', [
+        $this->logger->info('ContactPerson.MarkEmailVerification.start', [
             'contactPersonId' => $command->contactPersonId->toRfc4122(),
             'email' => $command->email,
         ]);
 
-        /** @var null|AggregateRootEventsEmitterInterface|ContactPersonInterface $contactPerson */
-        $contactPerson = $this->contactPersonRepository->getById($command->contactPersonId);
+        try {
+            /** @var AggregateRootEventsEmitterInterface|ContactPersonInterface $contactPerson */
+            $contactPerson = $this->contactPersonRepository->getById($command->contactPersonId);
+        } catch (ContactPersonNotFoundException $e) {
+            $this->logger->warning('ContactPerson.MarkEmailVerification.contactPersonNotFound', [
+                'contactPersonId' => $command->contactPersonId->toRfc4122(),
+            ]);
+
+            throw $e;
+        }
 
         $actualEmail = $contactPerson->getEmail();
-        if (mb_strtolower((string) $actualEmail) !== mb_strtolower($command->email)) {
-            $this->logger->warning('ContactPerson.ConfirmEmailVerification.emailMismatch', [
+        if (null == $actualEmail) {
+            $this->logger->warning('ContactPerson.MarkEmailVerification.currentEmailIsNull', [
+                'contactPersonId' => $command->contactPersonId->toRfc4122(),
+                'actualEmail' => null,
+                'expectedEmail' => $command->email,
+            ]);
+
+            return;
+        }
+
+        if (mb_strtolower($actualEmail) == mb_strtolower($command->email)) {
+
+            $contactPerson->markEmailAsVerified($command->emailVerifiedAt);
+            $this->contactPersonRepository->save($contactPerson);
+            $this->flusher->flush($contactPerson);
+
+        }else{
+            $this->logger->warning('ContactPerson.MarkEmailVerification.emailMismatch', [
                 'contactPersonId' => $command->contactPersonId->toRfc4122(),
                 'actualEmail' => $actualEmail,
                 'expectedEmail' => $command->email,
             ]);
-
-            throw new \InvalidArgumentException(sprintf(
-                'Email mismatch for contact person %s: actual="%s", expected="%s"',
-                $command->contactPersonId->toRfc4122(),
-                $actualEmail,
-                $command->email
-            ));
         }
 
-        $contactPerson->markEmailAsVerified($command->emailVerifiedAt);
-
-        $this->contactPersonRepository->save($contactPerson);
-        $this->flusher->flush($contactPerson);
-
-        $this->logger->info('ContactPerson.ConfirmEmailVerification.finish', [
+        $this->logger->info('ContactPerson.MarkEmailVerification.finish', [
             'contactPersonId' => $contactPerson->getId()->toRfc4122(),
             'emailVerifiedAt' => $contactPerson->getEmailVerifiedAt()?->toIso8601String(),
         ]);

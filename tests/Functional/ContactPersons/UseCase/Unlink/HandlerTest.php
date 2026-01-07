@@ -134,6 +134,7 @@ class HandlerTest extends TestCase
         $this->applicationInstallationRepository->save($applicationInstallation);
         $this->flusher->flush();
 
+        var_dump($contactPerson->getId());
         // Запуск use-case
         $this->handler->handle(
             new Command(
