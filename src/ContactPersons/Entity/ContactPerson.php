@@ -160,8 +160,10 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
     public function changeEmail(?string $email): void
     {
         $this->email = $email;
-
+        $this->isEmailVerified = false;
+        $this->emailVerifiedAt = null;
         $this->updatedAt = new CarbonImmutable();
+
         $this->events[] = new ContactPersonEmailChangedEvent(
             $this->id,
             $this->updatedAt,
@@ -206,6 +208,8 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
     public function changeMobilePhone(?PhoneNumber $phoneNumber): void
     {
         $this->mobilePhoneNumber = $phoneNumber;
+        $this->isMobilePhoneVerified = false;
+        $this->mobilePhoneVerifiedAt = null;
         $this->updatedAt = new CarbonImmutable();
 
         $this->events[] = new ContactPersonMobilePhoneChangedEvent(
