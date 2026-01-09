@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\ContactPersons\UseCase\Install;
+namespace Bitrix24\Lib\ApplicationInstallations\UseCase\InstallContactPerson;
 
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\FullName;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\UserAgentInfo;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\ContactPersons\UseCase\Install;
+namespace Bitrix24\Lib\ApplicationInstallations\UseCase\InstallContactPerson;
 
 use Bitrix24\Lib\ContactPersons\Entity\ContactPerson;
 use Bitrix24\Lib\Services\Flusher;
@@ -11,6 +11,10 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\Appli
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonStatus;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Repository\ContactPersonRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
+use libphonenumber\PhoneNumber;
+use libphonenumber\PhoneNumberType;
+use libphonenumber\PhoneNumberUtil;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -19,6 +23,7 @@ readonly class Handler
     public function __construct(
         private ApplicationInstallationRepositoryInterface $applicationInstallationRepository,
         private ContactPersonRepositoryInterface $contactPersonRepository,
+        private PhoneNumberUtil $phoneNumberUtil,
         private Flusher $flusher,
         private LoggerInterface $logger
     ) {}
@@ -30,6 +35,10 @@ readonly class Handler
             'bitrix24UserId' => $command->bitrix24UserId,
             'bitrix24PartnerId' => $command->bitrix24PartnerId?->toRfc4122() ?? '',
         ]);
+
+        if ($command->mobilePhoneNumber instanceof \libphonenumber\PhoneNumber) {
+            $this->guardMobilePhoneNumber($command->mobilePhoneNumber);
+        }
 
         /** @var null|AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $applicationInstallation */
         $applicationInstallation = $this->applicationInstallationRepository->getById($command->applicationInstallationId);
@@ -67,5 +76,24 @@ readonly class Handler
         $this->logger->info('ContactPerson.InstallContactPerson.finish', [
             'contact_person_id' => $uuidV7->toRfc4122(),
         ]);
+    }
+
+    private function guardMobilePhoneNumber(PhoneNumber $mobilePhoneNumber): void
+    {
+        if (!$this->phoneNumberUtil->isValidNumber($mobilePhoneNumber)) {
+            $this->logger->warning('ContactPerson.InstallContactPerson.InvalidMobilePhoneNumber', [
+                'mobilePhoneNumber' => (string) $mobilePhoneNumber,
+            ]);
+
+            throw new InvalidArgumentException('Invalid mobile phone number.');
+        }
+
+        if (PhoneNumberType::MOBILE !== $this->phoneNumberUtil->getNumberType($mobilePhoneNumber)) {
+            $this->logger->warning('ContactPerson.InstallContactPerson.MobilePhoneNumberMustBeMobile', [
+                'mobilePhoneNumber' => (string) $mobilePhoneNumber,
+            ]);
+
+            throw new InvalidArgumentException('Phone number must be mobile.');
+        }
     }
 }

@@ -347,7 +347,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function unlinkContactPerson(): void
     {
-        if (null === $this->contactPersonId) {
+        if (!$this->contactPersonId instanceof Uuid) {
             return;
         }
 
@@ -377,7 +377,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function unlinkBitrix24PartnerContactPerson(): void
     {
-        if (null === $this->bitrix24PartnerContactPersonId) {
+        if (!$this->bitrix24PartnerContactPersonId instanceof Uuid) {
             return;
         }
 
@@ -389,7 +389,6 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
 
         $this->bitrix24PartnerContactPersonId = null;
         $this->updatedAt = new CarbonImmutable();
-
     }
 
     #[\Override]

@@ -29,12 +29,12 @@ readonly class Handler
         try {
             /** @var AggregateRootEventsEmitterInterface|ContactPersonInterface $contactPerson */
             $contactPerson = $this->contactPersonRepository->getById($command->contactPersonId);
-        } catch (ContactPersonNotFoundException $e) {
+        } catch (ContactPersonNotFoundException $contactPersonNotFoundException) {
             $this->logger->warning('ContactPerson.MarkEmailVerification.contactPersonNotFound', [
                 'contactPersonId' => $command->contactPersonId->toRfc4122(),
             ]);
 
-            throw $e;
+            throw $contactPersonNotFoundException;
         }
 
         $actualEmail = $contactPerson->getEmail();
@@ -48,13 +48,11 @@ readonly class Handler
             return;
         }
 
-        if (mb_strtolower($actualEmail) == mb_strtolower($command->email)) {
-
+        if (mb_strtolower($actualEmail) === mb_strtolower($command->email)) {
             $contactPerson->markEmailAsVerified($command->emailVerifiedAt);
             $this->contactPersonRepository->save($contactPerson);
             $this->flusher->flush($contactPerson);
-
-        }else{
+        } else {
             $this->logger->warning('ContactPerson.MarkEmailVerification.emailMismatch', [
                 'contactPersonId' => $command->contactPersonId->toRfc4122(),
                 'actualEmail' => $actualEmail,

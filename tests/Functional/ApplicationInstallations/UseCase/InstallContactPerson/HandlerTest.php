@@ -11,31 +11,30 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Tests\Functional\ContactPersons\UseCase\Install;
+namespace Bitrix24\Lib\Tests\Functional\ApplicationInstallations\UseCase\InstallContactPerson;
 
 use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationInstallationRepository;
+use Bitrix24\Lib\ApplicationInstallations\UseCase\InstallContactPerson\Command;
+use Bitrix24\Lib\ApplicationInstallations\UseCase\InstallContactPerson\Handler;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
-use Bitrix24\Lib\ContactPersons\UseCase\Install\Handler;
-use Bitrix24\Lib\ContactPersons\UseCase\Install\Command;
 use Bitrix24\Lib\ContactPersons\Infrastructure\Doctrine\ContactPersonRepository;
 use Bitrix24\Lib\Services\Flusher;
+use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\Lib\Tests\Functional\ApplicationInstallations\Builders\ApplicationInstallationBuilder;
 use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
+use Bitrix24\Lib\Tests\Functional\ContactPersons\Builders\ContactPersonBuilder;
 use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationBitrix24PartnerContactPersonLinkedEvent;
-use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationBitrix24PartnerLinkedEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationContactPersonLinkedEvent;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Exceptions\ApplicationInstallationNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonInterface;
-use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonStatus;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Events\ContactPersonCreatedEvent;
-use Bitrix24\SDK\Application\Contracts\ContactPersons\Events\ContactPersonEmailChangedEvent;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Bitrix24\SDK\Core\Credentials\Scope;
-use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
-use Bitrix24\Lib\Tests\EntityManagerFactory;
-use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Exceptions\ApplicationInstallationNotFoundException;
+use libphonenumber\PhoneNumber;
+use libphonenumber\PhoneNumberUtil;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -44,10 +43,6 @@ use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
-use libphonenumber\PhoneNumberUtil;
-use libphonenumber\PhoneNumber;
-use Bitrix24\Lib\Tests\Functional\ContactPersons\Builders\ContactPersonBuilder;
-use Bitrix24\Lib\ContactPersons\Enum\ContactPersonType;
 
 /**
  * @internal
@@ -55,6 +50,10 @@ use Bitrix24\Lib\ContactPersons\Enum\ContactPersonType;
 #[CoversClass(Handler::class)]
 class HandlerTest extends TestCase
 {
+    /**
+     * @var \libphonenumber\PhoneNumberUtil
+     */
+    public $phoneNumberUtil;
     private Handler $handler;
 
     private Flusher $flusher;
@@ -75,10 +74,12 @@ class HandlerTest extends TestCase
         $this->repository = new ContactPersonRepository($entityManager);
         $this->applicationInstallationRepository = new ApplicationInstallationRepository($entityManager);
         $this->bitrix24accountRepository = new Bitrix24AccountRepository($entityManager);
+        $this->phoneNumberUtil = PhoneNumberUtil::getInstance();
         $this->flusher = new Flusher($entityManager, $this->eventDispatcher);
         $this->handler = new Handler(
             $this->applicationInstallationRepository,
             $this->repository,
+            $this->phoneNumberUtil,
             $this->flusher,
             new NullLogger()
         );

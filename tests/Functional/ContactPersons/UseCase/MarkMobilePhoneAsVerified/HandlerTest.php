@@ -38,6 +38,10 @@ use Bitrix24\Lib\Tests\Functional\ContactPersons\Builders\ContactPersonBuilder;
 #[CoversClass(Handler::class)]
 class HandlerTest extends TestCase
 {
+    /**
+     * @var \libphonenumber\PhoneNumberUtil
+     */
+    public $phoneNumberUtil;
     private Handler $handler;
 
     private Flusher $flusher;

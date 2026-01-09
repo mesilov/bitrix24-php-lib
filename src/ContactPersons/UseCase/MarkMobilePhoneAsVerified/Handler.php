@@ -9,7 +9,10 @@ use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonInterf
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Exceptions\ContactPersonNotFoundException;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Repository\ContactPersonRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
+use libphonenumber\PhoneNumber;
 use libphonenumber\PhoneNumberFormat;
+use libphonenumber\PhoneNumberType;
 use libphonenumber\PhoneNumberUtil;
 use Psr\Log\LoggerInterface;
 
@@ -32,15 +35,17 @@ readonly class Handler
             'phone' => $expectedMobilePhoneE164,
         ]);
 
+        $this->guardMobilePhoneNumber($command->phone);
+
         try {
             /** @var AggregateRootEventsEmitterInterface|ContactPersonInterface $contactPerson */
             $contactPerson = $this->contactPersonRepository->getById($command->contactPersonId);
-        } catch (ContactPersonNotFoundException $e) {
+        } catch (ContactPersonNotFoundException $contactPersonNotFoundException) {
             $this->logger->warning('ContactPerson.MarkMobilePhoneVerification.contactPersonNotFound', [
                 'contactPersonId' => $command->contactPersonId->toRfc4122(),
             ]);
 
-            throw $e;
+            throw $contactPersonNotFoundException;
         }
 
         $actualPhone = $contactPerson->getMobilePhone();
@@ -81,5 +86,24 @@ readonly class Handler
             'contactPersonId' => $contactPerson->getId()->toRfc4122(),
             'mobilePhoneVerifiedAt' => $contactPerson->getMobilePhoneVerifiedAt()?->toIso8601String(),
         ]);
+    }
+
+    private function guardMobilePhoneNumber(PhoneNumber $mobilePhoneNumber): void
+    {
+        if (!$this->phoneNumberUtil->isValidNumber($mobilePhoneNumber)) {
+            $this->logger->warning('ContactPerson.ChangeProfile.InvalidMobilePhoneNumber', [
+                'mobilePhoneNumber' => (string) $mobilePhoneNumber,
+            ]);
+
+            throw new InvalidArgumentException('Invalid mobile phone number.');
+        }
+
+        if (PhoneNumberType::MOBILE !== $this->phoneNumberUtil->getNumberType($mobilePhoneNumber)) {
+            $this->logger->warning('ContactPerson.ChangeProfile.MobilePhoneNumberMustBeMobile', [
+                'mobilePhoneNumber' => (string) $mobilePhoneNumber,
+            ]);
+
+            throw new InvalidArgumentException('Phone number must be mobile.');
+        }
     }
 }

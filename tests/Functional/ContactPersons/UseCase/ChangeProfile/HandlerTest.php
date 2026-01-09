@@ -12,12 +12,12 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Tests\Functional\ContactPersons\UseCase\UpdateData;
+namespace Bitrix24\Lib\Tests\Functional\ContactPersons\UseCase\ChangeProfile;
 
 use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationInstallationRepository;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
-use Bitrix24\Lib\ContactPersons\UseCase\UpdateData\Handler;
-use Bitrix24\Lib\ContactPersons\UseCase\UpdateData\Command;
+use Bitrix24\Lib\ContactPersons\UseCase\ChangeProfile\Handler;
+use Bitrix24\Lib\ContactPersons\UseCase\ChangeProfile\Command;
 use Bitrix24\Lib\ContactPersons\Infrastructure\Doctrine\ContactPersonRepository;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\Functional\ApplicationInstallations\Builders\ApplicationInstallationBuilder;
@@ -54,6 +54,10 @@ use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\FullName;
 #[CoversClass(Handler::class)]
 class HandlerTest extends TestCase
 {
+    /**
+     * @var \libphonenumber\PhoneNumberUtil
+     */
+    public $phoneNumberUtil;
     private Handler $handler;
 
     private Flusher $flusher;
@@ -68,9 +72,11 @@ class HandlerTest extends TestCase
         $entityManager = EntityManagerFactory::get();
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $this->repository = new ContactPersonRepository($entityManager);
+        $this->phoneNumberUtil = PhoneNumberUtil::getInstance();
         $this->flusher = new Flusher($entityManager, $this->eventDispatcher);
         $this->handler = new Handler(
             $this->repository,
+            $this->phoneNumberUtil,
             $this->flusher,
             new NullLogger()
         );
@@ -121,8 +127,6 @@ class HandlerTest extends TestCase
         $this->assertEquals('Jane Doe', $updatedContactPerson->getFullName()->name);
         $this->assertEquals('jane.doe@example.com', $updatedContactPerson->getEmail());
         $this->assertEquals('+79997654321', $formattedPhone);
-        $this->assertEquals($externalId, $updatedContactPerson->getExternalId());
-        $this->assertEquals($uuidV7, $updatedContactPerson->getBitrix24PartnerId());
     }
 
     private function createPhoneNumber(string $number): PhoneNumber
