@@ -10,6 +10,7 @@ readonly class Command
 {
     public function __construct(
         public Uuid $contactPersonId,
+        public Uuid $applicationInstallationId,
         public ?string $comment = null,
     ) {
         $this->validate();

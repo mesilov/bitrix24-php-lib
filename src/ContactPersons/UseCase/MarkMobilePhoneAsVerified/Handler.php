@@ -35,8 +35,6 @@ readonly class Handler
             'phone' => $expectedMobilePhoneE164,
         ]);
 
-        $this->guardMobilePhoneNumber($command->phone);
-
         try {
             /** @var AggregateRootEventsEmitterInterface|ContactPersonInterface $contactPerson */
             $contactPerson = $this->contactPersonRepository->getById($command->contactPersonId);
