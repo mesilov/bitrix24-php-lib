@@ -132,11 +132,11 @@ class HandlerTest extends TestCase
         $this->applicationInstallationRepository->save($applicationInstallation);
         $this->flusher->flush();
 
-        var_dump($contactPerson->getId());
         // Запуск use-case
         $this->handler->handle(
             new Command(
                 $contactPerson->getId(),
+                $applicationInstallation->getId(),
                 'Deleted by test'
             )
         );
@@ -195,6 +195,7 @@ class HandlerTest extends TestCase
         $this->handler->handle(
             new Command(
                 Uuid::v7(),
+                $applicationInstallation->getId(),
                 'Deleted by test'
             )
         );
@@ -221,6 +222,7 @@ class HandlerTest extends TestCase
         $this->handler->handle(
             new Command(
                 $contactPerson->getId(),
+                Uuid::v7(),
                 'Deleted by test'
             )
         );
@@ -282,6 +284,7 @@ class HandlerTest extends TestCase
         $this->handler->handle(
             new Command(
                 $contactPerson->getId(),
+                $applicationInstallation->getId(),
                 'Deleted by test'
             )
         );
@@ -295,7 +298,6 @@ class HandlerTest extends TestCase
         $foundInstallation = $this->applicationInstallationRepository->getById($applicationInstallation->getId());
         $this->assertNull($foundInstallation->getBitrix24PartnerContactPersonId());
 
-        // Контакт доступен в репозитории (с пометкой deleted)
         $this->expectException(ContactPersonNotFoundException::class);
         $this->repository->getById($contactPerson->getId());
     }
@@ -321,6 +323,7 @@ class HandlerTest extends TestCase
         $this->handler->handle(
             new Command(
                 $contactPerson->getId(),
+                Uuid::v7(),
                 'Deleted by test'
             )
         );

@@ -42,6 +42,7 @@ class HandlerTest extends TestCase
      * @var \libphonenumber\PhoneNumberUtil
      */
     public $phoneNumberUtil;
+
     private Handler $handler;
 
     private Flusher $flusher;

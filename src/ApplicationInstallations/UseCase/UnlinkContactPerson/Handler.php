@@ -60,13 +60,12 @@ readonly class Handler
             $entitiesToFlush[] = $contactPerson;
 
             $this->flusher->flush(...$entitiesToFlush);
-
-        } catch (ContactPersonNotFoundException|ApplicationInstallationNotFoundException $e) {
+        } catch (ApplicationInstallationNotFoundException|ContactPersonNotFoundException $e) {
             $this->logger->warning('ContactPerson.UnlinkContactPerson.notFound', [
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ]);
-            throw $e;
 
+            throw $e;
         } finally {
             $this->logger->info('ContactPerson.UnlinkContactPerson.finish', [
                 'contactPersonId' => $command->contactPersonId,

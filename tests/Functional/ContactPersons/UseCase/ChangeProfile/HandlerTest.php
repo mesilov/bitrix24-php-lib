@@ -58,6 +58,7 @@ class HandlerTest extends TestCase
      * @var \libphonenumber\PhoneNumberUtil
      */
     public $phoneNumberUtil;
+
     private Handler $handler;
 
     private Flusher $flusher;
@@ -99,18 +100,13 @@ class HandlerTest extends TestCase
         $this->repository->save($contactPerson);
         $this->flusher->flush();
 
-        $externalId = Uuid::v7()->toRfc4122();
-        $uuidV7 = Uuid::v7();
-
         // Обновляем контактное лицо через команду
         $this->handler->handle(
             new Command(
                 $contactPerson->getId(),
                 new FullName('Jane Doe'),
                 'jane.doe@example.com',
-                $this->createPhoneNumber('+79997654321'),
-                $externalId,
-                $uuidV7,
+                $this->createPhoneNumber('+79997654321')
             )
         );
 

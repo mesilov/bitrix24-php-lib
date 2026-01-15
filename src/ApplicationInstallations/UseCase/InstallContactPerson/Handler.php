@@ -7,6 +7,7 @@ namespace Bitrix24\Lib\ApplicationInstallations\UseCase\InstallContactPerson;
 use Bitrix24\Lib\ContactPersons\Entity\ContactPerson;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Exceptions\ApplicationInstallationNotFoundException;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\ApplicationInstallationRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonStatus;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Repository\ContactPersonRepositoryInterface;
@@ -36,46 +37,62 @@ readonly class Handler
             'bitrix24PartnerId' => $command->bitrix24PartnerId?->toRfc4122() ?? '',
         ]);
 
-        if ($command->mobilePhoneNumber instanceof \libphonenumber\PhoneNumber) {
-            $this->guardMobilePhoneNumber($command->mobilePhoneNumber);
+        $createdContactPersonId = '';
+
+        try {
+            if ($command->mobilePhoneNumber instanceof PhoneNumber) {
+                $this->guardMobilePhoneNumber($command->mobilePhoneNumber);
+            }
+
+            /** @var null|AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $applicationInstallation */
+            $applicationInstallation = $this->applicationInstallationRepository->getById($command->applicationInstallationId);
+
+            $uuidV7 = Uuid::v7();
+
+            $contactPerson = new ContactPerson(
+                $uuidV7,
+                ContactPersonStatus::active,
+                $command->fullName,
+                $command->email,
+                null,
+                $command->mobilePhoneNumber,
+                null,
+                $command->comment,
+                $command->externalId,
+                $command->bitrix24UserId,
+                $command->bitrix24PartnerId,
+                $command->userAgentInfo,
+                true
+            );
+
+            $this->contactPersonRepository->save($contactPerson);
+
+            if ($contactPerson->isPartner()) {
+                $applicationInstallation->linkBitrix24PartnerContactPerson($uuidV7);
+            } else {
+                $applicationInstallation->linkContactPerson($uuidV7);
+            }
+
+            $this->applicationInstallationRepository->save($applicationInstallation);
+
+            $this->flusher->flush($contactPerson, $applicationInstallation);
+
+            $createdContactPersonId = $uuidV7->toRfc4122();
+        } catch (ApplicationInstallationNotFoundException $applicationInstallationNotFoundException) {
+            $this->logger->warning('ContactPerson.InstallContactPerson.applicationInstallationNotFound', [
+                'applicationInstallationId' => $command->applicationInstallationId,
+                'message' => $applicationInstallationNotFoundException->getMessage(),
+            ]);
+
+            throw $applicationInstallationNotFoundException;
+        } finally {
+            $this->logger->info('ContactPerson.InstallContactPerson.finish', [
+                'applicationInstallationId' => $command->applicationInstallationId,
+                'bitrix24UserId' => $command->bitrix24UserId,
+                'bitrix24PartnerId' => $command->bitrix24PartnerId?->toRfc4122() ?? '',
+                'contact_person_id' => $createdContactPersonId,
+            ]);
         }
-
-        /** @var null|AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $applicationInstallation */
-        $applicationInstallation = $this->applicationInstallationRepository->getById($command->applicationInstallationId);
-
-        $uuidV7 = Uuid::v7();
-
-        $contactPerson = new ContactPerson(
-            $uuidV7,
-            ContactPersonStatus::active,
-            $command->fullName,
-            $command->email,
-            null,
-            $command->mobilePhoneNumber,
-            null,
-            $command->comment,
-            $command->externalId,
-            $command->bitrix24UserId,
-            $command->bitrix24PartnerId,
-            $command->userAgentInfo,
-            true
-        );
-
-        $this->contactPersonRepository->save($contactPerson);
-
-        if ($contactPerson->isPartner()) {
-            $applicationInstallation->linkBitrix24PartnerContactPerson($uuidV7);
-        } else {
-            $applicationInstallation->linkContactPerson($uuidV7);
-        }
-
-        $this->applicationInstallationRepository->save($applicationInstallation);
-
-        $this->flusher->flush($contactPerson, $applicationInstallation);
-
-        $this->logger->info('ContactPerson.InstallContactPerson.finish', [
-            'contact_person_id' => $uuidV7->toRfc4122(),
-        ]);
     }
 
     private function guardMobilePhoneNumber(PhoneNumber $mobilePhoneNumber): void

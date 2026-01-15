@@ -29,40 +29,40 @@ readonly class Handler
         try {
             /** @var AggregateRootEventsEmitterInterface|ContactPersonInterface $contactPerson */
             $contactPerson = $this->contactPersonRepository->getById($command->contactPersonId);
+
+            $actualEmail = $contactPerson->getEmail();
+            if (null == $actualEmail) {
+                $this->logger->warning('ContactPerson.MarkEmailVerification.currentEmailIsNull', [
+                    'contactPersonId' => $command->contactPersonId->toRfc4122(),
+                    'actualEmail' => null,
+                    'expectedEmail' => $command->email,
+                ]);
+
+                return;
+            }
+
+            if (mb_strtolower($actualEmail) === mb_strtolower($command->email)) {
+                $contactPerson->markEmailAsVerified($command->emailVerifiedAt);
+                $this->contactPersonRepository->save($contactPerson);
+                $this->flusher->flush($contactPerson);
+            } else {
+                $this->logger->warning('ContactPerson.MarkEmailVerification.emailMismatch', [
+                    'contactPersonId' => $command->contactPersonId->toRfc4122(),
+                    'actualEmail' => $actualEmail,
+                    'expectedEmail' => $command->email,
+                ]);
+            }
         } catch (ContactPersonNotFoundException $contactPersonNotFoundException) {
             $this->logger->warning('ContactPerson.MarkEmailVerification.contactPersonNotFound', [
                 'contactPersonId' => $command->contactPersonId->toRfc4122(),
+                'message' => $contactPersonNotFoundException->getMessage(),
             ]);
 
             throw $contactPersonNotFoundException;
-        }
-
-        $actualEmail = $contactPerson->getEmail();
-        if (null == $actualEmail) {
-            $this->logger->warning('ContactPerson.MarkEmailVerification.currentEmailIsNull', [
+        } finally {
+            $this->logger->info('ContactPerson.MarkEmailVerification.finish', [
                 'contactPersonId' => $command->contactPersonId->toRfc4122(),
-                'actualEmail' => null,
-                'expectedEmail' => $command->email,
-            ]);
-
-            return;
-        }
-
-        if (mb_strtolower($actualEmail) === mb_strtolower($command->email)) {
-            $contactPerson->markEmailAsVerified($command->emailVerifiedAt);
-            $this->contactPersonRepository->save($contactPerson);
-            $this->flusher->flush($contactPerson);
-        } else {
-            $this->logger->warning('ContactPerson.MarkEmailVerification.emailMismatch', [
-                'contactPersonId' => $command->contactPersonId->toRfc4122(),
-                'actualEmail' => $actualEmail,
-                'expectedEmail' => $command->email,
             ]);
         }
-
-        $this->logger->info('ContactPerson.MarkEmailVerification.finish', [
-            'contactPersonId' => $contactPerson->getId()->toRfc4122(),
-            'emailVerifiedAt' => $contactPerson->getEmailVerifiedAt()?->toIso8601String(),
-        ]);
     }
 }

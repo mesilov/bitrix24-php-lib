@@ -9,10 +9,7 @@ use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonInterf
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Exceptions\ContactPersonNotFoundException;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Repository\ContactPersonRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
-use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
-use libphonenumber\PhoneNumber;
 use libphonenumber\PhoneNumberFormat;
-use libphonenumber\PhoneNumberType;
 use libphonenumber\PhoneNumberUtil;
 use Psr\Log\LoggerInterface;
 
@@ -38,70 +35,46 @@ readonly class Handler
         try {
             /** @var AggregateRootEventsEmitterInterface|ContactPersonInterface $contactPerson */
             $contactPerson = $this->contactPersonRepository->getById($command->contactPersonId);
+
+            $actualPhone = $contactPerson->getMobilePhone();
+            if (null == $actualPhone) {
+                $this->logger->warning('ContactPerson.MarkMobilePhoneVerification.currentPhoneIsNull', [
+                    'contactPersonId' => $command->contactPersonId->toRfc4122(),
+                    'actualPhone' => null,
+                    'expectedPhone' => $expectedMobilePhoneE164,
+                ]);
+
+                return;
+            }
+
+            if ($command->phone->equals($actualPhone)) {
+                $contactPerson->markMobilePhoneAsVerified($command->phoneVerifiedAt);
+
+                $this->contactPersonRepository->save($contactPerson);
+                $this->flusher->flush($contactPerson);
+            } else {
+                // Format the current mobile phone number to the international E.164 format
+                $actualMobilePhoneE164 = $this->phoneNumberUtil->format($actualPhone, PhoneNumberFormat::E164);
+
+                $this->logger->warning('ContactPerson.MarkMobilePhoneVerification.phoneMismatch', [
+                    'contactPersonId' => $command->contactPersonId->toRfc4122(),
+                    'actualPhone' => $actualMobilePhoneE164,
+                    'expectedPhone' => $expectedMobilePhoneE164,
+                ]);
+
+                return;
+            }
         } catch (ContactPersonNotFoundException $contactPersonNotFoundException) {
             $this->logger->warning('ContactPerson.MarkMobilePhoneVerification.contactPersonNotFound', [
                 'contactPersonId' => $command->contactPersonId->toRfc4122(),
+                'message' => $contactPersonNotFoundException->getMessage(),
             ]);
 
             throw $contactPersonNotFoundException;
-        }
-
-        $actualPhone = $contactPerson->getMobilePhone();
-        if (null == $actualPhone) {
-            $this->logger->warning('ContactPerson.MarkMobilePhoneVerification.currentPhoneIsNull', [
-                'contactPersonId' => $command->contactPersonId->toRfc4122(),
-                'actualPhone' => null,
-                'expectedPhone' => $expectedMobilePhoneE164,
-            ]);
-
-            return;
-        }
-
-        if ($command->phone->equals($actualPhone)) {
-            $contactPerson->markMobilePhoneAsVerified($command->phoneVerifiedAt);
-
-            $this->contactPersonRepository->save($contactPerson);
-            $this->flusher->flush($contactPerson);
-        } else {
-            // Format the current mobile phone number to the international E.164 format
-            $actualMobilePhoneE164 = $this->phoneNumberUtil->format($actualPhone, PhoneNumberFormat::E164);
-
-            $this->logger->warning('ContactPerson.MarkMobilePhoneVerification.phoneMismatch', [
-                'contactPersonId' => $command->contactPersonId->toRfc4122(),
-                'actualPhone' => $actualMobilePhoneE164,
-                'expectedPhone' => $expectedMobilePhoneE164,
-            ]);
-            // Do not throw here — just log mismatch and finish without changes
+        } finally {
             $this->logger->info('ContactPerson.MarkMobilePhoneVerification.finish', [
-                'contactPersonId' => $contactPerson->getId()->toRfc4122(),
-                'mobilePhoneVerifiedAt' => $contactPerson->getMobilePhoneVerifiedAt()?->toIso8601String(),
+                'contactPersonId' => $command->contactPersonId->toRfc4122(),
             ]);
-
-            return;
-        }
-
-        $this->logger->info('ContactPerson.MarkMobilePhoneVerification.finish', [
-            'contactPersonId' => $contactPerson->getId()->toRfc4122(),
-            'mobilePhoneVerifiedAt' => $contactPerson->getMobilePhoneVerifiedAt()?->toIso8601String(),
-        ]);
-    }
-
-    private function guardMobilePhoneNumber(PhoneNumber $mobilePhoneNumber): void
-    {
-        if (!$this->phoneNumberUtil->isValidNumber($mobilePhoneNumber)) {
-            $this->logger->warning('ContactPerson.ChangeProfile.InvalidMobilePhoneNumber', [
-                'mobilePhoneNumber' => (string) $mobilePhoneNumber,
-            ]);
-
-            throw new InvalidArgumentException('Invalid mobile phone number.');
-        }
-
-        if (PhoneNumberType::MOBILE !== $this->phoneNumberUtil->getNumberType($mobilePhoneNumber)) {
-            $this->logger->warning('ContactPerson.ChangeProfile.MobilePhoneNumberMustBeMobile', [
-                'mobilePhoneNumber' => (string) $mobilePhoneNumber,
-            ]);
-
-            throw new InvalidArgumentException('Phone number must be mobile.');
         }
     }
 }

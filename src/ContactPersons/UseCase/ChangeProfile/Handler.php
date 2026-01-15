@@ -36,38 +36,43 @@ readonly class Handler
         try {
             /** @var AggregateRootEventsEmitterInterface|ContactPersonInterface $contactPerson */
             $contactPerson = $this->contactPersonRepository->getById($command->contactPersonId);
+
+            if (!$command->fullName->equal($contactPerson->getFullName())) {
+                $contactPerson->changeFullName($command->fullName);
+            }
+
+            if ($command->email !== $contactPerson->getEmail()) {
+                $contactPerson->changeEmail($command->email);
+            }
+
+            $this->guardMobilePhoneNumber($command->mobilePhoneNumber);
+            if (!$command->mobilePhoneNumber->equals($contactPerson->getMobilePhone())) {
+                $contactPerson->changeMobilePhone($command->mobilePhoneNumber);
+            }
+
+            $this->contactPersonRepository->save($contactPerson);
+            $this->flusher->flush($contactPerson);
+
+            $this->logger->info('ContactPerson.ChangeProfile.finish', [
+                'contactPersonId' => $contactPerson->getId()->toRfc4122(),
+                'updatedFields' => [
+                    'fullName' => (string) $command->fullName,
+                    'email' => $command->email,
+                    'mobilePhoneNumber' => (string) $command->mobilePhoneNumber,
+                ],
+            ]);
         } catch (ContactPersonNotFoundException $contactPersonNotFoundException) {
             $this->logger->warning('ContactPerson.ChangeProfile.contactPersonNotFound', [
                 'contactPersonId' => $command->contactPersonId->toRfc4122(),
+                'message' => $contactPersonNotFoundException->getMessage(),
             ]);
 
             throw $contactPersonNotFoundException;
+        } finally {
+            $this->logger->info('ContactPerson.ChangeProfile.finish', [
+                'contactPersonId' => $command->contactPersonId->toRfc4122(),
+            ]);
         }
-
-        if (!$command->fullName->equal($contactPerson->getFullName())) {
-            $contactPerson->changeFullName($command->fullName);
-        }
-
-        if ($command->email !== $contactPerson->getEmail()) {
-            $contactPerson->changeEmail($command->email);
-        }
-
-        $this->guardMobilePhoneNumber($command->mobilePhoneNumber);
-        if (!$command->mobilePhoneNumber->equals($contactPerson->getMobilePhone())) {
-            $contactPerson->changeMobilePhone($command->mobilePhoneNumber);
-        }
-
-        $this->contactPersonRepository->save($contactPerson);
-        $this->flusher->flush($contactPerson);
-
-        $this->logger->info('ContactPerson.ChangeProfile.finish', [
-            'contactPersonId' => $contactPerson->getId()->toRfc4122(),
-            'updatedFields' => [
-                'fullName' => (string) $command->fullName,
-                'email' => $command->email,
-                'mobilePhoneNumber' => (string) $command->mobilePhoneNumber,
-            ],
-        ]);
     }
 
     private function guardMobilePhoneNumber(PhoneNumber $mobilePhoneNumber): void
