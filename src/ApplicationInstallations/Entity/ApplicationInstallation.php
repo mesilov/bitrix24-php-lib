@@ -347,7 +347,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function unlinkContactPerson(): void
     {
-        if (!$this->contactPersonId instanceof Uuid) {
+        if (null === $this->contactPersonId) {
             return;
         }
 
@@ -377,7 +377,7 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function unlinkBitrix24PartnerContactPerson(): void
     {
-        if (!$this->bitrix24PartnerContactPersonId instanceof Uuid) {
+        if (null === $this->bitrix24PartnerContactPersonId) {
             return;
         }
 
