@@ -38,22 +38,15 @@ readonly class Handler
             $applicationInstallation = $this->applicationInstallationRepository->getById($command->applicationInstallationId);
 
             $entitiesToFlush = [];
+
             if ($contactPerson->isPartner()) {
-                if (null !== $applicationInstallation->getBitrix24PartnerContactPersonId()) {
-                    $applicationInstallation->unlinkBitrix24PartnerContactPerson();
-                    $this->applicationInstallationRepository->save($applicationInstallation);
-                    $entitiesToFlush[] = $applicationInstallation;
-                }
-            } elseif (null !== $applicationInstallation->getContactPersonId()) {
-                $applicationInstallation->unlinkContactPerson();
-                $this->applicationInstallationRepository->save($applicationInstallation);
-                $entitiesToFlush[] = $applicationInstallation;
+                $applicationInstallation->unlinkBitrix24PartnerContactPerson();
             } else {
-                $this->logger->warning('ContactPerson.UnlinkContactPerson.alreadyUnlinked', [
-                    'contactPersonId' => $command->contactPersonId,
-                    'applicationInstallationId' => $command->applicationInstallationId,
-                ]);
+                $applicationInstallation->unlinkContactPerson();
             }
+
+            $this->applicationInstallationRepository->save($applicationInstallation);
+            $entitiesToFlush[] = $applicationInstallation;
 
             $contactPerson->markAsDeleted($command->comment);
             $this->contactPersonRepository->save($contactPerson);

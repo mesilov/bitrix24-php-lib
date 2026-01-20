@@ -31,17 +31,8 @@ readonly class Handler
             $contactPerson = $this->contactPersonRepository->getById($command->contactPersonId);
 
             $actualEmail = $contactPerson->getEmail();
-            if (null == $actualEmail) {
-                $this->logger->warning('ContactPerson.MarkEmailVerification.currentEmailIsNull', [
-                    'contactPersonId' => $command->contactPersonId->toRfc4122(),
-                    'actualEmail' => null,
-                    'expectedEmail' => $command->email,
-                ]);
 
-                return;
-            }
-
-            if (mb_strtolower($actualEmail) === mb_strtolower($command->email)) {
+            if (mb_strtolower((string)$actualEmail) === mb_strtolower($command->email)) {
                 $contactPerson->markEmailAsVerified($command->emailVerifiedAt);
                 $this->contactPersonRepository->save($contactPerson);
                 $this->flusher->flush($contactPerson);

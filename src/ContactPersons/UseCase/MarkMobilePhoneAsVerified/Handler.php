@@ -37,17 +37,8 @@ readonly class Handler
             $contactPerson = $this->contactPersonRepository->getById($command->contactPersonId);
 
             $actualPhone = $contactPerson->getMobilePhone();
-            if (null == $actualPhone) {
-                $this->logger->warning('ContactPerson.MarkMobilePhoneVerification.currentPhoneIsNull', [
-                    'contactPersonId' => $command->contactPersonId->toRfc4122(),
-                    'actualPhone' => null,
-                    'expectedPhone' => $expectedMobilePhoneE164,
-                ]);
 
-                return;
-            }
-
-            if ($command->phone->equals($actualPhone)) {
+            if ($actualPhone !== null && $command->phone->equals($actualPhone)) {
                 $contactPerson->markMobilePhoneAsVerified($command->phoneVerifiedAt);
 
                 $this->contactPersonRepository->save($contactPerson);
