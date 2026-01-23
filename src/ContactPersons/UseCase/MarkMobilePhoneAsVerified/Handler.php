@@ -38,7 +38,7 @@ readonly class Handler
 
             $actualPhone = $contactPerson->getMobilePhone();
 
-            if ($actualPhone !== null && $command->phone->equals($actualPhone)) {
+            if (null !== $actualPhone && $command->phone->equals($actualPhone)) {
                 $contactPerson->markMobilePhoneAsVerified($command->phoneVerifiedAt);
 
                 $this->contactPersonRepository->save($contactPerson);

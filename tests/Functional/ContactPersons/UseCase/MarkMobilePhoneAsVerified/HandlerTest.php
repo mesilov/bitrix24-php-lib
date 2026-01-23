@@ -13,12 +13,15 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Functional\ContactPersons\UseCase\MarkMobilePhoneAsVerified;
 
-use Bitrix24\Lib\ContactPersons\UseCase\MarkMobilePhoneAsVerified\Handler;
-use Bitrix24\Lib\ContactPersons\UseCase\MarkMobilePhoneAsVerified\Command;
 use Bitrix24\Lib\ContactPersons\Infrastructure\Doctrine\ContactPersonRepository;
+use Bitrix24\Lib\ContactPersons\UseCase\MarkMobilePhoneAsVerified\Command;
+use Bitrix24\Lib\ContactPersons\UseCase\MarkMobilePhoneAsVerified\Handler;
 use Bitrix24\Lib\Services\Flusher;
-use Bitrix24\SDK\Application\Contracts\ContactPersons\Exceptions\ContactPersonNotFoundException;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
+use Bitrix24\Lib\Tests\Functional\ContactPersons\Builders\ContactPersonBuilder;
+use Bitrix24\SDK\Application\Contracts\ContactPersons\Exceptions\ContactPersonNotFoundException;
+use libphonenumber\PhoneNumber;
+use libphonenumber\PhoneNumberUtil;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -27,10 +30,6 @@ use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
-use libphonenumber\PhoneNumberUtil;
-use libphonenumber\PhoneNumber;
-use Bitrix24\Lib\Tests\Functional\ContactPersons\Builders\ContactPersonBuilder;
-
 
 /**
  * @internal
@@ -39,7 +38,7 @@ use Bitrix24\Lib\Tests\Functional\ContactPersons\Builders\ContactPersonBuilder;
 class HandlerTest extends TestCase
 {
     /**
-     * @var \libphonenumber\PhoneNumberUtil
+     * @var PhoneNumberUtil
      */
     public $phoneNumberUtil;
 
@@ -73,6 +72,7 @@ class HandlerTest extends TestCase
         $contactPersonBuilder = new ContactPersonBuilder();
         $externalId = Uuid::v7()->toRfc4122();
         $bitrix24UserId = random_int(1, 1_000_000);
+        $uuidV7 = Uuid::v7();
         $phoneNumber = $this->createPhoneNumber('+79991234567');
 
         $contactPerson = $contactPersonBuilder
@@ -81,8 +81,9 @@ class HandlerTest extends TestCase
             ->withComment('Test comment')
             ->withExternalId($externalId)
             ->withBitrix24UserId($bitrix24UserId)
-            ->withBitrix24PartnerId(Uuid::v7())
-            ->build();
+            ->withBitrix24PartnerId($uuidV7)
+            ->build()
+        ;
 
         $this->repository->save($contactPerson);
         $this->flusher->flush();
@@ -109,7 +110,8 @@ class HandlerTest extends TestCase
             ->withExternalId($externalId)
             ->withBitrix24UserId($bitrix24UserId)
             ->withBitrix24PartnerId(Uuid::v7())
-            ->build();
+            ->build()
+        ;
 
         $this->repository->save($contactPerson);
         $this->flusher->flush();
@@ -137,7 +139,8 @@ class HandlerTest extends TestCase
             ->withExternalId($externalId)
             ->withBitrix24UserId($bitrix24UserId)
             ->withBitrix24PartnerId(Uuid::v7())
-            ->build();
+            ->build()
+        ;
 
         $this->repository->save($contactPerson);
         $this->flusher->flush();
@@ -153,6 +156,7 @@ class HandlerTest extends TestCase
     private function createPhoneNumber(string $number): PhoneNumber
     {
         $phoneNumberUtil = PhoneNumberUtil::getInstance();
+
         return $phoneNumberUtil->parse($number, 'RU');
     }
 }

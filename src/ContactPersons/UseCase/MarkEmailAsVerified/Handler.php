@@ -32,7 +32,7 @@ readonly class Handler
 
             $actualEmail = $contactPerson->getEmail();
 
-            if (mb_strtolower((string)$actualEmail) === mb_strtolower($command->email)) {
+            if (mb_strtolower((string) $actualEmail) === mb_strtolower($command->email)) {
                 $contactPerson->markEmailAsVerified($command->emailVerifiedAt);
                 $this->contactPersonRepository->save($contactPerson);
                 $this->flusher->flush($contactPerson);

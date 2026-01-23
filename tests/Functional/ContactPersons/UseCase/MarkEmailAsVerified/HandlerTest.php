@@ -13,14 +13,16 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Functional\ContactPersons\UseCase\MarkEmailAsVerified;
 
-use Bitrix24\Lib\ContactPersons\UseCase\MarkEmailAsVerified\Handler;
-use Bitrix24\Lib\ContactPersons\UseCase\MarkEmailAsVerified\Command;
-use InvalidArgumentException;
-use Carbon\CarbonImmutable;
 use Bitrix24\Lib\ContactPersons\Infrastructure\Doctrine\ContactPersonRepository;
+use Bitrix24\Lib\ContactPersons\UseCase\MarkEmailAsVerified\Command;
+use Bitrix24\Lib\ContactPersons\UseCase\MarkEmailAsVerified\Handler;
 use Bitrix24\Lib\Services\Flusher;
-use Bitrix24\SDK\Application\Contracts\ContactPersons\Exceptions\ContactPersonNotFoundException;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
+use Bitrix24\Lib\Tests\Functional\ContactPersons\Builders\ContactPersonBuilder;
+use Bitrix24\SDK\Application\Contracts\ContactPersons\Exceptions\ContactPersonNotFoundException;
+use Carbon\CarbonImmutable;
+use libphonenumber\PhoneNumber;
+use libphonenumber\PhoneNumberUtil;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -29,10 +31,6 @@ use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
-use libphonenumber\PhoneNumberUtil;
-use libphonenumber\PhoneNumber;
-use Bitrix24\Lib\Tests\Functional\ContactPersons\Builders\ContactPersonBuilder;
-
 
 /**
  * @internal
@@ -63,7 +61,7 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    public function testConfirmEmailVerification_Success_WithEmailAndTimestamp(): void
+    public function testConfirmEmailVerificationSuccess(): void
     {
         $contactPersonBuilder = new ContactPersonBuilder();
         $externalId = Uuid::v7()->toRfc4122();
@@ -76,7 +74,8 @@ class HandlerTest extends TestCase
             ->withExternalId($externalId)
             ->withBitrix24UserId($bitrix24UserId)
             ->withBitrix24PartnerId(Uuid::v7())
-            ->build();
+            ->build()
+        ;
 
         $this->repository->save($contactPerson);
         $this->flusher->flush();
@@ -95,7 +94,7 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    public function testConfirmEmailVerification_Fails_IfContactPersonNotFound(): void
+    public function testConfirmEmailVerificationFailsIfContactPersonNotFound(): void
     {
         $contactPersonBuilder = new ContactPersonBuilder();
         $externalId = Uuid::v7()->toRfc4122();
@@ -108,7 +107,8 @@ class HandlerTest extends TestCase
             ->withExternalId($externalId)
             ->withBitrix24UserId($bitrix24UserId)
             ->withBitrix24PartnerId(Uuid::v7())
-            ->build();
+            ->build()
+        ;
 
         $this->repository->save($contactPerson);
         $this->flusher->flush();
@@ -120,7 +120,7 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    public function testConfirmEmailVerification_Fails_IfEmailMismatch(): void
+    public function testConfirmEmailVerificationFailsIfEmailMismatch(): void
     {
         $contactPersonBuilder = new ContactPersonBuilder();
         $externalId = Uuid::v7()->toRfc4122();
@@ -133,12 +133,13 @@ class HandlerTest extends TestCase
             ->withExternalId($externalId)
             ->withBitrix24UserId($bitrix24UserId)
             ->withBitrix24PartnerId(Uuid::v7())
-            ->build();
+            ->build()
+        ;
 
         $this->repository->save($contactPerson);
         $this->flusher->flush();
 
-        // Больше не бросаем исключение при несовпадении email — только лог и без изменений
+        // We no longer throw an exception when the email doesn't match — we only log it and make no changes.
         $this->handler->handle(
             new Command($contactPerson->getId(), 'another.email@example.com')
         );
@@ -149,7 +150,7 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    public function testConfirmEmailVerification_Fails_IfEntityHasNoEmailButCommandProvidesOne(): void
+    public function testConfirmEmailVerificationFailsIfEntityHasNoEmailButCommandProvidesOne(): void
     {
         $contactPersonBuilder = new ContactPersonBuilder();
         $externalId = Uuid::v7()->toRfc4122();
@@ -162,12 +163,13 @@ class HandlerTest extends TestCase
             ->withExternalId($externalId)
             ->withBitrix24UserId($bitrix24UserId)
             ->withBitrix24PartnerId(Uuid::v7())
-            ->build();
+            ->build()
+        ;
 
         $this->repository->save($contactPerson);
         $this->flusher->flush();
 
-        // В обработчик передаём email — теперь только лог и выход без изменений
+        // We no longer throw an exception when the email doesn't match — we only log it and make no changes.
         $this->handler->handle(
             new Command($contactPerson->getId(), 'john.doe@example.com')
         );
@@ -178,7 +180,7 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    public function testConfirmEmailVerification_Fails_IfInvalidEmailProvided(): void
+    public function testConfirmEmailVerificationFailsIfInvalidEmailProvided(): void
     {
         $contactPersonBuilder = new ContactPersonBuilder();
         $externalId = Uuid::v7()->toRfc4122();
@@ -191,13 +193,14 @@ class HandlerTest extends TestCase
             ->withExternalId($externalId)
             ->withBitrix24UserId($bitrix24UserId)
             ->withBitrix24PartnerId(Uuid::v7())
-            ->build();
+            ->build()
+        ;
 
         $this->repository->save($contactPerson);
         $this->flusher->flush();
 
-        $this->expectException(InvalidArgumentException::class);
-        // Неверный email должен упасть на валидации конструктора команды
+        $this->expectException(\InvalidArgumentException::class);
+        // An invalid email should fail during validation in the command constructor.
         $this->handler->handle(
             new Command($contactPerson->getId(), 'not-an-email')
         );
@@ -206,6 +209,7 @@ class HandlerTest extends TestCase
     private function createPhoneNumber(string $number): PhoneNumber
     {
         $phoneNumberUtil = PhoneNumberUtil::getInstance();
+
         return $phoneNumberUtil->parse($number, 'RU');
     }
 }

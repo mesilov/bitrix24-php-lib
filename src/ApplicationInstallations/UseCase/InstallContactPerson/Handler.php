@@ -40,10 +40,10 @@ readonly class Handler
         $createdContactPersonId = '';
 
         try {
-            if ($command->mobilePhoneNumber !== null) {
+            if (null !== $command->mobilePhoneNumber) {
                 try {
                     $this->guardMobilePhoneNumber($command->mobilePhoneNumber);
-                } catch (InvalidArgumentException $exception) {
+                } catch (InvalidArgumentException) {
                     // Ошибка уже залогирована внутри гарда.
                     // Прерываем создание контакта, но не останавливаем установку приложения.
                     return;
@@ -91,7 +91,7 @@ readonly class Handler
             ]);
 
             throw $applicationInstallationNotFoundException;
-        }finally {
+        } finally {
             $this->logger->info('ContactPerson.InstallContactPerson.finish', [
                 'applicationInstallationId' => $command->applicationInstallationId,
                 'bitrix24UserId' => $command->bitrix24UserId,
@@ -107,6 +107,7 @@ readonly class Handler
             $this->logger->warning('ContactPerson.InstallContactPerson.InvalidMobilePhoneNumber', [
                 'mobilePhoneNumber' => (string) $mobilePhoneNumber,
             ]);
+
             throw new InvalidArgumentException('Invalid mobile phone number.');
         }
 
