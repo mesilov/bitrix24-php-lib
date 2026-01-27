@@ -34,6 +34,7 @@ use Bitrix24\SDK\Core\Credentials\Scope;
 use libphonenumber\PhoneNumber;
 use libphonenumber\PhoneNumberUtil;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -92,7 +93,7 @@ class HandlerTest extends TestCase
         $memberId = Uuid::v4()->toRfc4122();
         $externalId = Uuid::v7()->toRfc4122();
 
-        $bitrix24Account = (new Bitrix24AccountBuilder())
+        $bitrix24Account = new Bitrix24AccountBuilder()
             ->withApplicationScope(new Scope(['crm']))
             ->withStatus(Bitrix24AccountStatus::new)
             ->withApplicationToken($applicationToken)
@@ -105,7 +106,7 @@ class HandlerTest extends TestCase
 
         $this->bitrix24accountRepository->save($bitrix24Account);
 
-        $applicationInstallation = (new ApplicationInstallationBuilder())
+        $applicationInstallation = new ApplicationInstallationBuilder()
             ->withApplicationStatus(new ApplicationStatus('F'))
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
             ->withBitrix24AccountId($bitrix24Account->getId())
@@ -190,6 +191,93 @@ class HandlerTest extends TestCase
                 $contactPerson->getBitrix24PartnerId(),
             )
         );
+    }
+
+    #[Test]
+    public function testInstallContactPersonWithInvalidEmail(): void
+    {
+        // Подготовим входные данные контакта
+        $contactPersonBuilder = new ContactPersonBuilder();
+        $contactPerson = $contactPersonBuilder
+            ->withEmail('invalid-email')
+            ->build()
+        ;
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid email format.');
+
+        new Command(
+            Uuid::v7(),
+            $contactPerson->getFullName(),
+            1,
+            $contactPerson->getUserAgentInfo(),
+            $contactPerson->getEmail(),
+            $contactPerson->getMobilePhone(),
+            $contactPerson->getComment(),
+            $contactPerson->getExternalId(),
+            $contactPerson->getBitrix24PartnerId(),
+        );
+    }
+
+    #[Test]
+    #[DataProvider('invalidPhoneProvider')]
+    public function testInstallContactPersonWithInvalidPhone(string $phoneNumber, string $region): void
+    {
+        // Подготовка Bitrix24 аккаунта и установки приложения
+        $applicationToken = Uuid::v7()->toRfc4122();
+        $memberId = Uuid::v7()->toRfc4122();
+
+        $bitrix24Account = new Bitrix24AccountBuilder()
+            ->withApplicationToken($applicationToken)
+            ->withMemberId($memberId)
+            ->build()
+        ;
+        $this->bitrix24accountRepository->save($bitrix24Account);
+
+        $applicationInstallation = new ApplicationInstallationBuilder()
+            ->withBitrix24AccountId($bitrix24Account->getId())
+            ->withApplicationToken($applicationToken)
+            ->withApplicationStatus(new ApplicationStatus('F'))
+            ->withPortalLicenseFamily(PortalLicenseFamily::free)
+            ->build()
+        ;
+        $this->applicationInstallationRepository->save($applicationInstallation);
+        $this->flusher->flush();
+
+        $invalidPhoneNumber = $this->phoneNumberUtil->parse($phoneNumber, $region);
+
+        $contactPersonBuilder = new ContactPersonBuilder();
+        $contactPerson = $contactPersonBuilder
+            ->withEmail('john.doe@example.com')
+            ->withMobilePhoneNumber($invalidPhoneNumber)
+            ->build()
+        ;
+
+        $this->handler->handle(
+            new Command(
+                $applicationInstallation->getId(),
+                $contactPerson->getFullName(),
+                $bitrix24Account->getBitrix24UserId(),
+                $contactPerson->getUserAgentInfo(),
+                $contactPerson->getEmail(),
+                $contactPerson->getMobilePhone(),
+                $contactPerson->getComment(),
+                $contactPerson->getExternalId(),
+                $contactPerson->getBitrix24PartnerId(),
+            )
+        );
+
+        // Проверяем, что контакт не был создан
+        $foundInstallation = $this->applicationInstallationRepository->getById($applicationInstallation->getId());
+        $this->assertNull($foundInstallation->getBitrix24PartnerId());
+    }
+
+    public static function invalidPhoneProvider(): array
+    {
+        return [
+            'invalid format' => ['123', 'RU'],
+            'not mobile' => ['+74951234567', 'RU'], // Moscow landline
+        ];
     }
 
     private function createPhoneNumber(string $number): PhoneNumber

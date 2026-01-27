@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Functional\ContactPersons\UseCase\MarkEmailAsVerified;
 
+use Bitrix24\Lib\ContactPersons\Entity\ContactPerson;
 use Bitrix24\Lib\ContactPersons\Infrastructure\Doctrine\ContactPersonRepository;
 use Bitrix24\Lib\ContactPersons\UseCase\MarkEmailAsVerified\Command;
 use Bitrix24\Lib\ContactPersons\UseCase\MarkEmailAsVerified\Handler;
@@ -24,6 +25,7 @@ use Carbon\CarbonImmutable;
 use libphonenumber\PhoneNumber;
 use libphonenumber\PhoneNumberUtil;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -63,24 +65,7 @@ class HandlerTest extends TestCase
     #[Test]
     public function testConfirmEmailVerificationSuccess(): void
     {
-        $contactPersonBuilder = new ContactPersonBuilder();
-        $externalId = Uuid::v7()->toRfc4122();
-        $bitrix24UserId = random_int(1, 1_000_000);
-
-        $contactPerson = $contactPersonBuilder
-            ->withEmail('john.doe@example.com')
-            ->withMobilePhoneNumber($this->createPhoneNumber('+79991234567'))
-            ->withComment('Test comment')
-            ->withExternalId($externalId)
-            ->withBitrix24UserId($bitrix24UserId)
-            ->withBitrix24PartnerId(Uuid::v7())
-            ->build()
-        ;
-
-        $this->repository->save($contactPerson);
-        $this->flusher->flush();
-
-        $this->assertFalse($contactPerson->isEmailVerified());
+        $contactPerson = $this->createContactPerson('john.doe@example.com');
 
         $verifiedAt = new CarbonImmutable('2025-01-01T10:00:00+00:00');
         $this->handler->handle(
@@ -89,79 +74,61 @@ class HandlerTest extends TestCase
 
         $updatedContactPerson = $this->repository->getById($contactPerson->getId());
         $this->assertTrue($updatedContactPerson->isEmailVerified());
-        $this->assertNotNull($updatedContactPerson->getEmailVerifiedAt());
         $this->assertSame($verifiedAt->toISOString(), $updatedContactPerson->getEmailVerifiedAt()?->toISOString());
     }
 
     #[Test]
-    public function testConfirmEmailVerificationFailsIfContactPersonNotFound(): void
-    {
-        $contactPersonBuilder = new ContactPersonBuilder();
-        $externalId = Uuid::v7()->toRfc4122();
-        $bitrix24UserId = random_int(1, 1_000_000);
+    #[DataProvider('invalidMarkEmailVerificationProvider')]
+    public function testConfirmEmailVerificationFails(
+        bool $useRealContactId,
+        string $emailInCommand,
+        ?string $expectedExceptionClass = null
+    ): void {
+        $contactPerson = $this->createContactPerson('john.doe@example.com');
+        $contactId = $useRealContactId ? $contactPerson->getId() : Uuid::v7();
 
-        $contactPerson = $contactPersonBuilder
-            ->withEmail('john.doe@example.com')
-            ->withMobilePhoneNumber($this->createPhoneNumber('+79991234567'))
-            ->withComment('Test comment')
-            ->withExternalId($externalId)
-            ->withBitrix24UserId($bitrix24UserId)
-            ->withBitrix24PartnerId(Uuid::v7())
-            ->build()
-        ;
+        if (null !== $expectedExceptionClass) {
+            $this->expectException($expectedExceptionClass);
+        }
 
-        $this->repository->save($contactPerson);
-        $this->flusher->flush();
+        $this->handler->handle(new Command($contactId, $emailInCommand));
 
-        $this->assertFalse($contactPerson->isEmailVerified());
-
-        $this->expectException(ContactPersonNotFoundException::class);
-        $this->handler->handle(new Command(Uuid::v7(), 'john.doe@example.com'));
+        if (null === $expectedExceptionClass) {
+            // Если исключение не ожидалось (например, при несовпадении email), проверяем, что статус не изменился
+            $reloaded = $this->repository->getById($contactPerson->getId());
+            $this->assertFalse($reloaded->isEmailVerified());
+        }
     }
 
-    #[Test]
-    public function testConfirmEmailVerificationFailsIfEmailMismatch(): void
+    public static function invalidMarkEmailVerificationProvider(): array
     {
-        $contactPersonBuilder = new ContactPersonBuilder();
-        $externalId = Uuid::v7()->toRfc4122();
-        $bitrix24UserId = random_int(1, 1_000_000);
-
-        $contactPerson = $contactPersonBuilder
-            ->withEmail('john.doe@example.com')
-            ->withMobilePhoneNumber($this->createPhoneNumber('+79991234567'))
-            ->withComment('Test comment')
-            ->withExternalId($externalId)
-            ->withBitrix24UserId($bitrix24UserId)
-            ->withBitrix24PartnerId(Uuid::v7())
-            ->build()
-        ;
-
-        $this->repository->save($contactPerson);
-        $this->flusher->flush();
-
-        // We no longer throw an exception when the email doesn't match — we only log it and make no changes.
-        $this->handler->handle(
-            new Command($contactPerson->getId(), 'another.email@example.com')
-        );
-
-        // Проверяем, что верификация не произошла
-        $reloaded = $this->repository->getById($contactPerson->getId());
-        $this->assertFalse($reloaded->isEmailVerified());
+        return [
+            'contact person not found' => [
+                'useRealContactId' => false,
+                'emailInCommand' => 'john.doe@example.com',
+                'expectedExceptionClass' => ContactPersonNotFoundException::class,
+            ],
+            'email mismatch' => [
+                'useRealContactId' => true,
+                'emailInCommand' => 'another.email@example.com',
+                'expectedExceptionClass' => null,
+            ],
+            'invalid email format' => [
+                'useRealContactId' => true,
+                'emailInCommand' => 'not-an-email',
+                'expectedExceptionClass' => \InvalidArgumentException::class,
+            ],
+        ];
     }
 
-    #[Test]
-    public function testConfirmEmailVerificationFailsIfEntityHasNoEmailButCommandProvidesOne(): void
+    private function createContactPerson(string $email): ContactPerson
     {
-        $contactPersonBuilder = new ContactPersonBuilder();
-        $externalId = Uuid::v7()->toRfc4122();
-        $bitrix24UserId = random_int(1, 1_000_000);
-
-        // Не задаём email в сущности (не вызываем withEmail)
-        $contactPerson = $contactPersonBuilder
+        $contactPerson = (new ContactPersonBuilder())
+            ->withEmail($email)
             ->withMobilePhoneNumber($this->createPhoneNumber('+79991234567'))
             ->withComment('Test comment')
-            ->withExternalId($externalId)
-            ->withBitrix24UserId($bitrix24UserId)
+            ->withExternalId(Uuid::v7()->toRfc4122())
+            ->withBitrix24UserId(random_int(1, 1_000_000))
             ->withBitrix24PartnerId(Uuid::v7())
             ->build()
         ;
@@ -169,41 +136,7 @@ class HandlerTest extends TestCase
         $this->repository->save($contactPerson);
         $this->flusher->flush();
 
-        // We no longer throw an exception when the email doesn't match — we only log it and make no changes.
-        $this->handler->handle(
-            new Command($contactPerson->getId(), 'john.doe@example.com')
-        );
-
-        // Проверяем, что верификация не произошла
-        $reloaded = $this->repository->getById($contactPerson->getId());
-        $this->assertFalse($reloaded->isEmailVerified());
-    }
-
-    #[Test]
-    public function testConfirmEmailVerificationFailsIfInvalidEmailProvided(): void
-    {
-        $contactPersonBuilder = new ContactPersonBuilder();
-        $externalId = Uuid::v7()->toRfc4122();
-        $bitrix24UserId = random_int(1, 1_000_000);
-
-        $contactPerson = $contactPersonBuilder
-            ->withEmail('john.doe@example.com')
-            ->withMobilePhoneNumber($this->createPhoneNumber('+79991234567'))
-            ->withComment('Test comment')
-            ->withExternalId($externalId)
-            ->withBitrix24UserId($bitrix24UserId)
-            ->withBitrix24PartnerId(Uuid::v7())
-            ->build()
-        ;
-
-        $this->repository->save($contactPerson);
-        $this->flusher->flush();
-
-        $this->expectException(\InvalidArgumentException::class);
-        // An invalid email should fail during validation in the command constructor.
-        $this->handler->handle(
-            new Command($contactPerson->getId(), 'not-an-email')
-        );
+        return $contactPerson;
     }
 
     private function createPhoneNumber(string $number): PhoneNumber

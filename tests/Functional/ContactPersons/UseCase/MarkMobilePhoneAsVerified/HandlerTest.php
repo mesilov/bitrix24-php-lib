@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Functional\ContactPersons\UseCase\MarkMobilePhoneAsVerified;
 
+use Bitrix24\Lib\ContactPersons\Entity\ContactPerson;
 use Bitrix24\Lib\ContactPersons\Infrastructure\Doctrine\ContactPersonRepository;
 use Bitrix24\Lib\ContactPersons\UseCase\MarkMobilePhoneAsVerified\Command;
 use Bitrix24\Lib\ContactPersons\UseCase\MarkMobilePhoneAsVerified\Handler;
@@ -23,6 +24,7 @@ use Bitrix24\SDK\Application\Contracts\ContactPersons\Exceptions\ContactPersonNo
 use libphonenumber\PhoneNumber;
 use libphonenumber\PhoneNumberUtil;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -69,24 +71,8 @@ class HandlerTest extends TestCase
     #[Test]
     public function testConfirmPhoneVerification(): void
     {
-        $contactPersonBuilder = new ContactPersonBuilder();
-        $externalId = Uuid::v7()->toRfc4122();
-        $bitrix24UserId = random_int(1, 1_000_000);
-        $uuidV7 = Uuid::v7();
         $phoneNumber = $this->createPhoneNumber('+79991234567');
-
-        $contactPerson = $contactPersonBuilder
-            ->withEmail('john.doe@example.com')
-            ->withMobilePhoneNumber($phoneNumber)
-            ->withComment('Test comment')
-            ->withExternalId($externalId)
-            ->withBitrix24UserId($bitrix24UserId)
-            ->withBitrix24PartnerId($uuidV7)
-            ->build()
-        ;
-
-        $this->repository->save($contactPerson);
-        $this->flusher->flush();
+        $contactPerson = $this->createContactPerson($phoneNumber);
 
         $this->assertFalse($contactPerson->isMobilePhoneVerified());
 
@@ -97,47 +83,62 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    public function testConfirmPhoneVerificationFailsIfContactPersonNotFound(): void
-    {
-        $contactPersonBuilder = new ContactPersonBuilder();
-        $externalId = Uuid::v7()->toRfc4122();
-        $bitrix24UserId = random_int(1, 1_000_000);
+    #[DataProvider('invalidPhoneVerificationProvider')]
+    public function testConfirmPhoneVerificationFails(
+        bool $useRealContactId,
+        string $phoneNumberInCommand,
+        ?string $expectedExceptionClass = null
+    ): void {
+        $realPhoneNumber = $this->createPhoneNumber('+79991234567');
+        $contactPerson = $this->createContactPerson($realPhoneNumber);
 
-        $contactPerson = $contactPersonBuilder
-            ->withEmail('john.doe@example.com')
-            ->withMobilePhoneNumber($this->createPhoneNumber('+79991234567'))
-            ->withComment('Test comment')
-            ->withExternalId($externalId)
-            ->withBitrix24UserId($bitrix24UserId)
-            ->withBitrix24PartnerId(Uuid::v7())
-            ->build()
-        ;
+        $contactId = $useRealContactId ? $contactPerson->getId() : Uuid::v7();
 
-        $this->repository->save($contactPerson);
-        $this->flusher->flush();
+        if (null !== $expectedExceptionClass) {
+            $this->expectException($expectedExceptionClass);
+        }
 
-        $this->assertFalse($contactPerson->isMobilePhoneVerified());
+        $commandPhone = $this->createPhoneNumber($phoneNumberInCommand);
+        $this->handler->handle(new Command($contactId, $commandPhone));
 
-        $this->expectException(ContactPersonNotFoundException::class);
-        $this->handler->handle(new Command(Uuid::v7(), $this->createPhoneNumber('+79991234567')));
+        if (null === $expectedExceptionClass) {
+            // Если исключение не ожидалось (например, при несовпадении телефона), проверяем, что статус не изменился
+            $reloaded = $this->repository->getById($contactPerson->getId());
+            $this->assertFalse($reloaded->isMobilePhoneVerified());
+        }
     }
 
-    #[Test]
-    public function testConfirmPhoneVerificationFailsOnPhoneMismatch(): void
+    public static function invalidPhoneVerificationProvider(): array
     {
-        $contactPersonBuilder = new ContactPersonBuilder();
-        $externalId = Uuid::v7()->toRfc4122();
-        $bitrix24UserId = random_int(1, 1_000_000);
+        return [
+            'contact person not found' => [
+                'useRealContactId' => false,
+                'phoneNumberInCommand' => '+79991234567',
+                'expectedExceptionClass' => ContactPersonNotFoundException::class,
+            ],
+            'phone mismatch' => [
+                'useRealContactId' => true,
+                'phoneNumberInCommand' => '+79990000000',
+                'expectedExceptionClass' => null,
+            ],
+            'invalid phone format' => [
+                'useRealContactId' => true,
+                'phoneNumberInCommand' => '123',
+                'expectedExceptionClass' => null, // Handler catches it or Command validates it?
+                // Actually Command doesn't validate phone format in this package, it's a PhoneNumber object.
+                // In Handler.php there's no guard for phone in MarkMobilePhoneAsVerified, it just compares them.
+            ],
+        ];
+    }
 
-        $phoneNumber = $this->createPhoneNumber('+79991234567');
-        $expectedDifferentPhone = $this->createPhoneNumber('+79990000000');
-
-        $contactPerson = $contactPersonBuilder
+    private function createContactPerson(PhoneNumber $phoneNumber): ContactPerson
+    {
+        $contactPerson = (new ContactPersonBuilder())
             ->withEmail('john.doe@example.com')
             ->withMobilePhoneNumber($phoneNumber)
             ->withComment('Test comment')
-            ->withExternalId($externalId)
-            ->withBitrix24UserId($bitrix24UserId)
+            ->withExternalId(Uuid::v7()->toRfc4122())
+            ->withBitrix24UserId(random_int(1, 1_000_000))
             ->withBitrix24PartnerId(Uuid::v7())
             ->build()
         ;
@@ -145,12 +146,7 @@ class HandlerTest extends TestCase
         $this->repository->save($contactPerson);
         $this->flusher->flush();
 
-        // No exception should be thrown; phone mismatch is only logged
-        $this->handler->handle(new Command($contactPerson->getId(), $expectedDifferentPhone));
-
-        // Ensure mobile phone is still not verified
-        $reloaded = $this->repository->getById($contactPerson->getId());
-        $this->assertFalse($reloaded->isMobilePhoneVerified());
+        return $contactPerson;
     }
 
     private function createPhoneNumber(string $number): PhoneNumber
