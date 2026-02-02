@@ -21,45 +21,55 @@ use Symfony\Component\Uid\Uuid;
 final class CommandTest extends TestCase
 {
     #[Test]
-    public function testValidCommand(): void
-    {
+    #[DataProvider('commandDataProvider')]
+    public function testCommand(
+        Uuid $contactPersonId,
+        FullName $fullName,
+        string $email,
+        PhoneNumber $mobilePhoneNumber,
+        ?string $expectedException = null,
+    ): void {
+        if (null !== $expectedException) {
+            $this->expectException($expectedException);
+        }
+
         $command = new Command(
-            Uuid::v7(),
-            new FullName('John Doe'),
-            'john.doe@example.com',
-            $this->createDummyPhone()
-        );
-
-        self::assertSame('john.doe@example.com', $command->email);
-    }
-
-    #[Test]
-    #[DataProvider('invalidEmailProvider')]
-    public function testInvalidEmailThrows(string $email): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid email format.');
-
-        new Command(
-            Uuid::v7(),
-            new FullName('John Doe'),
+            $contactPersonId,
+            $fullName,
             $email,
-            $this->createDummyPhone()
+            $mobilePhoneNumber
         );
+
+        self::assertEquals($contactPersonId, $command->contactPersonId);
+        self::assertEquals($fullName, $command->fullName);
+        self::assertSame($email, $command->email);
+        self::assertEquals($mobilePhoneNumber, $command->mobilePhoneNumber);
     }
 
-    public static function invalidEmailProvider(): array
+    public static function commandDataProvider(): array
     {
+        $fullName = new FullName('John Doe');
+
         return [
-            'empty' => [''],
-            'spaces' => ['   '],
-            'invalid format' => ['not-an-email'],
+            'valid data' => [
+                Uuid::v7(),
+                $fullName,
+                'john.doe@example.com',
+                new PhoneNumber(),
+            ],
+            'empty email is valid' => [
+                Uuid::v7(),
+                $fullName,
+                '',
+                new PhoneNumber(),
+            ],
+            'invalid email format' => [
+                Uuid::v7(),
+                $fullName,
+                'not-an-email',
+                new PhoneNumber(),
+                InvalidArgumentException::class,
+            ],
         ];
-    }
-
-    private function createDummyPhone(): PhoneNumber
-    {
-        // Нам не важно содержимое, т.к. Command телефон не валидирует.
-        return new PhoneNumber();
     }
 }

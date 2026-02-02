@@ -93,7 +93,7 @@ class HandlerTest extends TestCase
         $memberId = Uuid::v4()->toRfc4122();
         $externalId = Uuid::v7()->toRfc4122();
 
-        $bitrix24Account = new Bitrix24AccountBuilder()
+        $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withApplicationScope(new Scope(['crm']))
             ->withStatus(Bitrix24AccountStatus::new)
             ->withApplicationToken($applicationToken)
@@ -106,7 +106,7 @@ class HandlerTest extends TestCase
 
         $this->bitrix24accountRepository->save($bitrix24Account);
 
-        $applicationInstallation = new ApplicationInstallationBuilder()
+        $applicationInstallation = (new ApplicationInstallationBuilder())
             ->withApplicationStatus(new ApplicationStatus('F'))
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
             ->withBitrix24AccountId($bitrix24Account->getId())
@@ -227,14 +227,14 @@ class HandlerTest extends TestCase
         $applicationToken = Uuid::v7()->toRfc4122();
         $memberId = Uuid::v7()->toRfc4122();
 
-        $bitrix24Account = new Bitrix24AccountBuilder()
+        $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withApplicationToken($applicationToken)
             ->withMemberId($memberId)
             ->build()
         ;
         $this->bitrix24accountRepository->save($bitrix24Account);
 
-        $applicationInstallation = new ApplicationInstallationBuilder()
+        $applicationInstallation = (new ApplicationInstallationBuilder())
             ->withBitrix24AccountId($bitrix24Account->getId())
             ->withApplicationToken($applicationToken)
             ->withApplicationStatus(new ApplicationStatus('F'))

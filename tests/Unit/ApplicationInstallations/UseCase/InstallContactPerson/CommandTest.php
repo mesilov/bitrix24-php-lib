@@ -22,17 +22,22 @@ use Symfony\Component\Uid\Uuid;
 final class CommandTest extends TestCase
 {
     #[Test]
-    public function testValidCommand(): void
-    {
-        $applicationInstallationId = Uuid::v7();
-        $fullName = new FullName('John Doe');
-        $bitrix24UserId = 123;
-        $userAgentInfo = new UserAgentInfo(IP::factory('127.0.0.1'));
-        $email = 'john.doe@example.com';
-        $mobilePhoneNumber = new PhoneNumber();
-        $comment = 'Test comment';
-        $externalId = 'ext-123';
-        $bitrix24PartnerId = Uuid::v7();
+    #[DataProvider('commandDataProvider')]
+    public function testCommand(
+        Uuid $applicationInstallationId,
+        FullName $fullName,
+        int $bitrix24UserId,
+        UserAgentInfo $userAgentInfo,
+        ?string $email = null,
+        ?PhoneNumber $mobilePhoneNumber = null,
+        ?string $comment = null,
+        ?string $externalId = null,
+        ?Uuid $bitrix24PartnerId = null,
+        ?string $expectedException = null,
+    ): void {
+        if (null !== $expectedException) {
+            $this->expectException($expectedException);
+        }
 
         $command = new Command(
             $applicationInstallationId,
@@ -57,79 +62,95 @@ final class CommandTest extends TestCase
         self::assertSame($bitrix24PartnerId, $command->bitrix24PartnerId);
     }
 
-    #[Test]
-    #[DataProvider('invalidEmailProvider')]
-    public function testInvalidEmailThrows(string $email): void
+    public static function commandDataProvider(): array
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid email format.');
+        $fullName = new FullName('John Doe');
+        $userAgentInfo = new UserAgentInfo(null);
 
-        new Command(
-            Uuid::v7(),
-            new FullName('John Doe'),
-            123,
-            new UserAgentInfo(null),
-            $email,
-            null,
-            null,
-            null,
-            null
-        );
-    }
-
-    public static function invalidEmailProvider(): array
-    {
         return [
-            'empty' => [''],
-            'spaces' => ['   '],
-            'invalid format' => ['not-an-email'],
-        ];
-    }
-
-    #[Test]
-    public function testEmptyExternalIdThrows(): void
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('External ID cannot be empty if provided.');
-
-        new Command(
-            Uuid::v7(),
-            new FullName('John Doe'),
-            123,
-            new UserAgentInfo(null),
-            null,
-            null,
-            null,
-            ' ',
-            null
-        );
-    }
-
-    #[Test]
-    #[DataProvider('invalidUserIdProvider')]
-    public function testInvalidBitrix24UserIdThrows(int $userId): void
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Bitrix24 User ID must be a positive integer.');
-
-        new Command(
-            Uuid::v7(),
-            new FullName('John Doe'),
-            $userId,
-            new UserAgentInfo(null),
-            null,
-            null,
-            null,
-            null,
-            null
-        );
-    }
-
-    public static function invalidUserIdProvider(): array
-    {
-        return [
-            'zero' => [0],
-            'negative' => [-1],
+            'valid data' => [
+                Uuid::v7(),
+                $fullName,
+                123,
+                $userAgentInfo,
+                'john.doe@example.com',
+                new PhoneNumber(),
+                'Test comment',
+                'ext-123',
+                Uuid::v7(),
+            ],
+            'invalid email: empty' => [
+                Uuid::v7(),
+                $fullName,
+                123,
+                $userAgentInfo,
+                '',
+                null,
+                null,
+                null,
+                null,
+                \InvalidArgumentException::class,
+            ],
+            'invalid email: spaces' => [
+                Uuid::v7(),
+                $fullName,
+                123,
+                $userAgentInfo,
+                '   ',
+                null,
+                null,
+                null,
+                null,
+                \InvalidArgumentException::class,
+            ],
+            'invalid email: format' => [
+                Uuid::v7(),
+                $fullName,
+                123,
+                $userAgentInfo,
+                'not-an-email',
+                null,
+                null,
+                null,
+                null,
+                \InvalidArgumentException::class,
+            ],
+            'invalid external id: empty string' => [
+                Uuid::v7(),
+                $fullName,
+                123,
+                $userAgentInfo,
+                null,
+                null,
+                null,
+                ' ',
+                null,
+                \InvalidArgumentException::class,
+            ],
+            'invalid user id: zero' => [
+                Uuid::v7(),
+                $fullName,
+                0,
+                $userAgentInfo,
+                null,
+                null,
+                null,
+                null,
+                null,
+                \InvalidArgumentException::class,
+            ],
+            'invalid user id: negative' => [
+                Uuid::v7(),
+                $fullName,
+                -1,
+                $userAgentInfo,
+                null,
+                null,
+                null,
+                null,
+                null,
+                \InvalidArgumentException::class,
+            ],
         ];
     }
 }

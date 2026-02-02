@@ -22,7 +22,7 @@ readonly class Command
 
     private function validate(): void
     {
-        if ('' === trim($this->email) || !filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
+        if ('' !== trim($this->email) && !filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
             throw new InvalidArgumentException('Invalid email format.');
         }
     }

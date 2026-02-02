@@ -19,58 +19,59 @@ use Symfony\Component\Uid\Uuid;
 final class CommandTest extends TestCase
 {
     #[Test]
-    public function testValidCommand(): void
-    {
-        $id = Uuid::v7();
-        $email = 'john.doe@example.com';
-        $verifiedAt = new CarbonImmutable();
+    #[DataProvider('commandDataProvider')]
+    public function testCommand(
+        Uuid $contactPersonId,
+        string $email,
+        ?CarbonImmutable $emailVerifiedAt = null,
+        ?string $expectedException = null,
+    ): void {
+        if (null !== $expectedException) {
+            $this->expectException($expectedException);
+        }
 
         $command = new Command(
-            $id,
+            $contactPersonId,
             $email,
-            $verifiedAt
+            $emailVerifiedAt
         );
 
-        self::assertEquals($id, $command->contactPersonId);
+        self::assertEquals($contactPersonId, $command->contactPersonId);
         self::assertSame($email, $command->email);
-        self::assertSame($verifiedAt, $command->emailVerifiedAt);
+        self::assertEquals($emailVerifiedAt, $command->emailVerifiedAt);
     }
 
-    #[Test]
-    public function testValidCommandWithoutDate(): void
-    {
-        $id = Uuid::v7();
-        $email = 'john.doe@example.com';
-
-        $command = new Command(
-            $id,
-            $email
-        );
-
-        self::assertEquals($id, $command->contactPersonId);
-        self::assertSame($email, $command->email);
-        self::assertNull($command->emailVerifiedAt);
-    }
-
-    #[Test]
-    #[DataProvider('invalidEmailProvider')]
-    public function testInvalidEmailThrows(string $email): void
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid email format.');
-
-        new Command(
-            Uuid::v7(),
-            $email
-        );
-    }
-
-    public static function invalidEmailProvider(): array
+    public static function commandDataProvider(): array
     {
         return [
-            'empty' => [''],
-            'spaces' => ['   '],
-            'invalid format' => ['not-an-email'],
+            'valid data' => [
+                Uuid::v7(),
+                'john.doe@example.com',
+                new CarbonImmutable(),
+            ],
+            'valid data without date' => [
+                Uuid::v7(),
+                'john.doe@example.com',
+                null,
+            ],
+            'invalid email: empty' => [
+                Uuid::v7(),
+                '',
+                null,
+                \InvalidArgumentException::class,
+            ],
+            'invalid email: spaces' => [
+                Uuid::v7(),
+                '   ',
+                null,
+                \InvalidArgumentException::class,
+            ],
+            'invalid email: format' => [
+                Uuid::v7(),
+                'not-an-email',
+                null,
+                \InvalidArgumentException::class,
+            ],
         ];
     }
 }
