@@ -19,7 +19,13 @@ readonly class Command
 
     private function validate(): void
     {
-        if (null !== $this->email && !filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
+        $email = trim($this->email);
+
+        if ('' === $email) {
+            throw new \InvalidArgumentException('Cannot confirm an empty email.');
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw new \InvalidArgumentException('Invalid email format.');
         }
     }

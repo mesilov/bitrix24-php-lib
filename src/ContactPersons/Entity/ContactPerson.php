@@ -159,6 +159,11 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
     #[\Override]
     public function changeEmail(?string $email): void
     {
+        $email = null !== $email ? trim($email) : null;
+        if ('' === $email) {
+            $email = null;
+        }
+
         $this->email = $email;
         $this->isEmailVerified = false;
         $this->emailVerifiedAt = null;
