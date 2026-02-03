@@ -22,6 +22,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class ContactPersonTest extends ContactPersonInterfaceTest
 {
+    #[\Override]
     protected function createContactPersonImplementation(
         Uuid $uuid,
         CarbonImmutable $createdAt,

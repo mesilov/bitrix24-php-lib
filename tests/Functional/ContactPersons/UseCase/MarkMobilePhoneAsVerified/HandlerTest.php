@@ -98,8 +98,8 @@ class HandlerTest extends TestCase
             $this->expectException($expectedExceptionClass);
         }
 
-        $commandPhone = $this->createPhoneNumber($phoneNumberInCommand);
-        $this->handler->handle(new Command($contactId, $commandPhone));
+        $phoneNumber = $this->createPhoneNumber($phoneNumberInCommand);
+        $this->handler->handle(new Command($contactId, $phoneNumber));
 
         if (null === $expectedExceptionClass) {
             // Если исключение не ожидалось (например, при несовпадении телефона), проверяем, что статус не изменился
@@ -124,7 +124,7 @@ class HandlerTest extends TestCase
             'invalid phone format' => [
                 'useRealContactId' => true,
                 'phoneNumberInCommand' => '123',
-                'expectedExceptionClass' => null, // Handler catches it or Command validates it?
+                'expectedExceptionClass' => null,
                 // Actually Command doesn't validate phone format in this package, it's a PhoneNumber object.
                 // In Handler.php there's no guard for phone in MarkMobilePhoneAsVerified, it just compares them.
             ],

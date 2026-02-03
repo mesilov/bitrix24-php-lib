@@ -21,7 +21,7 @@ final class CommandTest extends TestCase
     #[Test]
     #[DataProvider('commandDataProvider')]
     public function testCommand(
-        Uuid $contactPersonId,
+        Uuid $uuid,
         string $email,
         ?CarbonImmutable $emailVerifiedAt = null,
         ?string $expectedException = null,
@@ -31,12 +31,12 @@ final class CommandTest extends TestCase
         }
 
         $command = new Command(
-            $contactPersonId,
+            $uuid,
             $email,
             $emailVerifiedAt
         );
 
-        self::assertEquals($contactPersonId, $command->contactPersonId);
+        self::assertEquals($uuid, $command->contactPersonId);
         self::assertSame($email, $command->email);
         self::assertEquals($emailVerifiedAt, $command->emailVerifiedAt);
     }

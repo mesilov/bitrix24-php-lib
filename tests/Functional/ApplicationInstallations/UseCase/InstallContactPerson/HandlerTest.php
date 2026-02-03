@@ -154,11 +154,18 @@ class HandlerTest extends TestCase
         $this->assertContains(ApplicationInstallationContactPersonLinkedEvent::class, $dispatchedEvents);
 
         $foundInstallation = $this->applicationInstallationRepository->getById($applicationInstallation->getId());
-        $this->assertNotNull($foundInstallation->getContactPersonId());
+        $contactPersonId = $foundInstallation->getContactPersonId();
+        $this->assertNotNull($contactPersonId);
 
-        $uuid = $foundInstallation->getContactPersonId();
-        $foundContactPerson = $this->repository->getById($uuid);
-        $this->assertEquals($foundContactPerson->getId(), $uuid);
+        $foundContactPerson = $this->repository->getById($contactPersonId);
+        $this->assertEquals($contactPersonId, $foundContactPerson->getId());
+        $this->assertEquals($contactPerson->getEmail(), $foundContactPerson->getEmail());
+        $this->assertEquals($contactPerson->getMobilePhone(), $foundContactPerson->getMobilePhone());
+        $this->assertEquals($contactPerson->getFullName(), $foundContactPerson->getFullName());
+        $this->assertEquals($contactPerson->getComment(), $foundContactPerson->getComment());
+        $this->assertEquals($contactPerson->getExternalId(), $foundContactPerson->getExternalId());
+        $this->assertEquals($contactPerson->getBitrix24UserId(), $foundContactPerson->getBitrix24UserId());
+        $this->assertEquals($contactPerson->getBitrix24PartnerId(), $foundContactPerson->getBitrix24PartnerId());
     }
 
     #[Test]

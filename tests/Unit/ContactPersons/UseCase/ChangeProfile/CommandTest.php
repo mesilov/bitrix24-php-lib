@@ -23,7 +23,7 @@ final class CommandTest extends TestCase
     #[Test]
     #[DataProvider('commandDataProvider')]
     public function testCommand(
-        Uuid $contactPersonId,
+        Uuid $uuid,
         FullName $fullName,
         string $email,
         PhoneNumber $mobilePhoneNumber,
@@ -34,13 +34,13 @@ final class CommandTest extends TestCase
         }
 
         $command = new Command(
-            $contactPersonId,
+            $uuid,
             $fullName,
             $email,
             $mobilePhoneNumber
         );
 
-        self::assertEquals($contactPersonId, $command->contactPersonId);
+        self::assertEquals($uuid, $command->contactPersonId);
         self::assertEquals($fullName, $command->fullName);
         self::assertSame($email, $command->email);
         self::assertEquals($mobilePhoneNumber, $command->mobilePhoneNumber);
