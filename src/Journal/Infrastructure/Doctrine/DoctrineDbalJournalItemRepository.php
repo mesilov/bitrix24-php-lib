@@ -22,24 +22,26 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Component\Uid\Uuid;
 
-class DoctrineDbalJournalItemRepository extends EntityRepository implements JournalItemRepositoryInterface
+class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterface
 {
+    private readonly EntityRepository $repository;
+
     public function __construct(
-        EntityManagerInterface $entityManager
+        private readonly EntityManagerInterface $entityManager
     ) {
-        parent::__construct($entityManager, $entityManager->getClassMetadata(JournalItem::class));
+        $this->repository = $this->entityManager->getRepository(JournalItem::class);
     }
 
     #[\Override]
     public function save(JournalItemInterface $journalItem): void
     {
-        $this->getEntityManager()->persist($journalItem);
+        $this->entityManager->persist($journalItem);
     }
 
     #[\Override]
     public function findById(Uuid $id): ?JournalItemInterface
     {
-        return $this->getEntityManager()->getRepository(JournalItem::class)->find($id);
+        return $this->repository->find($id);
     }
 
     /**
@@ -52,15 +54,17 @@ class DoctrineDbalJournalItemRepository extends EntityRepository implements Jour
         ?int $limit = null,
         ?int $offset = null
     ): array {
-        $qb = $this->getEntityManager()->getRepository(JournalItem::class)
+        $qb = $this->repository
             ->createQueryBuilder('j')
             ->where('j.applicationInstallationId = :appId')
             ->setParameter('appId', $applicationInstallationId)
-            ->orderBy('j.createdAt', 'DESC');
+            ->orderBy('j.createdAt', 'DESC')
+        ;
 
         if (null !== $level) {
             $qb->andWhere('j.level = :level')
-                ->setParameter('level', $level);
+                ->setParameter('level', $level)
+            ;
         }
 
         if (null !== $limit) {
@@ -75,41 +79,14 @@ class DoctrineDbalJournalItemRepository extends EntityRepository implements Jour
     }
 
     #[\Override]
-    public function deleteByApplicationInstallationId(Uuid $applicationInstallationId): int
-    {
-        return $this->getEntityManager()->createQueryBuilder()
-            ->delete(JournalItem::class, 'j')
-            ->where('j.applicationInstallationId = :appId')
-            ->setParameter('appId', $applicationInstallationId)
-            ->getQuery()
-            ->execute();
-    }
-
-    #[\Override]
     public function deleteOlderThan(CarbonImmutable $date): int
     {
-        return $this->getEntityManager()->createQueryBuilder()
+        return $this->entityManager->createQueryBuilder()
             ->delete(JournalItem::class, 'j')
             ->where('j.createdAt < :date')
             ->setParameter('date', $date)
             ->getQuery()
-            ->execute();
-    }
-
-    #[\Override]
-    public function countByApplicationInstallationId(Uuid $applicationInstallationId, ?LogLevel $level = null): int
-    {
-        $qb = $this->getEntityManager()->getRepository(JournalItem::class)
-            ->createQueryBuilder('j')
-            ->select('COUNT(j.id)')
-            ->where('j.applicationInstallationId = :appId')
-            ->setParameter('appId', $applicationInstallationId);
-
-        if (null !== $level) {
-            $qb->andWhere('j.level = :level')
-                ->setParameter('level', $level);
-        }
-
-        return (int) $qb->getQuery()->getSingleScalarResult();
+            ->execute()
+        ;
     }
 }

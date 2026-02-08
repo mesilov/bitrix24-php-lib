@@ -46,17 +46,7 @@ interface JournalItemRepositoryInterface
     ): array;
 
     /**
-     * Delete all journal items by application installation ID
-     */
-    public function deleteByApplicationInstallationId(Uuid $applicationInstallationId): int;
-
-    /**
      * Delete journal items older than specified date
      */
     public function deleteOlderThan(CarbonImmutable $date): int;
-
-    /**
-     * Count journal items by application installation ID
-     */
-    public function countByApplicationInstallationId(Uuid $applicationInstallationId, ?LogLevel $level = null): int;
 }

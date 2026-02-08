@@ -83,20 +83,6 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
     }
 
     #[\Override]
-    public function deleteByApplicationInstallationId(Uuid $applicationInstallationId): int
-    {
-        $count = 0;
-        foreach ($this->items as $key => $item) {
-            if ($item->getApplicationInstallationId()->equals($applicationInstallationId)) {
-                unset($this->items[$key]);
-                ++$count;
-            }
-        }
-
-        return $count;
-    }
-
-    #[\Override]
     public function deleteOlderThan(CarbonImmutable $date): int
     {
         $count = 0;
@@ -108,12 +94,6 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
         }
 
         return $count;
-    }
-
-    #[\Override]
-    public function countByApplicationInstallationId(Uuid $applicationInstallationId, ?LogLevel $level = null): int
-    {
-        return count($this->findByApplicationInstallationId($applicationInstallationId, $level));
     }
 
     /**

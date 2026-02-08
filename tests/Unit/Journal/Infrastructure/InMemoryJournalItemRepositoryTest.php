@@ -141,25 +141,6 @@ class InMemoryJournalItemRepositoryTest extends TestCase
         $this->assertCount(3, $items);
     }
 
-    public function testDeleteByApplicationInstallationId(): void
-    {
-        $context = new JournalContext('test.label');
-        $item1 = JournalItem::info($this->applicationInstallationId, 'Message 1', $context);
-        $item2 = JournalItem::info($this->applicationInstallationId, 'Message 2', $context);
-        $otherInstallationId = Uuid::v7();
-        $item3 = JournalItem::info($otherInstallationId, 'Message 3', $context);
-
-        $this->repository->save($item1);
-        $this->repository->save($item2);
-        $this->repository->save($item3);
-
-        $deleted = $this->repository->deleteByApplicationInstallationId($this->applicationInstallationId);
-
-        $this->assertSame(2, $deleted);
-        $this->assertEmpty($this->repository->findByApplicationInstallationId($this->applicationInstallationId));
-        $this->assertCount(1, $this->repository->findByApplicationInstallationId($otherInstallationId));
-    }
-
     public function testDeleteOlderThan(): void
     {
         $context = new JournalContext('test.label');
@@ -171,34 +152,6 @@ class InMemoryJournalItemRepositoryTest extends TestCase
 
         // Item should be deleted as it's older than future date
         $this->assertSame(1, $deleted);
-    }
-
-    public function testCountByApplicationInstallationId(): void
-    {
-        $context = new JournalContext('test.label');
-        for ($i = 1; $i <= 5; ++$i) {
-            $item = JournalItem::info($this->applicationInstallationId, "Message {$i}", $context);
-            $this->repository->save($item);
-        }
-
-        $count = $this->repository->countByApplicationInstallationId($this->applicationInstallationId);
-
-        $this->assertSame(5, $count);
-    }
-
-    public function testCountByApplicationInstallationIdWithLevelFilter(): void
-    {
-        $context = new JournalContext('test.label');
-        $this->repository->save(JournalItem::info($this->applicationInstallationId, 'Info 1', $context));
-        $this->repository->save(JournalItem::info($this->applicationInstallationId, 'Info 2', $context));
-        $this->repository->save(JournalItem::error($this->applicationInstallationId, 'Error 1', $context));
-
-        $count = $this->repository->countByApplicationInstallationId(
-            $this->applicationInstallationId,
-            LogLevel::info
-        );
-
-        $this->assertSame(2, $count);
     }
 
     public function testClear(): void
