@@ -22,6 +22,9 @@ readonly class Command
 
     private function validate(): void
     {
+        // Note: empty email is allowed for profile changes.
+        // If you pass an empty string (or whitespace), it will be normalized to `null`
+        // on the entity level, so the database will store `NULL` instead of an empty string.
         if ('' !== trim($this->email) && !filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
             throw new InvalidArgumentException('Invalid email format.');
         }

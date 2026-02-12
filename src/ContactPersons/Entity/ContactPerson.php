@@ -156,12 +156,21 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
         return $this->email;
     }
 
+
+    /**
+     * Changes the contact person's email address.
+     *
+     * If an empty string is provided (including a string containing only whitespace),
+     * it will be normalized to `null` so that the database stores `NULL` instead of an empty value.
+     */
     #[\Override]
     public function changeEmail(?string $email): void
     {
-        $email = null !== $email ? trim($email) : null;
-        if ('' === $email) {
-            $email = null;
+        if (null !== $email) {
+            $email = trim($email);
+            if ('' === $email) {
+                $email = null;
+            }
         }
 
         $this->email = $email;

@@ -21,6 +21,8 @@ readonly class Command
     {
         $email = trim($this->email);
 
+        // Email verification requires a real (non-empty) email address.
+        // An empty value cannot be confirmed, so we fail fast with a clear error.
         if ('' === $email) {
             throw new \InvalidArgumentException('Cannot confirm an empty email.');
         }
