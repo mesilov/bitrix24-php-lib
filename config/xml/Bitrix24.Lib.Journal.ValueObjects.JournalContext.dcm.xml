@@ -8,6 +8,6 @@
 
         <field name="bitrix24UserId" type="integer" column="bitrix24_user_id" nullable="true"/>
 
-        <field name="ipAddress" type="darsyn_ip" column="ip_address" nullable="true"/>
+        <field name="ipAddress" type="ip_address" column="ip_address" nullable="true"/>
     </embeddable>
 </doctrine-mapping>

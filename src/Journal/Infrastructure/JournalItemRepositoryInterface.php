@@ -19,34 +19,34 @@ use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Journal item repository interface for SDK contract extraction
+ * Journal item repository interface for SDK contract extraction.
  */
 interface JournalItemRepositoryInterface
 {
     /**
-     * Save journal item
+     * Save journal item.
      */
     public function save(JournalItemInterface $journalItem): void;
 
     /**
-     * Find journal item by ID
+     * Find journal item by ID.
      */
-    public function findById(Uuid $id): ?JournalItemInterface;
+    public function findById(Uuid $uuid): ?JournalItemInterface;
 
     /**
-     * Find journal items by application installation ID
+     * Find journal items by application installation ID.
      *
      * @return JournalItemInterface[]
      */
     public function findByApplicationInstallationId(
-        Uuid $applicationInstallationId,
-        ?LogLevel $level = null,
+        Uuid $uuid,
+        ?LogLevel $logLevel = null,
         ?int $limit = null,
         ?int $offset = null
     ): array;
 
     /**
-     * Delete journal items older than specified date
+     * Delete journal items older than specified date.
      */
     public function deleteOlderThan(CarbonImmutable $date): int;
 }

@@ -39,9 +39,9 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
     }
 
     #[\Override]
-    public function findById(Uuid $id): ?JournalItemInterface
+    public function findById(Uuid $uuid): ?JournalItemInterface
     {
-        return $this->repository->find($id);
+        return $this->repository->find($uuid);
     }
 
     /**
@@ -49,33 +49,33 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
      */
     #[\Override]
     public function findByApplicationInstallationId(
-        Uuid $applicationInstallationId,
-        ?LogLevel $level = null,
+        Uuid $uuid,
+        ?LogLevel $logLevel = null,
         ?int $limit = null,
         ?int $offset = null
     ): array {
-        $qb = $this->repository
+        $queryBuilder = $this->repository
             ->createQueryBuilder('j')
             ->where('j.applicationInstallationId = :appId')
-            ->setParameter('appId', $applicationInstallationId)
+            ->setParameter('appId', $uuid)
             ->orderBy('j.createdAt', 'DESC')
         ;
 
-        if (null !== $level) {
-            $qb->andWhere('j.level = :level')
-                ->setParameter('level', $level)
+        if (null !== $logLevel) {
+            $queryBuilder->andWhere('j.level = :level')
+                ->setParameter('level', $logLevel)
             ;
         }
 
         if (null !== $limit) {
-            $qb->setMaxResults($limit);
+            $queryBuilder->setMaxResults($limit);
         }
 
         if (null !== $offset) {
-            $qb->setFirstResult($offset);
+            $queryBuilder->setFirstResult($offset);
         }
 
-        return $qb->getQuery()->getResult();
+        return $queryBuilder->getQuery()->getResult();
     }
 
     #[\Override]

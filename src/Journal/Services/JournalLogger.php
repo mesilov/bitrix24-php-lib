@@ -25,7 +25,7 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * PSR-3 compatible journal logger
- * Writes log entries to the journal repository
+ * Writes log entries to the journal repository.
  */
 class JournalLogger implements LoggerInterface
 {
@@ -35,14 +35,12 @@ class JournalLogger implements LoggerInterface
         private readonly Uuid $applicationInstallationId,
         private readonly JournalItemRepositoryInterface $repository,
         private readonly EntityManagerInterface $entityManager
-    ) {
-    }
+    ) {}
 
     /**
-     * Logs with an arbitrary level
+     * Logs with an arbitrary level.
      *
-     * @param mixed $level
-     * @param string|\Stringable $message
+     * @param mixed                $level
      * @param array<string, mixed> $context
      */
     #[\Override]
@@ -63,7 +61,7 @@ class JournalLogger implements LoggerInterface
     }
 
     /**
-     * Convert PSR-3 log level to LogLevel enum
+     * Convert PSR-3 log level to LogLevel enum.
      */
     private function convertLevel(mixed $level): LogLevel
     {
@@ -81,7 +79,7 @@ class JournalLogger implements LoggerInterface
     }
 
     /**
-     * Create JournalContext from PSR-3 context array
+     * Create JournalContext from PSR-3 context array.
      */
     private function createContext(array $context): JournalContext
     {

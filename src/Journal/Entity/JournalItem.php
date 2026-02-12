@@ -21,7 +21,7 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Journal item entity
- * Each journal record contains domain business events for technical support staff
+ * Each journal record contains domain business events for technical support staff.
  */
 class JournalItem extends AggregateRoot implements JournalItemInterface
 {
@@ -30,10 +30,10 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     private readonly CarbonImmutable $createdAt;
 
     public function __construct(
-        private Uuid $applicationInstallationId,
-        private LogLevel $level,
-        private string $message,
-        private JournalContext $context
+        private readonly Uuid $applicationInstallationId,
+        private readonly LogLevel $level,
+        private readonly string $message,
+        private readonly JournalContext $context
     ) {
         if ('' === trim($this->message)) {
             throw new InvalidArgumentException('Journal message cannot be empty');
@@ -80,7 +80,7 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     }
 
     /**
-     * Create journal item with custom log level
+     * Create journal item with custom log level.
      */
     public static function create(
         Uuid $applicationInstallationId,
@@ -97,45 +97,45 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     }
 
     /**
-     * PSR-3 compatible factory methods
+     * PSR-3 compatible factory methods.
      */
-    public static function emergency(Uuid $applicationInstallationId, string $message, JournalContext $context): self
+    public static function emergency(Uuid $uuid, string $message, JournalContext $journalContext): self
     {
-        return self::create($applicationInstallationId, LogLevel::emergency, $message, $context);
+        return self::create($uuid, LogLevel::emergency, $message, $journalContext);
     }
 
-    public static function alert(Uuid $applicationInstallationId, string $message, JournalContext $context): self
+    public static function alert(Uuid $uuid, string $message, JournalContext $journalContext): self
     {
-        return self::create($applicationInstallationId, LogLevel::alert, $message, $context);
+        return self::create($uuid, LogLevel::alert, $message, $journalContext);
     }
 
-    public static function critical(Uuid $applicationInstallationId, string $message, JournalContext $context): self
+    public static function critical(Uuid $uuid, string $message, JournalContext $journalContext): self
     {
-        return self::create($applicationInstallationId, LogLevel::critical, $message, $context);
+        return self::create($uuid, LogLevel::critical, $message, $journalContext);
     }
 
-    public static function error(Uuid $applicationInstallationId, string $message, JournalContext $context): self
+    public static function error(Uuid $uuid, string $message, JournalContext $journalContext): self
     {
-        return self::create($applicationInstallationId, LogLevel::error, $message, $context);
+        return self::create($uuid, LogLevel::error, $message, $journalContext);
     }
 
-    public static function warning(Uuid $applicationInstallationId, string $message, JournalContext $context): self
+    public static function warning(Uuid $uuid, string $message, JournalContext $journalContext): self
     {
-        return self::create($applicationInstallationId, LogLevel::warning, $message, $context);
+        return self::create($uuid, LogLevel::warning, $message, $journalContext);
     }
 
-    public static function notice(Uuid $applicationInstallationId, string $message, JournalContext $context): self
+    public static function notice(Uuid $uuid, string $message, JournalContext $journalContext): self
     {
-        return self::create($applicationInstallationId, LogLevel::notice, $message, $context);
+        return self::create($uuid, LogLevel::notice, $message, $journalContext);
     }
 
-    public static function info(Uuid $applicationInstallationId, string $message, JournalContext $context): self
+    public static function info(Uuid $uuid, string $message, JournalContext $journalContext): self
     {
-        return self::create($applicationInstallationId, LogLevel::info, $message, $context);
+        return self::create($uuid, LogLevel::info, $message, $journalContext);
     }
 
-    public static function debug(Uuid $applicationInstallationId, string $message, JournalContext $context): self
+    public static function debug(Uuid $uuid, string $message, JournalContext $journalContext): self
     {
-        return self::create($applicationInstallationId, LogLevel::debug, $message, $context);
+        return self::create($uuid, LogLevel::debug, $message, $journalContext);
     }
 }

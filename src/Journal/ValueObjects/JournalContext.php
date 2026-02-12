@@ -16,7 +16,7 @@ namespace Bitrix24\Lib\Journal\ValueObjects;
 use Darsyn\IP\Version\Multi as IP;
 
 /**
- * Journal context value object
+ * Journal context value object.
  */
 readonly class JournalContext
 {
@@ -25,8 +25,7 @@ readonly class JournalContext
         private ?array $payload = null,
         private ?int $bitrix24UserId = null,
         private ?IP $ipAddress = null
-    ) {
-    }
+    ) {}
 
     public function getLabel(): string
     {
@@ -49,7 +48,7 @@ readonly class JournalContext
     }
 
     /**
-     * Convert to array
+     * Convert to array.
      */
     public function toArray(): array
     {

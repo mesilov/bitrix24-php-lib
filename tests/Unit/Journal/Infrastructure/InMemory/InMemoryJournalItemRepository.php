@@ -36,9 +36,9 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
     }
 
     #[\Override]
-    public function findById(Uuid $id): ?JournalItemInterface
+    public function findById(Uuid $uuid): ?JournalItemInterface
     {
-        return $this->items[$id->toRfc4122()] ?? null;
+        return $this->items[$uuid->toRfc4122()] ?? null;
     }
 
     /**
@@ -46,19 +46,19 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
      */
     #[\Override]
     public function findByApplicationInstallationId(
-        Uuid $applicationInstallationId,
-        ?LogLevel $level = null,
+        Uuid $uuid,
+        ?LogLevel $logLevel = null,
         ?int $limit = null,
         ?int $offset = null
     ): array {
         $filtered = array_filter(
             $this->items,
-            static function (JournalItemInterface $item) use ($applicationInstallationId, $level): bool {
-                if (!$item->getApplicationInstallationId()->equals($applicationInstallationId)) {
+            static function (JournalItemInterface $journalItem) use ($uuid, $logLevel): bool {
+                if (!$journalItem->getApplicationInstallationId()->equals($uuid)) {
                     return false;
                 }
 
-                if ($level !== null && $item->getLevel() !== $level) {
+                if ($logLevel !== null && $journalItem->getLevel() !== $logLevel) {
                     return false;
                 }
 
@@ -67,16 +67,14 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
         );
 
         // Sort by created date descending
-        usort($filtered, static function (JournalItemInterface $a, JournalItemInterface $b): int {
-            return $b->getCreatedAt()->getTimestamp() <=> $a->getCreatedAt()->getTimestamp();
-        });
+        usort($filtered, static fn(JournalItemInterface $a, JournalItemInterface $b): int => $b->getCreatedAt()->getTimestamp() <=> $a->getCreatedAt()->getTimestamp());
 
         if ($offset !== null) {
             $filtered = array_slice($filtered, $offset);
         }
 
         if ($limit !== null) {
-            $filtered = array_slice($filtered, 0, $limit);
+            return array_slice($filtered, 0, $limit);
         }
 
         return $filtered;

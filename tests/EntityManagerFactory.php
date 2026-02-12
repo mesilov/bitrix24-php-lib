@@ -7,6 +7,7 @@ namespace Bitrix24\Lib\Tests;
 use Bitrix24\SDK\Core\Exceptions\WrongConfigurationException;
 use Carbon\Doctrine\CarbonImmutableType;
 use Doctrine\DBAL\DriverManager;
+use Darsyn\IP\Doctrine\MultiType;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManager;
@@ -64,6 +65,10 @@ class EntityManagerFactory
 
             if (!Type::hasType('carbon_immutable')) {
                 Type::addType('carbon_immutable', CarbonImmutableType::class);
+            }
+
+            if (!Type::hasType('ip_address')) {
+                Type::addType('ip_address', MultiType::class);
             }
 
             $configuration = ORMSetup::createXMLMetadataConfiguration($paths, $isDevMode);

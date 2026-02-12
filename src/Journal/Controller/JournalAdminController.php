@@ -22,17 +22,16 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Admin controller for journal management
- * Developer should configure routes in their application
+ * Developer should configure routes in their application.
  */
 class JournalAdminController extends AbstractController
 {
     public function __construct(
         private readonly JournalItemReadRepository $journalReadRepository
-    ) {
-    }
+    ) {}
 
     /**
-     * List journal items with filters and pagination
+     * List journal items with filters and pagination.
      */
     public function list(Request $request): Response
     {
@@ -48,7 +47,7 @@ class JournalAdminController extends AbstractController
 
         $pagination = $this->journalReadRepository->findWithFilters(
             domainUrl: $domainUrl ?: null,
-            level: $level,
+            logLevel: $level,
             label: $label ?: null,
             page: $page,
             limit: 50
@@ -71,7 +70,7 @@ class JournalAdminController extends AbstractController
     }
 
     /**
-     * Show journal item details
+     * Show journal item details.
      */
     public function show(string $id): Response
     {
@@ -83,7 +82,7 @@ class JournalAdminController extends AbstractController
 
         $journalItem = $this->journalReadRepository->findById($uuid);
 
-        if (!$journalItem) {
+        if (null === $journalItem) {
             throw $this->createNotFoundException('Journal item not found');
         }
 

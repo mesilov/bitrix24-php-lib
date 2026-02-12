@@ -30,6 +30,7 @@ class JournalLoggerTest extends TestCase
 
     private JournalLogger $logger;
 
+    #[\Override]
     protected function setUp(): void
     {
         $this->repository = new InMemoryJournalItemRepository();

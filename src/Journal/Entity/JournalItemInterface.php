@@ -18,7 +18,7 @@ use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Journal item interface for SDK contract extraction
+ * Journal item interface for SDK contract extraction.
  */
 interface JournalItemInterface
 {
