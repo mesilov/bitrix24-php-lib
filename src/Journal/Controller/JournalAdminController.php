@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Journal\Controller;
 
 use Bitrix24\Lib\Journal\Entity\LogLevel;
-use Bitrix24\Lib\Journal\ReadModel\JournalItemReadRepository;
+use Bitrix24\Lib\Journal\Infrastructure\Doctrine\JournalItemReadRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,6 +37,7 @@ class JournalAdminController extends AbstractController
     {
         $page = max(1, $request->query->getInt('page', 1));
         $domainUrl = $request->query->get('domain');
+        $memberId = $request->query->get('member_id');
         $levelValue = $request->query->get('level');
         $label = $request->query->get('label');
 
@@ -46,6 +47,7 @@ class JournalAdminController extends AbstractController
         }
 
         $pagination = $this->journalReadRepository->findWithFilters(
+            memberId: $memberId ?: null,
             domainUrl: $domainUrl ?: null,
             logLevel: $level,
             label: $label ?: null,
@@ -60,6 +62,7 @@ class JournalAdminController extends AbstractController
             'pagination' => $pagination,
             'currentFilters' => [
                 'domain' => $domainUrl,
+                'member_id' => $memberId,
                 'level' => $levelValue,
                 'label' => $label,
             ],

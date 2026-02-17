@@ -46,6 +46,7 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
      */
     #[\Override]
     public function findByApplicationInstallationId(
+        string $memberId,
         Uuid $uuid,
         ?LogLevel $logLevel = null,
         ?int $limit = null,
@@ -53,8 +54,51 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
     ): array {
         $filtered = array_filter(
             $this->items,
-            static function (JournalItemInterface $journalItem) use ($uuid, $logLevel): bool {
+            static function (JournalItemInterface $journalItem) use ($uuid, $memberId, $logLevel): bool {
+                if ($journalItem->getMemberId() !== $memberId) {
+                    return false;
+                }
+
                 if (!$journalItem->getApplicationInstallationId()->equals($uuid)) {
+                    return false;
+                }
+
+                if ($logLevel !== null && $journalItem->getLevel() !== $logLevel) {
+                    return false;
+                }
+
+                return true;
+            }
+        );
+
+        // Sort by created date descending
+        usort($filtered, static fn(JournalItemInterface $a, JournalItemInterface $b): int => $b->getCreatedAt()->getTimestamp() <=> $a->getCreatedAt()->getTimestamp());
+
+        if ($offset !== null) {
+            $filtered = array_slice($filtered, $offset);
+        }
+
+        if ($limit !== null) {
+            return array_slice($filtered, 0, $limit);
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * @return JournalItemInterface[]
+     */
+    #[\Override]
+    public function findByMemberId(
+        string $memberId,
+        ?LogLevel $logLevel = null,
+        ?int $limit = null,
+        ?int $offset = null
+    ): array {
+        $filtered = array_filter(
+            $this->items,
+            static function (JournalItemInterface $journalItem) use ($memberId, $logLevel): bool {
+                if ($journalItem->getMemberId() !== $memberId) {
                     return false;
                 }
 

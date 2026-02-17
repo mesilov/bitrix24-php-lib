@@ -32,6 +32,7 @@ class JournalLogger implements LoggerInterface
     use LoggerTrait;
 
     public function __construct(
+        private readonly string $memberId,
         private readonly Uuid $applicationInstallationId,
         private readonly JournalItemRepositoryInterface $repository,
         private readonly EntityManagerInterface $entityManager
@@ -50,6 +51,7 @@ class JournalLogger implements LoggerInterface
         $journalContext = $this->createContext($context);
 
         $journalItem = JournalItem::create(
+            memberId: $this->memberId,
             applicationInstallationId: $this->applicationInstallationId,
             level: $logLevel,
             message: (string) $message,

@@ -28,6 +28,8 @@ class JournalLoggerTest extends TestCase
 
     private Uuid $applicationInstallationId;
 
+    private string $memberId;
+
     private JournalLogger $logger;
 
     #[\Override]
@@ -36,8 +38,10 @@ class JournalLoggerTest extends TestCase
         $this->repository = new InMemoryJournalItemRepository();
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->applicationInstallationId = Uuid::v7();
+        $this->memberId = 'test-member-id';
 
         $this->logger = new JournalLogger(
+            $this->memberId,
             $this->applicationInstallationId,
             $this->repository,
             $this->entityManager
@@ -53,6 +57,7 @@ class JournalLoggerTest extends TestCase
         $items = $this->repository->findAll();
         $this->assertCount(1, $items);
         $this->assertSame(LogLevel::info, $items[0]->getLevel());
+        $this->assertSame($this->memberId, $items[0]->getMemberId());
         $this->assertSame('Test info message', $items[0]->getMessage());
         $this->assertSame('test.label', $items[0]->getContext()->getLabel());
     }

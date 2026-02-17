@@ -20,7 +20,8 @@ $factory = $container->get(JournalLoggerFactory::class);
 
 // Создаем логгер для конкретной установки приложения
 $installationId = Uuid::fromString('...');
-$logger = $factory->createLogger($installationId);
+$memberId = '...';
+$logger = $factory->createLogger($memberId, $installationId);
 
 // Используем как обычный PSR-3 логгер
 $logger->info('Синхронизация завершена', [
@@ -50,6 +51,7 @@ use Bitrix24\Lib\Journal\Services\JournalLogger;
 use Bitrix24\Lib\Journal\Infrastructure\Doctrine\DoctrineDbalJournalItemRepository;
 
 $logger = new JournalLogger(
+    memberId: $memberId,
     applicationInstallationId: $installationId,
     repository: $repository,
     entityManager: $entityManager
@@ -74,13 +76,14 @@ $logger->debug('Отладочная информация');
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 
 // Создание через статические методы
-$item = JournalItem::info($installationId, 'Сообщение', [
+$item = JournalItem::info($memberId, $installationId, 'Сообщение', [
     'label' => 'custom.label',
     'payload' => ['key' => 'value']
 ]);
 
 // Или через create с явным указанием уровня
 $item = JournalItem::create(
+    memberId: $memberId,
     applicationInstallationId: $installationId,
     level: LogLevel::error,
     message: 'Сообщение об ошибке',
@@ -103,10 +106,9 @@ $entityManager->flush();
 
 // Поиск
 $item = $repository->findById($uuid);
-$items = $repository->findByApplicationInstallationId($installationId, LogLevel::error, 50, 0);
+$items = $repository->findByApplicationInstallationId($memberId, $installationId, LogLevel::error, 50, 0);
 
 // Очистка
-$deleted = $repository->deleteByApplicationInstallationId($installationId);
 $deleted = $repository->deleteOlderThan(new CarbonImmutable('-30 days'));
 ```
 
@@ -126,12 +128,13 @@ $repository->clear();
 ### 4. Admin UI (ReadModel)
 
 ```php
-use Bitrix24\Lib\Journal\ReadModel\JournalItemReadRepository;
+use Bitrix24\Lib\Journal\Infrastructure\Doctrine\JournalItemReadRepository;
 
 $readRepo = new JournalItemReadRepository($entityManager, $paginator);
 
 // Получение с фильтрами и пагинацией
 $pagination = $readRepo->findWithFilters(
+    memberId: '66c9893d5f30e6.45265697',
     domainUrl: 'example.bitrix24.ru',
     level: LogLevel::error,
     label: 'b24.api.error',
@@ -185,6 +188,7 @@ class MyTest extends TestCase
         $entityManager = $this->createMock(EntityManagerInterface::class);
 
         $this->logger = new JournalLogger(
+            '66c9893d5f30e6.45265697',
             Uuid::v7(),
             $this->repository,
             $entityManager
@@ -215,6 +219,7 @@ class MyTest extends TestCase
 
 Таблица `journal_item` с полями:
 - `id` (UUID) - PK
+- `member_id` (string) - ID портала Bitrix24
 - `application_installation_id` (UUID) - FK к установке приложения
 - `created_at_utc` (timestamp) - время создания
 - `level` (string) - уровень логирования
@@ -222,6 +227,7 @@ class MyTest extends TestCase
 - `label`, `payload`, `bitrix24_user_id`, `ip_address` - поля контекста
 
 Индексы:
-- `application_installation_id`
+- `member_id, application_installation_id, level, created_at_utc` (composite)
+- `member_id`
 - `created_at_utc`
 - `level`

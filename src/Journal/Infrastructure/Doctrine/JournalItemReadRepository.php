@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Journal\ReadModel;
+namespace Bitrix24\Lib\Journal\Infrastructure\Doctrine;
 
 use Bitrix24\Lib\ApplicationInstallations\Entity\ApplicationInstallation;
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
@@ -25,7 +25,7 @@ use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Read model repository for journal items with filtering and pagination.
+ * Read the model repository for journal items with filtering and pagination.
  */
 readonly class JournalItemReadRepository
 {
@@ -40,13 +40,14 @@ readonly class JournalItemReadRepository
      * @return PaginationInterface<JournalItemInterface>
      */
     public function findWithFilters(
+        ?string $memberId = null,
         ?string $domainUrl = null,
         ?LogLevel $logLevel = null,
         ?string $label = null,
         int $page = 1,
         int $limit = 50
     ): PaginationInterface {
-        $queryBuilder = $this->createFilteredQueryBuilder($domainUrl, $logLevel, $label);
+        $queryBuilder = $this->createFilteredQueryBuilder($memberId, $domainUrl, $logLevel, $label);
 
         return $this->paginator->paginate(
             $queryBuilder,
@@ -111,6 +112,7 @@ readonly class JournalItemReadRepository
      * Create query builder with filters.
      */
     private function createFilteredQueryBuilder(
+        ?string $memberId = null,
         ?string $domainUrl = null,
         ?LogLevel $logLevel = null,
         ?string $label = null
@@ -120,7 +122,13 @@ readonly class JournalItemReadRepository
             ->from(JournalItem::class, 'j')
         ;
 
-        if (null !== $domainUrl && '' !== $domainUrl && '0' !== $domainUrl) {
+        if (null !== $memberId) {
+            $queryBuilder->andWhere('j.memberId = :memberId')
+                ->setParameter('memberId', $memberId)
+            ;
+        }
+
+        if (null !== $domainUrl) {
             $queryBuilder->innerJoin(ApplicationInstallation::class, 'ai', 'WITH', 'ai.id = j.applicationInstallationId')
                 ->innerJoin(Bitrix24Account::class, 'b24', 'WITH', 'b24.id = ai.bitrix24AccountId')
                 ->andWhere('b24.domainUrl = :domainUrl')
@@ -134,7 +142,7 @@ readonly class JournalItemReadRepository
             ;
         }
 
-        if (null !== $label && '' !== $label && '0' !== $label) {
+        if (null !== $label) {
             $queryBuilder->andWhere('j.context.label = :label')
                 ->setParameter('label', $label)
             ;

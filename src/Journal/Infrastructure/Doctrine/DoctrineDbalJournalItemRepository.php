@@ -49,15 +49,52 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
      */
     #[\Override]
     public function findByApplicationInstallationId(
-        Uuid $uuid,
+        string $memberId,
+        Uuid $applicationInstallationId,
         ?LogLevel $logLevel = null,
         ?int $limit = null,
         ?int $offset = null
     ): array {
         $queryBuilder = $this->repository
             ->createQueryBuilder('j')
-            ->where('j.applicationInstallationId = :appId')
-            ->setParameter('appId', $uuid)
+            ->where('j.memberId = :memberId')
+            ->setParameter('memberId', $memberId)
+            ->andWhere('j.applicationInstallationId = :appId')
+            ->setParameter('appId', $applicationInstallationId)
+            ->orderBy('j.createdAt', 'DESC')
+        ;
+
+        if (null !== $logLevel) {
+            $queryBuilder->andWhere('j.level = :level')
+                ->setParameter('level', $logLevel)
+            ;
+        }
+
+        if (null !== $limit) {
+            $queryBuilder->setMaxResults($limit);
+        }
+
+        if (null !== $offset) {
+            $queryBuilder->setFirstResult($offset);
+        }
+
+        return $queryBuilder->getQuery()->getResult();
+    }
+
+    /**
+     * @return JournalItemInterface[]
+     */
+    #[\Override]
+    public function findByMemberId(
+        string $memberId,
+        ?LogLevel $logLevel = null,
+        ?int $limit = null,
+        ?int $offset = null
+    ): array {
+        $queryBuilder = $this->repository
+            ->createQueryBuilder('j')
+            ->where('j.memberId = :memberId')
+            ->setParameter('memberId', $memberId)
             ->orderBy('j.createdAt', 'DESC')
         ;
 

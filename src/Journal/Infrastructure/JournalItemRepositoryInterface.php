@@ -39,7 +39,20 @@ interface JournalItemRepositoryInterface
      * @return JournalItemInterface[]
      */
     public function findByApplicationInstallationId(
-        Uuid $uuid,
+        string $memberId,
+        Uuid $applicationInstallationId,
+        ?LogLevel $logLevel = null,
+        ?int $limit = null,
+        ?int $offset = null
+    ): array;
+
+    /**
+     * Find journal items by member ID.
+     *
+     * @return JournalItemInterface[]
+     */
+    public function findByMemberId(
+        string $memberId,
         ?LogLevel $logLevel = null,
         ?int $limit = null,
         ?int $offset = null

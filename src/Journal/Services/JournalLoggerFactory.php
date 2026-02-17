@@ -31,9 +31,10 @@ readonly class JournalLoggerFactory
     /**
      * Create logger for specific application installation.
      */
-    public function createLogger(Uuid $applicationInstallationId): LoggerInterface
+    public function createLogger(string $memberId, Uuid $applicationInstallationId): LoggerInterface
     {
         return new JournalLogger(
+            memberId: $memberId,
             applicationInstallationId: $applicationInstallationId,
             repository: $this->repository,
             entityManager: $this->entityManager

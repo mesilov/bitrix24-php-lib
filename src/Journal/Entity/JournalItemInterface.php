@@ -26,6 +26,8 @@ interface JournalItemInterface
 
     public function getApplicationInstallationId(): Uuid;
 
+    public function getMemberId(): string;
+
     public function getCreatedAt(): CarbonImmutable;
 
     public function getLevel(): LogLevel;
