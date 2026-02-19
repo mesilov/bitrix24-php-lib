@@ -35,7 +35,7 @@ class JournalAdminController extends AbstractController
      */
     public function list(Request $request): Response
     {
-        $page = max(1, $request->query->getInt('page', 1));
+        $page = max(1 , $request->query->getInt('page', 1));
         $domainUrl = $request->query->get('domain');
         $memberId = $request->query->get('member_id');
         $levelValue = $request->query->get('level');

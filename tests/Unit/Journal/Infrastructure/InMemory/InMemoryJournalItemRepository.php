@@ -20,7 +20,7 @@ use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * In-memory implementation of JournalItemRepository for testing
+ * In-memory implementation of JournalItemRepository for testing.
  */
 class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
 {
@@ -47,23 +47,23 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
     #[\Override]
     public function findByApplicationInstallationId(
         string $memberId,
-        Uuid $uuid,
+        Uuid $applicationInstallationId,
         ?LogLevel $logLevel = null,
         ?int $limit = null,
         ?int $offset = null
     ): array {
         $filtered = array_filter(
             $this->items,
-            static function (JournalItemInterface $journalItem) use ($uuid, $memberId, $logLevel): bool {
+            static function (JournalItemInterface $journalItem) use ($applicationInstallationId, $memberId, $logLevel): bool {
                 if ($journalItem->getMemberId() !== $memberId) {
                     return false;
                 }
 
-                if (!$journalItem->getApplicationInstallationId()->equals($uuid)) {
+                if (!$journalItem->getApplicationInstallationId()->equals($applicationInstallationId)) {
                     return false;
                 }
 
-                if ($logLevel !== null && $journalItem->getLevel() !== $logLevel) {
+                if (null !== $logLevel && $journalItem->getLevel() !== $logLevel) {
                     return false;
                 }
 
@@ -72,13 +72,13 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
         );
 
         // Sort by created date descending
-        usort($filtered, static fn(JournalItemInterface $a, JournalItemInterface $b): int => $b->getCreatedAt()->getTimestamp() <=> $a->getCreatedAt()->getTimestamp());
+        usort($filtered, static fn (JournalItemInterface $a, JournalItemInterface $b): int => $b->getCreatedAt()->getTimestamp() <=> $a->getCreatedAt()->getTimestamp());
 
-        if ($offset !== null) {
+        if (null !== $offset) {
             $filtered = array_slice($filtered, $offset);
         }
 
-        if ($limit !== null) {
+        if (null !== $limit) {
             return array_slice($filtered, 0, $limit);
         }
 
@@ -102,7 +102,7 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
                     return false;
                 }
 
-                if ($logLevel !== null && $journalItem->getLevel() !== $logLevel) {
+                if (null !== $logLevel && $journalItem->getLevel() !== $logLevel) {
                     return false;
                 }
 
@@ -111,13 +111,13 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
         );
 
         // Sort by created date descending
-        usort($filtered, static fn(JournalItemInterface $a, JournalItemInterface $b): int => $b->getCreatedAt()->getTimestamp() <=> $a->getCreatedAt()->getTimestamp());
+        usort($filtered, static fn (JournalItemInterface $a, JournalItemInterface $b): int => $b->getCreatedAt()->getTimestamp() <=> $a->getCreatedAt()->getTimestamp());
 
-        if ($offset !== null) {
+        if (null !== $offset) {
             $filtered = array_slice($filtered, $offset);
         }
 
-        if ($limit !== null) {
+        if (null !== $limit) {
             return array_slice($filtered, 0, $limit);
         }
 
@@ -125,11 +125,17 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
     }
 
     #[\Override]
-    public function deleteOlderThan(CarbonImmutable $date): int
-    {
+    public function deleteOlderThan(
+        string $memberId,
+        Uuid $applicationInstallationId,
+        CarbonImmutable $date
+    ): int {
         $count = 0;
         foreach ($this->items as $key => $item) {
-            if ($item->getCreatedAt()->isBefore($date)) {
+            if ($item->getMemberId() === $memberId
+                && $item->getApplicationInstallationId()->equals($applicationInstallationId)
+                && $item->getCreatedAt()->isBefore($date)
+            ) {
                 unset($this->items[$key]);
                 ++$count;
             }
@@ -139,7 +145,7 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
     }
 
     /**
-     * Get all items (for testing purposes)
+     * Get all items (for testing purposes).
      *
      * @return JournalItemInterface[]
      */
@@ -149,7 +155,7 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
     }
 
     /**
-     * Clear all items (for testing purposes)
+     * Clear all items (for testing purposes).
      */
     public function clear(): void
     {

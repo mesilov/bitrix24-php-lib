@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Journal\Entity;
 
-use Bitrix24\Lib\Journal\ValueObjects\JournalContext;
+use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
 
@@ -33,6 +33,10 @@ interface JournalItemInterface
     public function getLevel(): LogLevel;
 
     public function getMessage(): string;
+    
+    public function getUserId(): ?string;
 
-    public function getContext(): JournalContext;
+    public function getLabel(): string;
+
+    public function getContext(): Context;
 }

@@ -61,5 +61,9 @@ interface JournalItemRepositoryInterface
     /**
      * Delete journal items older than specified date.
      */
-    public function deleteOlderThan(CarbonImmutable $date): int;
+    public function deleteOlderThan(
+        string $memberId,
+        Uuid $applicationInstallationId,
+        CarbonImmutable $date
+    ): int;
 }

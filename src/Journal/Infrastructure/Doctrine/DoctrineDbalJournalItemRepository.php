@@ -116,11 +116,18 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
     }
 
     #[\Override]
-    public function deleteOlderThan(CarbonImmutable $date): int
-    {
+    public function deleteOlderThan(
+        string $memberId,
+        Uuid $applicationInstallationId,
+        CarbonImmutable $date
+    ): int {
         return $this->entityManager->createQueryBuilder()
             ->delete(JournalItem::class, 'j')
-            ->where('j.createdAt < :date')
+            ->where('j.memberId = :memberId')
+            ->andWhere('j.applicationInstallationId = :appId')
+            ->andWhere('j.createdAt < :date')
+            ->setParameter('memberId', $memberId)
+            ->setParameter('appId', $applicationInstallationId)
             ->setParameter('date', $date)
             ->getQuery()
             ->execute()

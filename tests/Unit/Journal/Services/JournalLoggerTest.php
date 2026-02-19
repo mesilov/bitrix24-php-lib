@@ -52,14 +52,15 @@ class JournalLoggerTest extends TestCase
     {
         $this->entityManager->expects($this->once())->method('flush');
 
-        $this->logger->info('Test info message', ['label' => 'test.label']);
+        $this->logger->info('Test info message', ['label' => 'test.label', 'userId' => 'test-user']);
 
         $items = $this->repository->findAll();
         $this->assertCount(1, $items);
         $this->assertSame(LogLevel::info, $items[0]->getLevel());
         $this->assertSame($this->memberId, $items[0]->getMemberId());
         $this->assertSame('Test info message', $items[0]->getMessage());
-        $this->assertSame('test.label', $items[0]->getContext()->getLabel());
+        $this->assertSame('test.label', $items[0]->getLabel());
+        $this->assertSame('test-user', $items[0]->getUserId());
     }
 
     public function testLogErrorMessage(): void
@@ -71,7 +72,7 @@ class JournalLoggerTest extends TestCase
         $items = $this->repository->findAll();
         $this->assertCount(1, $items);
         $this->assertSame(LogLevel::error, $items[0]->getLevel());
-        $this->assertSame('error.label', $items[0]->getContext()->getLabel());
+        $this->assertSame('error.label', $items[0]->getLabel());
     }
 
     public function testLogWarningMessage(): void
@@ -150,7 +151,7 @@ class JournalLoggerTest extends TestCase
         $items = $this->repository->findAll();
         $item = $items[0];
 
-        $this->assertSame('test.label', $item->getContext()->getLabel());
+        $this->assertSame('test.label', $item->getLabel());
         $this->assertSame(['key' => 'value'], $item->getContext()->getPayload());
         $this->assertSame(123, $item->getContext()->getBitrix24UserId());
         $this->assertNotNull($item->getContext()->getIpAddress());
@@ -163,7 +164,7 @@ class JournalLoggerTest extends TestCase
         $this->logger->info('Test message without label');
 
         $items = $this->repository->findAll();
-        $this->assertSame('application.log', $items[0]->getContext()->getLabel());
+        $this->assertSame('application.log', $items[0]->getLabel());
     }
 
     public function testLogMultipleMessages(): void

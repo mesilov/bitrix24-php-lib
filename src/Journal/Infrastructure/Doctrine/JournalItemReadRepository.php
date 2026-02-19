@@ -97,10 +97,10 @@ readonly class JournalItemReadRepository
     public function getAvailableLabels(): array
     {
         $queryBuilder = $this->entityManager->createQueryBuilder();
-        $queryBuilder->select('DISTINCT j.context.label')
+        $queryBuilder->select('DISTINCT j.label')
             ->from(JournalItem::class, 'j')
-            ->where('j.context.label IS NOT NULL')
-            ->orderBy('j.context.label', 'ASC')
+            ->where('j.label IS NOT NULL')
+            ->orderBy('j.label', 'ASC')
         ;
 
         $results = $queryBuilder->getQuery()->getScalarResult();
@@ -143,7 +143,7 @@ readonly class JournalItemReadRepository
         }
 
         if (null !== $label) {
-            $queryBuilder->andWhere('j.context.label = :label')
+            $queryBuilder->andWhere('j.label = :label')
                 ->setParameter('label', $label)
             ;
         }
