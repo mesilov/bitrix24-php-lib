@@ -15,8 +15,8 @@ namespace Bitrix24\Lib\Journal\Services;
 
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Journal\Entity\LogLevel;
-use Bitrix24\Lib\Journal\Infrastructure\JournalItemRepositoryInterface;
 use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
+use Bitrix24\Lib\Journal\Infrastructure\JournalItemRepositoryInterface;
 use Darsyn\IP\Version\Multi as IP;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;

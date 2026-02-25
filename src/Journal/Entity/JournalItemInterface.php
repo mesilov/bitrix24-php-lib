@@ -33,7 +33,7 @@ interface JournalItemInterface
     public function getLevel(): LogLevel;
 
     public function getMessage(): string;
-    
+
     public function getUserId(): ?string;
 
     public function getLabel(): string;
