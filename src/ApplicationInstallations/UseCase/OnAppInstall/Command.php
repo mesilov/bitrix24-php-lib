@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall;
 
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+use Bitrix24\Lib\Kernel\ValueObjects\Domain;
 
 /**
  * Command is called when installation occurs through UI.

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallFinish;
 
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+use Bitrix24\Lib\Kernel\ValueObjects\Domain;
 
 readonly class Command
 {

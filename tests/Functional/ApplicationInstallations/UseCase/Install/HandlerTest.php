@@ -16,7 +16,7 @@ namespace Bitrix24\Lib\Tests\Functional\ApplicationInstallations\UseCase\Install
 
 use Bitrix24\Lib\Bitrix24Accounts;
 
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+use Bitrix24\Lib\Kernel\ValueObjects\Domain;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\ApplicationInstallations;
 use Bitrix24\Lib\Tests\EntityManagerFactory;

@@ -18,6 +18,7 @@ use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Journal\Entity\JournalItemInterface;
 use Bitrix24\Lib\Journal\Entity\LogLevel;
+use Bitrix24\Lib\Kernel\ValueObjects\Domain;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use Knp\Component\Pager\Pagination\PaginationInterface;
@@ -41,13 +42,13 @@ readonly class JournalItemReadRepository
      */
     public function findWithFilters(
         ?string $memberId = null,
-        ?string $domainUrl = null,
+        ?Domain $domain = null,
         ?LogLevel $logLevel = null,
         ?string $label = null,
         int $page = 1,
         int $limit = 50
     ): PaginationInterface {
-        $queryBuilder = $this->createFilteredQueryBuilder($memberId, $domainUrl, $logLevel, $label);
+        $queryBuilder = $this->createFilteredQueryBuilder($memberId, $domain, $logLevel, $label);
 
         return $this->paginator->paginate(
             $queryBuilder,
@@ -113,7 +114,7 @@ readonly class JournalItemReadRepository
      */
     private function createFilteredQueryBuilder(
         ?string $memberId = null,
-        ?string $domainUrl = null,
+        ?Domain $domain = null,
         ?LogLevel $logLevel = null,
         ?string $label = null
     ): QueryBuilder {
@@ -128,11 +129,11 @@ readonly class JournalItemReadRepository
             ;
         }
 
-        if (null !== $domainUrl) {
+        if (null !== $domain) {
             $queryBuilder->innerJoin(ApplicationInstallation::class, 'ai', 'WITH', 'ai.id = j.applicationInstallationId')
                 ->innerJoin(Bitrix24Account::class, 'b24', 'WITH', 'b24.id = ai.bitrix24AccountId')
                 ->andWhere('b24.domainUrl = :domainUrl')
-                ->setParameter('domainUrl', $domainUrl)
+                ->setParameter('domainUrl', $domain->value)
             ;
         }
 

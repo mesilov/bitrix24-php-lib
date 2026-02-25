@@ -135,8 +135,8 @@ $readRepo = new JournalItemReadRepository($entityManager, $paginator);
 // Получение с фильтрами и пагинацией
 $pagination = $readRepo->findWithFilters(
     memberId: '66c9893d5f30e6.45265697',
-    domainUrl: 'example.bitrix24.ru',
-    level: LogLevel::error,
+    domain: new Domain('example.bitrix24.ru'),
+    logLevel: LogLevel::error,
     label: 'b24.api.error',
     page: 1,
     limit: 50

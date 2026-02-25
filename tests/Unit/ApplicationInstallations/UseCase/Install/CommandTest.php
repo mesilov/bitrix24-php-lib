@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Unit\ApplicationInstallations\UseCase\Install;
 
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+use Bitrix24\Lib\Kernel\ValueObjects\Domain;
 use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
