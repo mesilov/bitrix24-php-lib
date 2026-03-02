@@ -156,7 +156,6 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
         return $this->email;
     }
 
-
     /**
      * Changes the contact person's email address.
      *
