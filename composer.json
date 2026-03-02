@@ -29,8 +29,7 @@
       "dealerdirect/phpcodesniffer-composer-installer": true
     },
     "preferred-install": {
-      "*": "dist",
-      "bitrix24/b24phpsdk": "source"
+      "*": "dist"
     }
   },
   "require": {
@@ -80,8 +79,7 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "Bitrix24\\Lib\\Tests\\": "tests",
-      "Bitrix24\\SDK\\Tests\\": "vendor/bitrix24/b24phpsdk/tests"
+      "Bitrix24\\Lib\\Tests\\": "tests"
     }
   }
 }
