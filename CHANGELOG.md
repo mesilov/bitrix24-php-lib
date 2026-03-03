@@ -1,7 +1,7 @@
 ## 0.3.1
 
 ### Changed
-
+ 
 - **Makefile aligned with b24phpsdk v3 style**
     - Set `help` as default target and added grouped help output
     - Switched Docker commands from `docker-compose` to `docker compose`
