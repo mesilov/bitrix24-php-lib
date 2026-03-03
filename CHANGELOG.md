@@ -1,3 +1,20 @@
+## 0.3.1
+
+### Changed
+
+- **Makefile aligned with b24phpsdk v3 style**
+    - Set `help` as default target and added grouped help output
+    - Switched Docker commands from `docker-compose` to `docker compose`
+    - Renamed targets to SDK-style naming (`docker-*`, `test-unit`, `test-functional`, `debug-show-env`, `doctrine-schema-*`)
+    - Added explicit `.PHONY` declarations for operational targets
+    - Added `lint-all` aggregate target
+
+### Fixed
+
+- **Unit tests failing in `SettingsFetcherTest` due to missing serializer dependency**
+    - Added `symfony/property-access` to `require-dev`
+    - Restored successful run of `make test-unit` (`97 tests, 190 assertions`)
+
 ## 0.3.0
 
 ### Added
