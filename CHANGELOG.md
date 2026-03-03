@@ -8,12 +8,19 @@
     - Renamed targets to SDK-style naming (`docker-*`, `test-unit`, `test-functional`, `debug-show-env`, `doctrine-schema-*`)
     - Added explicit `.PHONY` declarations for operational targets
     - Added `lint-all` aggregate target
+- **Dependency update for PHP 8.4 compatibility**
+    - Updated `darsyn/ip` from `^5` to `^6`
+    - Removed runtime deprecation warnings from functional test runs
 
 ### Fixed
 
 - **Unit tests failing in `SettingsFetcherTest` due to missing serializer dependency**
     - Added `symfony/property-access` to `require-dev`
     - Restored successful run of `make test-unit` (`97 tests, 190 assertions`)
+- **Functional tests bootstrap failure due to SDK contract mismatch**
+    - Updated `ContactPerson::markEmailAsVerified()` and `ContactPerson::markMobilePhoneAsVerified()` signatures to match `ContactPersonInterface`
+    - Added missing `ContactPerson::isPartner()` method implementation
+    - Restored successful run of `make test-functional` (`62 tests, 127 assertions, 1 skipped`)
 
 ## 0.3.0
 
