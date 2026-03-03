@@ -11,6 +11,13 @@
 - **Dependency update for PHP 8.4 compatibility**
     - Updated `darsyn/ip` from `^5` to `^6`
     - Removed runtime deprecation warnings from functional test runs
+- **CI pipelines moved to dev Docker image from GHCR**
+    - Added workflow to build and publish `php-cli` image to `ghcr.io/mesilov/bitrix24-php-lib` (`php-cli` and `php-cli-<sha>` tags)
+    - Switched lint, unit, functional, and license-check workflows to run inside `ghcr.io/mesilov/bitrix24-php-lib:php-cli`
+    - Added GitHub Actions package permissions for pulling private GHCR images in jobs
+- **Docker Compose image source updated for dev workflow**
+    - Added `image: ${PHP_CLI_IMAGE:-ghcr.io/mesilov/bitrix24-php-lib:php-cli}` to `php-cli` service
+    - Kept local `build` section as fallback when registry tag is unavailable
 
 ### Fixed
 
