@@ -280,7 +280,7 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
     #[\Override]
     public function isPartner(): bool
     {
-        return $this->bitrix24PartnerId instanceof \Symfony\Component\Uid\Uuid;
+        return $this->bitrix24PartnerId instanceof Uuid;
     }
 
     #[\Override]
