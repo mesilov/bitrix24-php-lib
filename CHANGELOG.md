@@ -1,3 +1,34 @@
+## 0.3.1
+
+### Changed
+ 
+- **Makefile aligned with b24phpsdk v3 style**
+    - Set `help` as default target and added grouped help output
+    - Switched Docker commands from `docker-compose` to `docker compose`
+    - Renamed targets to SDK-style naming (`docker-*`, `test-unit`, `test-functional`, `debug-show-env`, `doctrine-schema-*`)
+    - Added explicit `.PHONY` declarations for operational targets
+    - Added `lint-all` aggregate target
+- **Dependency update for PHP 8.4 compatibility**
+    - Updated `darsyn/ip` from `^5` to `^6`
+    - Removed runtime deprecation warnings from functional test runs
+- **CI pipelines moved to dev Docker image from GHCR**
+    - Added workflow to build and publish `php-cli` image to `ghcr.io/mesilov/bitrix24-php-lib` (`php-cli` and `php-cli-<sha>` tags)
+    - Switched lint, unit, functional, and license-check workflows to run inside `ghcr.io/mesilov/bitrix24-php-lib:php-cli`
+    - Added GitHub Actions package permissions for pulling private GHCR images in jobs
+- **Docker Compose image source updated for dev workflow**
+    - Added `image: ${PHP_CLI_IMAGE:-ghcr.io/mesilov/bitrix24-php-lib:php-cli}` to `php-cli` service
+    - Kept local `build` section as fallback when registry tag is unavailable
+
+### Fixed
+
+- **Unit tests failing in `SettingsFetcherTest` due to missing serializer dependency**
+    - Added `symfony/property-access` to `require-dev`
+    - Restored successful run of `make test-unit` (`97 tests, 190 assertions`)
+- **Functional tests bootstrap failure due to SDK contract mismatch**
+    - Updated `ContactPerson::markEmailAsVerified()` and `ContactPerson::markMobilePhoneAsVerified()` signatures to match `ContactPersonInterface`
+    - Added missing `ContactPerson::isPartner()` method implementation
+    - Restored successful run of `make test-functional` (`62 tests, 127 assertions, 1 skipped`)
+
 ## 0.3.0
 
 ### Added
