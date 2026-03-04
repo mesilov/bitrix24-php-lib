@@ -1,28 +1,27 @@
 <?php
 
-namespace Bitrix24\Lib\Tests\Functional\ContactPersons\Infrastructure\Doctrine;
+declare(strict_types=1);
+
+namespace Bitrix24\Lib\Tests\Unit\ContactPersons\Entity;
 
 use Bitrix24\Lib\ContactPersons\Entity\ContactPerson;
-use Bitrix24\Lib\ContactPersons\Infrastructure\Doctrine\ContactPersonRepository;
-use Bitrix24\Lib\Tests\Functional\FlusherDecorator;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonInterface;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonStatus;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\FullName;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\UserAgentInfo;
-use Bitrix24\SDK\Application\Contracts\ContactPersons\Repository\ContactPersonRepositoryInterface;
-use Bitrix24\SDK\Tests\Application\Contracts\ContactPersons\Repository\ContactPersonRepositoryInterfaceTest;
-use Bitrix24\SDK\Tests\Application\Contracts\TestRepositoryFlusherInterface;
+use Bitrix24\SDK\Tests\Application\Contracts\ContactPersons\Entity\ContactPersonInterfaceTest;
 use Carbon\CarbonImmutable;
 use Darsyn\IP\Version\Multi as IP;
 use libphonenumber\PhoneNumber;
 use Symfony\Component\Uid\Uuid;
-use Symfony\Component\EventDispatcher\EventDispatcher;
-use Bitrix24\Lib\Services\Flusher;
-use Bitrix24\Lib\Tests\EntityManagerFactory;
 
-class ContactPersonRepositoryTest extends ContactPersonRepositoryInterfaceTest
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
+class ContactPersonTest extends ContactPersonInterfaceTest
 {
-
     #[\Override]
     protected function createContactPersonImplementation(
         Uuid $uuid,
@@ -39,12 +38,11 @@ class ContactPersonRepositoryTest extends ContactPersonRepositoryInterfaceTest
         ?PhoneNumber $phoneNumber,
         ?CarbonImmutable $mobilePhoneVerifiedAt,
         ?string $externalId,
-        ?Uuid $bitrix24PartnerId,
+        ?Uuid $bitrix24PartnerUuid,
         ?string $userAgent,
         ?string $userAgentReferer,
         ?IP $userAgentIp
-    ): ContactPersonInterface
-    {
+    ): ContactPersonInterface {
         return new ContactPerson(
             $uuid,
             $contactPersonStatus,
@@ -56,29 +54,11 @@ class ContactPersonRepositoryTest extends ContactPersonRepositoryInterfaceTest
             $mobilePhoneVerifiedAt,
             $comment,
             $externalId,
-            $bitrix24PartnerId,
+            $bitrix24PartnerUuid,
             new UserAgentInfo($userAgentIp, $userAgent, $userAgentReferer),
             false,
             $createdAt,
             $updatedAt
         );
     }
-
-    #[\Override]
-    protected function createContactPersonRepositoryImplementation(): ContactPersonRepositoryInterface
-    {
-        $entityManager = EntityManagerFactory::get();
-
-        return new ContactPersonRepository($entityManager);
-    }
-
-    #[\Override]
-    protected function createRepositoryFlusherImplementation(): TestRepositoryFlusherInterface
-    {
-        $entityManager = EntityManagerFactory::get();
-        $eventDispatcher = new EventDispatcher();
-
-        return new FlusherDecorator(new Flusher($entityManager, $eventDispatcher));
-    }
-
 }

@@ -15,28 +15,24 @@ use Bitrix24\SDK\Application\Contracts\ContactPersons\Events\ContactPersonDelete
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Events\ContactPersonEmailChangedEvent;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Events\ContactPersonEmailVerifiedEvent;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Events\ContactPersonFullNameChangedEvent;
+use Bitrix24\SDK\Application\Contracts\ContactPersons\Events\ContactPersonMobilePhoneChangedEvent;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Events\ContactPersonMobilePhoneVerifiedEvent;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Bitrix24\SDK\Core\Exceptions\LogicException;
 use Carbon\CarbonImmutable;
 use libphonenumber\PhoneNumber;
-use libphonenumber\PhoneNumberType;
-use libphonenumber\PhoneNumberUtil;
 use Symfony\Component\Uid\Uuid;
 
 class ContactPerson extends AggregateRoot implements ContactPersonInterface
 {
-    private readonly CarbonImmutable $createdAt;
+    private bool $isEmailVerified;
 
-    private CarbonImmutable $updatedAt;
-
-    private ?bool $isEmailVerified = false;
-
-    private ?bool $isMobilePhoneVerified = false;
+    private bool $isMobilePhoneVerified;
 
     public function __construct(
         private readonly Uuid $id,
         private ContactPersonStatus $status,
+        private readonly int $bitrix24UserId,
         private FullName $fullName,
         private ?string $email,
         private ?CarbonImmutable $emailVerifiedAt,
@@ -44,13 +40,14 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
         private ?CarbonImmutable $mobilePhoneVerifiedAt,
         private ?string $comment,
         private ?string $externalId,
-        private readonly ?int $bitrix24UserId,
         private ?Uuid $bitrix24PartnerId,
-        private readonly ?UserAgentInfo $userAgentInfo,
+        private readonly UserAgentInfo $userAgentInfo,
         private readonly bool $isEmitContactPersonCreatedEvent = false,
+        private readonly CarbonImmutable $createdAt = new CarbonImmutable(),
+        private CarbonImmutable $updatedAt = new CarbonImmutable(),
     ) {
-        $this->createdAt = new CarbonImmutable();
-        $this->updatedAt = new CarbonImmutable();
+        $this->isEmailVerified = null !== $emailVerifiedAt;
+        $this->isMobilePhoneVerified = null !== $mobilePhoneVerifiedAt;
         $this->addContactPersonCreatedEventIfNeeded($this->isEmitContactPersonCreatedEvent);
     }
 
@@ -103,7 +100,7 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
     public function markAsDeleted(?string $comment): void
     {
         if (!in_array($this->status, [ContactPersonStatus::active, ContactPersonStatus::blocked], true)) {
-            throw new LogicException(sprintf('you must be in status active or blocked, now status is «%s»', $this->status->value));
+            throw new InvalidArgumentException(sprintf('you must be in status active or blocked, now status is «%s»', $this->status->value));
         }
 
         $this->status = ContactPersonStatus::deleted;
@@ -157,12 +154,27 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
         return $this->email;
     }
 
+    /**
+     * Changes the contact person's email address.
+     *
+     * If an empty string is provided (including a string containing only whitespace),
+     * it will be normalized to `null` so that the database stores `NULL` instead of an empty value.
+     */
     #[\Override]
     public function changeEmail(?string $email): void
     {
-        $this->email = $email;
+        if (null !== $email) {
+            $email = trim($email);
+            if ('' === $email) {
+                $email = null;
+            }
+        }
 
+        $this->email = $email;
+        $this->isEmailVerified = false;
+        $this->emailVerifiedAt = null;
         $this->updatedAt = new CarbonImmutable();
+
         $this->events[] = new ContactPersonEmailChangedEvent(
             $this->id,
             $this->updatedAt,
@@ -173,6 +185,7 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
     public function markEmailAsVerified(?CarbonImmutable $verifiedAt = null): void
     {
         $this->isEmailVerified = true;
+
         $this->emailVerifiedAt = $verifiedAt ?? new CarbonImmutable();
         $this->events[] = new ContactPersonEmailVerifiedEvent(
             $this->id,
@@ -181,31 +194,39 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
     }
 
     #[\Override]
+    public function isPartner(): bool
+    {
+        return $this->getBitrix24PartnerId() instanceof Uuid;
+    }
+
+    #[\Override]
     public function getEmailVerifiedAt(): ?CarbonImmutable
     {
         return $this->emailVerifiedAt;
     }
 
+    /**
+     * Changes the contact's mobile phone number.
+     *
+     * Note: This method does not validate the phone number.
+     * Make sure to use it through the appropriate use case,
+     * where validation is performed.
+     *
+     * If you use this method outside a use case,
+     * ensure that you pass a valid mobile phone number.
+     */
     #[\Override]
     public function changeMobilePhone(?PhoneNumber $phoneNumber): void
     {
-        if ($phoneNumber instanceof PhoneNumber) {
-            $phoneUtil = PhoneNumberUtil::getInstance();
-            $isValidNumber = $phoneUtil->isValidNumber($phoneNumber);
-
-            if (!$isValidNumber) {
-                throw new InvalidArgumentException('Invalid phone number.');
-            }
-
-            $numberType = $phoneUtil->getNumberType($phoneNumber);
-            if (PhoneNumberType::MOBILE !== $numberType) {
-                throw new InvalidArgumentException('Phone number must be mobile.');
-            }
-
-            $this->mobilePhoneNumber = $phoneNumber;
-        }
-
+        $this->mobilePhoneNumber = $phoneNumber;
+        $this->isMobilePhoneVerified = false;
+        $this->mobilePhoneVerifiedAt = null;
         $this->updatedAt = new CarbonImmutable();
+
+        $this->events[] = new ContactPersonMobilePhoneChangedEvent(
+            $this->id,
+            $this->updatedAt,
+        );
     }
 
     #[\Override]
@@ -259,7 +280,7 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
     }
 
     #[\Override]
-    public function getBitrix24UserId(): ?int
+    public function getBitrix24UserId(): int
     {
         return $this->bitrix24UserId;
     }
@@ -275,12 +296,6 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
     {
         $this->bitrix24PartnerId = $uuid;
         $this->updatedAt = new CarbonImmutable();
-    }
-
-    #[\Override]
-    public function isPartner(): bool
-    {
-        return $this->bitrix24PartnerId instanceof Uuid;
     }
 
     #[\Override]

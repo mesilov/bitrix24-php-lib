@@ -5,6 +5,6 @@
         <field name="ip" type="ip_address" column="user_agent_ip" nullable="true"/>
         <field name="userAgent" type="string" column="user_agent" nullable="true"/>
         <field name="referrer" type="string" column="referrer" nullable="true"/>
-        <field name="fingerprint" type="string" column="finger_print" nullable="true"/>
+        <field name="fingerprint" type="string" column="fingerprint" nullable="true"/>
     </embeddable>
 </doctrine-mapping>

@@ -10,14 +10,14 @@
         <field name="updatedAt" type="carbon_immutable" column="updated_at" nullable="false"/>
         <field name="status" enum-type="Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonStatus" column="status" nullable="false"/>
         <field name="email" type="string" column="email" nullable="true"/>
-        <field name="isEmailVerified" type="boolean" column="is_email_verified" nullable="true"/>
+        <field name="isEmailVerified" type="boolean" column="is_email_verified" nullable="false"/>
         <field name="emailVerifiedAt" type="carbon_immutable" column="email_verified_at" nullable="true"/>
         <field name="mobilePhoneNumber" type="phone_number" column="mobile_phone_number" nullable="true"/>
         <field name="isMobilePhoneVerified" type="boolean" column="is_mobile_phone_verified" nullable="false"/>
         <field name="mobilePhoneVerifiedAt" type="carbon_immutable" column="mobile_phone_verified_at" nullable="true"/>
         <field name="comment" type="string" column="comment" nullable="true"/>
         <field name="externalId" type="string" column="external_id" nullable="true"/>
-        <field name="bitrix24UserId" type="integer" column="bitrix24_user_id" nullable="true"/>
+        <field name="bitrix24UserId" type="integer" column="bitrix24_user_id" nullable="false"/>
         <field name="bitrix24PartnerId" type="uuid" column="bitrix24_partner_id" nullable="true"/>
         <embedded name="fullName" class="Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\FullName"/>
         <embedded name="userAgentInfo" class="Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\UserAgentInfo"/>

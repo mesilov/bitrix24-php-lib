@@ -9,6 +9,7 @@ use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonInterf
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonStatus;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Exceptions\ContactPersonNotFoundException;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Repository\ContactPersonRepositoryInterface;
+use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
@@ -17,7 +18,7 @@ use Symfony\Component\Uid\Uuid;
 
 class ContactPersonRepository implements ContactPersonRepositoryInterface
 {
-    private readonly EntityRepository $repository; // Внутренний репозиторий для базовых операций
+    private readonly EntityRepository $repository;
 
     public function __construct(private readonly EntityManagerInterface $entityManager)
     {
@@ -54,6 +55,11 @@ class ContactPersonRepository implements ContactPersonRepositoryInterface
         $this->save($contactPerson);
     }
 
+    /**
+     * @phpstan-return ContactPersonInterface&AggregateRootEventsEmitterInterface
+     *
+     * @throws ContactPersonNotFoundException
+     */
     #[\Override]
     public function getById(Uuid $uuid): ContactPersonInterface
     {
@@ -122,7 +128,7 @@ class ContactPersonRepository implements ContactPersonRepositoryInterface
         $criteria = ['externalId' => $externalId];
 
         if ($contactPersonStatus instanceof ContactPersonStatus) {
-            $criteria['contactPersonStatus'] = $contactPersonStatus->name;
+            $criteria['status'] = $contactPersonStatus->name;
         }
 
         return $this->repository->findBy($criteria);
