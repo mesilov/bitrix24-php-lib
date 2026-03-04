@@ -28,6 +28,7 @@ class ContactPersonTest extends ContactPersonInterfaceTest
         CarbonImmutable $createdAt,
         CarbonImmutable $updatedAt,
         ContactPersonStatus $contactPersonStatus,
+        int $bitrix24UserId,
         string $name,
         ?string $surname,
         ?string $patronymic,
@@ -37,7 +38,6 @@ class ContactPersonTest extends ContactPersonInterfaceTest
         ?PhoneNumber $phoneNumber,
         ?CarbonImmutable $mobilePhoneVerifiedAt,
         ?string $externalId,
-        ?int $bitrix24UserId,
         ?Uuid $bitrix24PartnerUuid,
         ?string $userAgent,
         ?string $userAgentReferer,
@@ -46,6 +46,7 @@ class ContactPersonTest extends ContactPersonInterfaceTest
         return new ContactPerson(
             $uuid,
             $contactPersonStatus,
+            $bitrix24UserId,
             new FullName($name, $surname, $patronymic),
             $email,
             $emailVerifiedAt,
@@ -53,9 +54,11 @@ class ContactPersonTest extends ContactPersonInterfaceTest
             $mobilePhoneVerifiedAt,
             $comment,
             $externalId,
-            $bitrix24UserId,
             $bitrix24PartnerUuid,
-            new UserAgentInfo($userAgentIp, $userAgent, $userAgentReferer)
+            new UserAgentInfo($userAgentIp, $userAgent, $userAgentReferer),
+            false,
+            $createdAt,
+            $updatedAt
         );
     }
 }

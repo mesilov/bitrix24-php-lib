@@ -39,7 +39,7 @@
     "ext-curl": "*",
     "ext-intl": "*",
     "ext-json": "*",
-    "bitrix24/b24phpsdk": "3.0.*",
+    "bitrix24/b24phpsdk": "dev-v3-dev",
     "darsyn/ip": "^6",
     "darsyn/ip-doctrine": "^6",
     "doctrine/doctrine-bundle": "3.2.2",

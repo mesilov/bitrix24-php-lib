@@ -58,6 +58,7 @@ readonly class Handler
             $contactPerson = new ContactPerson(
                 $uuidV7,
                 ContactPersonStatus::active,
+                $command->bitrix24UserId,
                 $command->fullName,
                 $command->email,
                 null,
@@ -65,7 +66,6 @@ readonly class Handler
                 null,
                 $command->comment,
                 $command->externalId,
-                $command->bitrix24UserId,
                 $command->bitrix24PartnerId,
                 $command->userAgentInfo,
                 true

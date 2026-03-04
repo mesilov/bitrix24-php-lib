@@ -25,17 +25,14 @@ use Symfony\Component\Uid\Uuid;
 
 class ContactPerson extends AggregateRoot implements ContactPersonInterface
 {
-    private readonly CarbonImmutable $createdAt;
+    private bool $isEmailVerified;
 
-    private CarbonImmutable $updatedAt;
-
-    private bool $isEmailVerified = false;
-
-    private bool $isMobilePhoneVerified = false;
+    private bool $isMobilePhoneVerified;
 
     public function __construct(
         private readonly Uuid $id,
         private ContactPersonStatus $status,
+        private readonly int $bitrix24UserId,
         private FullName $fullName,
         private ?string $email,
         private ?CarbonImmutable $emailVerifiedAt,
@@ -43,13 +40,14 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
         private ?CarbonImmutable $mobilePhoneVerifiedAt,
         private ?string $comment,
         private ?string $externalId,
-        private readonly int $bitrix24UserId,
         private ?Uuid $bitrix24PartnerId,
         private readonly UserAgentInfo $userAgentInfo,
         private readonly bool $isEmitContactPersonCreatedEvent = false,
+        private readonly CarbonImmutable $createdAt = new CarbonImmutable(),
+        private CarbonImmutable $updatedAt = new CarbonImmutable(),
     ) {
-        $this->createdAt = new CarbonImmutable();
-        $this->updatedAt = new CarbonImmutable();
+        $this->isEmailVerified = null !== $emailVerifiedAt;
+        $this->isMobilePhoneVerified = null !== $mobilePhoneVerifiedAt;
         $this->addContactPersonCreatedEventIfNeeded($this->isEmitContactPersonCreatedEvent);
     }
 
@@ -102,7 +100,7 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
     public function markAsDeleted(?string $comment): void
     {
         if (!in_array($this->status, [ContactPersonStatus::active, ContactPersonStatus::blocked], true)) {
-            throw new LogicException(sprintf('you must be in status active or blocked, now status is «%s»', $this->status->value));
+            throw new InvalidArgumentException(sprintf('you must be in status active or blocked, now status is «%s»', $this->status->value));
         }
 
         $this->status = ContactPersonStatus::deleted;
@@ -282,7 +280,7 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
     }
 
     #[\Override]
-    public function getBitrix24UserId(): ?int
+    public function getBitrix24UserId(): int
     {
         return $this->bitrix24UserId;
     }

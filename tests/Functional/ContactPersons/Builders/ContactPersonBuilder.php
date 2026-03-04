@@ -30,7 +30,7 @@ class ContactPersonBuilder
 
     private ?string $externalId = null;
 
-    private ?int $bitrix24UserId = null;
+    private int $bitrix24UserId;
 
     private ?Uuid $bitrix24PartnerId = null;
 
@@ -116,6 +116,7 @@ class ContactPersonBuilder
         return new ContactPerson(
             $this->id,
             $this->status,
+            $this->bitrix24UserId,
             $this->fullName,
             $this->email,
             null,
@@ -123,7 +124,6 @@ class ContactPersonBuilder
             null,
             $this->comment,
             $this->externalId,
-            $this->bitrix24UserId,
             $this->bitrix24PartnerId,
             $userAgentInfo
         );

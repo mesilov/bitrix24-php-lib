@@ -1,3 +1,33 @@
+## Unreleased
+
+### Added
+
+- **ContactPersons use cases**
+    - `ChangeProfile\Command` / `Handler` — updates `FullName`, email and mobile phone on an existing `ContactPerson`; empty email strings are normalised to `null` at the entity level
+    - `MarkEmailAsVerified\Command` / `Handler` — marks the contact person's email as verified; rejects empty or malformed email addresses with `InvalidArgumentException`
+    - `MarkMobilePhoneAsVerified\Command` / `Handler` — marks the contact person's mobile phone as verified; validates that the supplied phone number matches the one stored on the entity
+- **`ContactPersonType` enum** (`personal` | `partner`) in `Bitrix24\Lib\ContactPersons\Enum`
+- **`ApplicationInstallations` use cases**
+    - `InstallContactPerson\Command` / `Handler` — creates a `ContactPerson` and links it to an `ApplicationInstallation`; validates email format, external ID, and that `bitrix24UserId` is a positive integer
+    - `UnlinkContactPerson\Command` / `Handler` — unlinks a contact person from an application installation
+
+### Changed
+
+- **`ContactPerson` entity**
+    - Constructor accepts optional `$createdAt` / `$updatedAt` parameters (PHP 8.1 new-in-initializer style) so SDK contract tests can assert stable timestamps; defaults to `new CarbonImmutable()`
+    - `$isEmailVerified` and `$isMobilePhoneVerified` are now initialised from the provided `$emailVerifiedAt` / `$mobilePhoneVerifiedAt` values in the constructor
+    - `getBitrix24UserId()` return type narrowed from `?int` to `int` to match `ContactPersonInterface`
+    - `markAsDeleted()` now throws `InvalidArgumentException` (was `LogicException`) to satisfy the SDK contract
+- **`ApplicationInstallation` entity** — `unlinkContactPerson()` and `unlinkBitrix24PartnerContactPerson()` now return early when the respective ID is already `null`, preventing a spurious `updatedAt` mutation
+- **`OnAppInstall\Handler`** — throws `ApplicationInstallationNotFoundException` when the installation cannot be found for the given member ID (was a silent no-op)
+
+### Fixed
+
+- **Unit tests failing after `bitrix24/b24phpsdk` contract update (task #77)**
+    - `createContactPersonImplementation()` signature updated in `ContactPersonTest` and `ContactPersonRepositoryTest`: `int $bitrix24UserId` moved to position 5, type made non-nullable
+    - `ContactPersonBuilder::$bitrix24UserId` type narrowed from `?int` to `int`
+    - All 170 unit tests pass
+
 ## 0.3.1
 
 ### Changed
