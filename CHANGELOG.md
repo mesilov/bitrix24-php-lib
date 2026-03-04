@@ -1,3 +1,67 @@
+## Unreleased
+
+## 0.4.0
+
+### Added
+
+- **ContactPersons support (main feature of 0.4.0)**
+    - Added `ApplicationInstallations\UseCase\InstallContactPerson\Command` / `Handler` to create and link a `ContactPerson` to an `ApplicationInstallation`
+    - Added `ApplicationInstallations\UseCase\UnlinkContactPerson\Command` / `Handler` to unlink a contact person from an installation
+    - Added `ContactPersons\UseCase\ChangeProfile\Command` / `Handler` to update `FullName`, email, and mobile phone
+    - Added `ContactPersons\UseCase\MarkEmailAsVerified\Command` / `Handler` to confirm email ownership
+    - Added `ContactPersons\UseCase\MarkMobilePhoneAsVerified\Command` / `Handler` to confirm mobile phone ownership
+- **`ContactPersonType` enum** (`personal` | `partner`) in `Bitrix24\Lib\ContactPersons\Enum`
+
+### Changed
+
+- **`ContactPerson` entity**
+    - Constructor accepts optional `$createdAt` / `$updatedAt` parameters so SDK contract tests can assert stable timestamps
+    - `$isEmailVerified` and `$isMobilePhoneVerified` are initialized from `$emailVerifiedAt` / `$mobilePhoneVerifiedAt` in constructor
+    - `getBitrix24UserId()` return type narrowed from `?int` to `int` to match `ContactPersonInterface`
+    - `markAsDeleted()` now throws `InvalidArgumentException` (was `LogicException`) to satisfy the SDK contract
+- **`ApplicationInstallation` entity**
+    - `unlinkContactPerson()` and `unlinkBitrix24PartnerContactPerson()` now return early when the respective ID is already `null` to avoid unnecessary `updatedAt` mutation
+- **`OnAppInstall\Handler`**
+    - Now throws `ApplicationInstallationNotFoundException` when installation cannot be found by member ID (instead of silent no-op)
+
+### Fixed
+
+- **SDK contract compatibility after `bitrix24/b24phpsdk` update**
+    - Updated `createContactPersonImplementation()` signatures in `ContactPersonTest` and `ContactPersonRepositoryTest` (`int $bitrix24UserId` moved to position 5 and made non-nullable)
+    - Narrowed `ContactPersonBuilder::$bitrix24UserId` from `?int` to `int`
+    - Restored green unit test suite (`170` tests)
+
+## 0.3.1
+
+### Changed
+ 
+- **Makefile aligned with b24phpsdk v3 style**
+    - Set `help` as default target and added grouped help output
+    - Switched Docker commands from `docker-compose` to `docker compose`
+    - Renamed targets to SDK-style naming (`docker-*`, `test-unit`, `test-functional`, `debug-show-env`, `doctrine-schema-*`)
+    - Added explicit `.PHONY` declarations for operational targets
+    - Added `lint-all` aggregate target
+- **Dependency update for PHP 8.4 compatibility**
+    - Updated `darsyn/ip` from `^5` to `^6`
+    - Removed runtime deprecation warnings from functional test runs
+- **CI pipelines moved to dev Docker image from GHCR**
+    - Added workflow to build and publish `php-cli` image to `ghcr.io/mesilov/bitrix24-php-lib` (`php-cli` and `php-cli-<sha>` tags)
+    - Switched lint, unit, functional, and license-check workflows to run inside `ghcr.io/mesilov/bitrix24-php-lib:php-cli`
+    - Added GitHub Actions package permissions for pulling private GHCR images in jobs
+- **Docker Compose image source updated for dev workflow**
+    - Added `image: ${PHP_CLI_IMAGE:-ghcr.io/mesilov/bitrix24-php-lib:php-cli}` to `php-cli` service
+    - Kept local `build` section as fallback when registry tag is unavailable
+
+### Fixed
+
+- **Unit tests failing in `SettingsFetcherTest` due to missing serializer dependency**
+    - Added `symfony/property-access` to `require-dev`
+    - Restored successful run of `make test-unit` (`97 tests, 190 assertions`)
+- **Functional tests bootstrap failure due to SDK contract mismatch**
+    - Updated `ContactPerson::markEmailAsVerified()` and `ContactPerson::markMobilePhoneAsVerified()` signatures to match `ContactPersonInterface`
+    - Added missing `ContactPerson::isPartner()` method implementation
+    - Restored successful run of `make test-functional` (`62 tests, 127 assertions, 1 skipped`)
+
 ## 0.3.0
 
 ### Added
@@ -92,6 +156,12 @@
     - Created `BaseException` class in `src/Exceptions/` for future custom exceptions
     - Updated all tests to expect correct SDK exception types
     - Fixed PHPDoc annotations to reference correct exception types
+- **Type safety improvement in OnAppInstall Command** — [#64](https://github.com/mesilov/bitrix24-php-lib/issues/64)
+    - Changed `$applicationStatus` parameter type from `string` to `ApplicationStatus` object
+    - Improved type safety by enforcing proper value object usage
+    - Removed unnecessary string validation in Command constructor
+    - Eliminated redundant ApplicationStatus instantiation in Handler
+    - Updated all related tests to use ApplicationStatus objects
 
 ### Removed
 

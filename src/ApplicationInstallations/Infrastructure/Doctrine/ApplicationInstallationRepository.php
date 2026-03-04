@@ -103,6 +103,32 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
     }
 
     /**
+     * Get the current installation on the portal without input parameters.
+     * The system allows only one active installation per portal,
+     * therefore, the current one is interpreted as the installation with status active.
+     * If, for any reason, there are multiple, select the most recent by createdAt.
+     *
+     * @throws ApplicationInstallationNotFoundException
+     */
+    public function getCurrent(): ApplicationInstallationInterface
+    {
+        $applicationInstallation = $this->getEntityManager()->getRepository(ApplicationInstallation::class)
+            ->createQueryBuilder('appInstallation')
+            ->where('appInstallation.status = :status')
+            ->orderBy('appInstallation.createdAt', 'DESC')
+            ->setParameter('status', ApplicationInstallationStatus::active)
+            ->getQuery()
+            ->getOneOrNullResult()
+        ;
+
+        if (null === $applicationInstallation) {
+            throw new ApplicationInstallationNotFoundException('current active application installation not found');
+        }
+
+        return $applicationInstallation;
+    }
+
+    /**
      * Find application installation by application token.
      *
      * TODO: Create issue in b24-php-sdk to add this method to ApplicationInstallationRepositoryInterface

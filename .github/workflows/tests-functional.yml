@@ -6,7 +6,7 @@ on:
 
 env:
   COMPOSER_FLAGS: "--ansi --no-interaction --no-progress"
-  DATABASE_HOST: localhost
+  DATABASE_HOST: postgres
   DATABASE_USER: b24phpLibTest
   DATABASE_PASSWORD: b24phpLibTest
   DATABASE_NAME: b24phpLibTest
@@ -14,19 +14,18 @@ env:
 jobs:
   tests:
     name: "Functional tests"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ghcr.io/mesilov/bitrix24-php-lib:php-cli
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
-    runs-on: ${{ matrix.operating-system }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        php-version:
-          - "8.3"
-          - "8.4"
-        dependencies: [ highest ]
-        operating-system: [ ubuntu-latest ]
     services:
-      bitrix24-php-lib-test-database:
+      postgres:
         image: postgres:16-alpine
         ports:
           - 5432:5432
@@ -42,14 +41,7 @@ jobs:
 
     steps:
       - name: "Checkout code"
-        uses: "actions/checkout@v2"
-
-      - name: "Setup PHP"
-        uses: "shivammathur/setup-php@v2"
-        with:
-          coverage: "none"
-          php-version: "${{ matrix.php-version }}"
-          extensions: json, bcmath, curl, intl, mbstring, pdo_pgsql, pdo
+        uses: actions/checkout@v4
 
       - name: "Install dependencies with Composer"
         run: |
@@ -57,12 +49,11 @@ jobs:
 
       - name: "Install PostgreSQL client"
         run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
+          apk add --no-cache postgresql-client
 
       - name: "Wait for PostgreSQL to be ready"
         run: |
-          until pg_isready -h localhost -p 5432 -U b24phpLibTest; do
+          until pg_isready -h postgres -p 5432 -U b24phpLibTest; do
             echo "Waiting for PostgreSQL to start..."
             sleep 2
           done
@@ -73,7 +64,6 @@ jobs:
           php bin/doctrine orm:schema-tool:create --dump-sql
           php bin/doctrine orm:schema-tool:update --force
           php bin/doctrine orm:info
-          # Запуск тестов с очисткой состояния между тестами
           php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox --process-isolation
 
       - name: "is functional tests succeeded"
