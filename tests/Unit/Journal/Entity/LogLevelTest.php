@@ -20,50 +20,50 @@ class LogLevelTest extends TestCase
 {
     public function testFromPsr3LevelEmergency(): void
     {
-        $level = LogLevel::fromPsr3Level('emergency');
-        $this->assertSame(LogLevel::emergency, $level);
+        $logLevel = LogLevel::fromPsr3Level('emergency');
+        $this->assertSame(LogLevel::emergency, $logLevel);
     }
 
     public function testFromPsr3LevelAlert(): void
     {
-        $level = LogLevel::fromPsr3Level('alert');
-        $this->assertSame(LogLevel::alert, $level);
+        $logLevel = LogLevel::fromPsr3Level('alert');
+        $this->assertSame(LogLevel::alert, $logLevel);
     }
 
     public function testFromPsr3LevelCritical(): void
     {
-        $level = LogLevel::fromPsr3Level('critical');
-        $this->assertSame(LogLevel::critical, $level);
+        $logLevel = LogLevel::fromPsr3Level('critical');
+        $this->assertSame(LogLevel::critical, $logLevel);
     }
 
     public function testFromPsr3LevelError(): void
     {
-        $level = LogLevel::fromPsr3Level('error');
-        $this->assertSame(LogLevel::error, $level);
+        $logLevel = LogLevel::fromPsr3Level('error');
+        $this->assertSame(LogLevel::error, $logLevel);
     }
 
     public function testFromPsr3LevelWarning(): void
     {
-        $level = LogLevel::fromPsr3Level('warning');
-        $this->assertSame(LogLevel::warning, $level);
+        $logLevel = LogLevel::fromPsr3Level('warning');
+        $this->assertSame(LogLevel::warning, $logLevel);
     }
 
     public function testFromPsr3LevelNotice(): void
     {
-        $level = LogLevel::fromPsr3Level('notice');
-        $this->assertSame(LogLevel::notice, $level);
+        $logLevel = LogLevel::fromPsr3Level('notice');
+        $this->assertSame(LogLevel::notice, $logLevel);
     }
 
     public function testFromPsr3LevelInfo(): void
     {
-        $level = LogLevel::fromPsr3Level('info');
-        $this->assertSame(LogLevel::info, $level);
+        $logLevel = LogLevel::fromPsr3Level('info');
+        $this->assertSame(LogLevel::info, $logLevel);
     }
 
     public function testFromPsr3LevelDebug(): void
     {
-        $level = LogLevel::fromPsr3Level('debug');
-        $this->assertSame(LogLevel::debug, $level);
+        $logLevel = LogLevel::fromPsr3Level('debug');
+        $this->assertSame(LogLevel::debug, $logLevel);
     }
 
     public function testFromPsr3LevelCaseInsensitive(): void
@@ -98,7 +98,7 @@ class LogLevelTest extends TestCase
         $cases = LogLevel::cases();
         $this->assertCount(8, $cases);
 
-        $values = array_map(static fn (LogLevel $level): string => $level->value, $cases);
+        $values = array_map(static fn (LogLevel $logLevel): string => $logLevel->value, $cases);
 
         $this->assertContains('emergency', $values);
         $this->assertContains('alert', $values);

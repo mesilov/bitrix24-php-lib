@@ -15,36 +15,45 @@ namespace Bitrix24\Lib\Tests\Unit\Journal\Infrastructure;
 
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Journal\Entity\LogLevel;
-use Bitrix24\Lib\Journal\ValueObjects\JournalContext;
+use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Bitrix24\Lib\Tests\Unit\Journal\Infrastructure\InMemory\InMemoryJournalItemRepository;
 use Carbon\CarbonImmutable;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class InMemoryJournalItemRepositoryTest extends TestCase
 {
     private InMemoryJournalItemRepository $repository;
 
     private Uuid $applicationInstallationId;
 
+    private string $memberId;
+
+    #[\Override]
     protected function setUp(): void
     {
         $this->repository = new InMemoryJournalItemRepository();
         $this->applicationInstallationId = Uuid::v7();
+        $this->memberId = 'test-member-id';
     }
 
     public function testSaveAndFindById(): void
     {
-        $context = new JournalContext('test.label');
-        $item = JournalItem::info($this->applicationInstallationId, 'Test message', $context);
+        $journalContext = new Context(['key' => 'value']);
+        $journalItem = JournalItem::info($this->memberId, $this->applicationInstallationId, 'Test message', 'test.label', null, $journalContext);
 
-        $this->repository->save($item);
+        $this->repository->save($journalItem);
 
-        $found = $this->repository->findById($item->getId());
+        $found = $this->repository->findById($journalItem->getId());
 
         $this->assertNotNull($found);
-        $this->assertSame($item->getId()->toRfc4122(), $found->getId()->toRfc4122());
-        $this->assertSame($item->getMessage(), $found->getMessage());
+        $this->assertSame($journalItem->getId()->toRfc4122(), $found->getId()->toRfc4122());
+        $this->assertSame($journalItem->getMessage(), $found->getMessage());
     }
 
     public function testFindByIdReturnsNullForNonexistent(): void
@@ -56,34 +65,35 @@ class InMemoryJournalItemRepositoryTest extends TestCase
 
     public function testFindByApplicationInstallationId(): void
     {
-        $context = new JournalContext('test.label');
-        $item1 = JournalItem::info($this->applicationInstallationId, 'Message 1', $context);
-        $item2 = JournalItem::error($this->applicationInstallationId, 'Message 2', $context);
-        $item3 = JournalItem::info(Uuid::v7(), 'Message 3', $context); // Different installation
+        $journalContext = new Context(['key' => 'value']);
+        $journalItem = JournalItem::info($this->memberId, $this->applicationInstallationId, 'Message 1', 'test.label', null, $journalContext);
+        $item2 = JournalItem::error($this->memberId, $this->applicationInstallationId, 'Message 2', 'test.label', null, $journalContext);
+        $item3 = JournalItem::info('other-member', Uuid::v7(), 'Message 3', 'test.label', null, $journalContext); // Different installation
 
-        $this->repository->save($item1);
+        $this->repository->save($journalItem);
         $this->repository->save($item2);
         $this->repository->save($item3);
 
-        $items = $this->repository->findByApplicationInstallationId($this->applicationInstallationId);
+        $items = $this->repository->findByApplicationInstallationId($this->memberId, $this->applicationInstallationId);
 
         $this->assertCount(2, $items);
     }
 
     public function testFindByApplicationInstallationIdWithLevelFilter(): void
     {
-        $context = new JournalContext('test.label');
-        $item1 = JournalItem::info($this->applicationInstallationId, 'Message 1', $context);
-        $item2 = JournalItem::error($this->applicationInstallationId, 'Message 2', $context);
-        $item3 = JournalItem::info($this->applicationInstallationId, 'Message 3', $context);
+        $journalContext = new Context(['key' => 'value']);
+        $journalItem = JournalItem::info($this->memberId, $this->applicationInstallationId, 'Message 1', 'test.label', null, $journalContext);
+        $item2 = JournalItem::error($this->memberId, $this->applicationInstallationId, 'Message 2', 'test.label', null, $journalContext);
+        $item3 = JournalItem::info($this->memberId, $this->applicationInstallationId, 'Message 3', 'test.label', null, $journalContext);
 
-        $this->repository->save($item1);
+        $this->repository->save($journalItem);
         $this->repository->save($item2);
         $this->repository->save($item3);
 
         $items = $this->repository->findByApplicationInstallationId(
+            $this->memberId,
             $this->applicationInstallationId,
-            LogLevel::info
+            logLevel: LogLevel::info
         );
 
         $this->assertCount(2, $items);
@@ -92,15 +102,35 @@ class InMemoryJournalItemRepositoryTest extends TestCase
         }
     }
 
+    public function testFindByMemberId(): void
+    {
+        $journalContext = new Context(['key' => 'value']);
+        $journalItem = JournalItem::info($this->memberId, $this->applicationInstallationId, 'Message 1', 'test.label', null, $journalContext);
+        $item2 = JournalItem::error($this->memberId, $this->applicationInstallationId, 'Message 2', 'test.label', null, $journalContext);
+        $item3 = JournalItem::info('other-member', Uuid::v7(), 'Message 3', 'test.label', null, $journalContext);
+
+        $this->repository->save($journalItem);
+        $this->repository->save($item2);
+        $this->repository->save($item3);
+
+        $items = $this->repository->findByMemberId($this->memberId);
+
+        $this->assertCount(2, $items);
+        foreach ($items as $item) {
+            $this->assertSame($this->memberId, $item->getMemberId());
+        }
+    }
+
     public function testFindByApplicationInstallationIdWithLimit(): void
     {
-        $context = new JournalContext('test.label');
+        $journalContext = new Context(['key' => 'value']);
         for ($i = 1; $i <= 5; ++$i) {
-            $item = JournalItem::info($this->applicationInstallationId, "Message {$i}", $context);
+            $item = JournalItem::info($this->memberId, $this->applicationInstallationId, 'Message '.$i, 'test.label', null, $journalContext);
             $this->repository->save($item);
         }
 
         $items = $this->repository->findByApplicationInstallationId(
+            $this->memberId,
             $this->applicationInstallationId,
             limit: 3
         );
@@ -110,13 +140,14 @@ class InMemoryJournalItemRepositoryTest extends TestCase
 
     public function testFindByApplicationInstallationIdWithOffset(): void
     {
-        $context = new JournalContext('test.label');
+        $journalContext = new Context(['key' => 'value']);
         for ($i = 1; $i <= 5; ++$i) {
-            $item = JournalItem::info($this->applicationInstallationId, "Message {$i}", $context);
+            $item = JournalItem::info($this->memberId, $this->applicationInstallationId, 'Message '.$i, 'test.label', null, $journalContext);
             $this->repository->save($item);
         }
 
         $items = $this->repository->findByApplicationInstallationId(
+            $this->memberId,
             $this->applicationInstallationId,
             offset: 2
         );
@@ -126,13 +157,14 @@ class InMemoryJournalItemRepositoryTest extends TestCase
 
     public function testFindByApplicationInstallationIdWithLimitAndOffset(): void
     {
-        $context = new JournalContext('test.label');
+        $journalContext = new Context(['key' => 'value']);
         for ($i = 1; $i <= 10; ++$i) {
-            $item = JournalItem::info($this->applicationInstallationId, "Message {$i}", $context);
+            $item = JournalItem::info($this->memberId, $this->applicationInstallationId, 'Message '.$i, 'test.label', null, $journalContext);
             $this->repository->save($item);
         }
 
         $items = $this->repository->findByApplicationInstallationId(
+            $this->memberId,
             $this->applicationInstallationId,
             limit: 3,
             offset: 2
@@ -141,71 +173,24 @@ class InMemoryJournalItemRepositoryTest extends TestCase
         $this->assertCount(3, $items);
     }
 
-    public function testDeleteByApplicationInstallationId(): void
-    {
-        $context = new JournalContext('test.label');
-        $item1 = JournalItem::info($this->applicationInstallationId, 'Message 1', $context);
-        $item2 = JournalItem::info($this->applicationInstallationId, 'Message 2', $context);
-        $otherInstallationId = Uuid::v7();
-        $item3 = JournalItem::info($otherInstallationId, 'Message 3', $context);
-
-        $this->repository->save($item1);
-        $this->repository->save($item2);
-        $this->repository->save($item3);
-
-        $deleted = $this->repository->deleteByApplicationInstallationId($this->applicationInstallationId);
-
-        $this->assertSame(2, $deleted);
-        $this->assertEmpty($this->repository->findByApplicationInstallationId($this->applicationInstallationId));
-        $this->assertCount(1, $this->repository->findByApplicationInstallationId($otherInstallationId));
-    }
-
     public function testDeleteOlderThan(): void
     {
-        $context = new JournalContext('test.label');
-        $item = JournalItem::info($this->applicationInstallationId, 'Message', $context);
-        $this->repository->save($item);
+        $journalContext = new Context(['key' => 'value']);
+        $journalItem = JournalItem::info($this->memberId, $this->applicationInstallationId, 'Message', 'test.label', null, $journalContext);
+        $this->repository->save($journalItem);
 
         $futureDate = new CarbonImmutable('+1 day');
-        $deleted = $this->repository->deleteOlderThan($futureDate);
+        $deleted = $this->repository->deleteOlderThan($this->memberId, $this->applicationInstallationId, $futureDate);
 
         // Item should be deleted as it's older than future date
         $this->assertSame(1, $deleted);
     }
 
-    public function testCountByApplicationInstallationId(): void
-    {
-        $context = new JournalContext('test.label');
-        for ($i = 1; $i <= 5; ++$i) {
-            $item = JournalItem::info($this->applicationInstallationId, "Message {$i}", $context);
-            $this->repository->save($item);
-        }
-
-        $count = $this->repository->countByApplicationInstallationId($this->applicationInstallationId);
-
-        $this->assertSame(5, $count);
-    }
-
-    public function testCountByApplicationInstallationIdWithLevelFilter(): void
-    {
-        $context = new JournalContext('test.label');
-        $this->repository->save(JournalItem::info($this->applicationInstallationId, 'Info 1', $context));
-        $this->repository->save(JournalItem::info($this->applicationInstallationId, 'Info 2', $context));
-        $this->repository->save(JournalItem::error($this->applicationInstallationId, 'Error 1', $context));
-
-        $count = $this->repository->countByApplicationInstallationId(
-            $this->applicationInstallationId,
-            LogLevel::info
-        );
-
-        $this->assertSame(2, $count);
-    }
-
     public function testClear(): void
     {
-        $context = new JournalContext('test.label');
-        $item = JournalItem::info($this->applicationInstallationId, 'Message', $context);
-        $this->repository->save($item);
+        $journalContext = new Context(['key' => 'value']);
+        $journalItem = JournalItem::info($this->memberId, $this->applicationInstallationId, 'Message', 'test.label', null, $journalContext);
+        $this->repository->save($journalItem);
 
         $this->assertNotEmpty($this->repository->findAll());
 
@@ -216,11 +201,11 @@ class InMemoryJournalItemRepositoryTest extends TestCase
 
     public function testFindAll(): void
     {
-        $context = new JournalContext('test.label');
-        $item1 = JournalItem::info($this->applicationInstallationId, 'Message 1', $context);
-        $item2 = JournalItem::error(Uuid::v7(), 'Message 2', $context);
+        $journalContext = new Context(['key' => 'value']);
+        $journalItem = JournalItem::info($this->memberId, $this->applicationInstallationId, 'Message 1', 'test.label', null, $journalContext);
+        $item2 = JournalItem::error('other-member', Uuid::v7(), 'Message 2', 'test.label', null, $journalContext);
 
-        $this->repository->save($item1);
+        $this->repository->save($journalItem);
         $this->repository->save($item2);
 
         $all = $this->repository->findAll();

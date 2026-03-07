@@ -14,7 +14,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+use Bitrix24\Lib\Kernel\ValueObjects\Domain;
 
 
 /**

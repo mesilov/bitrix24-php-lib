@@ -1,5 +1,6 @@
 services:
   php-cli:
+    image: ${PHP_CLI_IMAGE:-ghcr.io/mesilov/bitrix24-php-lib:php-cli}
     build:
       context: ./docker/php-cli
     depends_on:

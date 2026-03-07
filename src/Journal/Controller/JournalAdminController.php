@@ -14,7 +14,8 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Journal\Controller;
 
 use Bitrix24\Lib\Journal\Entity\LogLevel;
-use Bitrix24\Lib\Journal\ReadModel\JournalItemReadRepository;
+use Bitrix24\Lib\Journal\Infrastructure\Doctrine\JournalItemReadRepository;
+use Bitrix24\Lib\Kernel\ValueObjects\Domain;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,22 +23,22 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Admin controller for journal management
- * Developer should configure routes in their application
+ * Developer should configure routes in their application.
  */
 class JournalAdminController extends AbstractController
 {
     public function __construct(
         private readonly JournalItemReadRepository $journalReadRepository
-    ) {
-    }
+    ) {}
 
     /**
-     * List journal items with filters and pagination
+     * List journal items with filters and pagination.
      */
     public function list(Request $request): Response
     {
         $page = max(1, $request->query->getInt('page', 1));
         $domainUrl = $request->query->get('domain');
+        $memberId = $request->query->get('member_id');
         $levelValue = $request->query->get('level');
         $label = $request->query->get('label');
 
@@ -47,8 +48,9 @@ class JournalAdminController extends AbstractController
         }
 
         $pagination = $this->journalReadRepository->findWithFilters(
-            domainUrl: $domainUrl ?: null,
-            level: $level,
+            memberId: $memberId ?: null,
+            domain: $domainUrl ? new Domain($domainUrl) : null,
+            logLevel: $level,
             label: $label ?: null,
             page: $page,
             limit: 50
@@ -61,6 +63,7 @@ class JournalAdminController extends AbstractController
             'pagination' => $pagination,
             'currentFilters' => [
                 'domain' => $domainUrl,
+                'member_id' => $memberId,
                 'level' => $levelValue,
                 'label' => $label,
             ],
@@ -71,7 +74,7 @@ class JournalAdminController extends AbstractController
     }
 
     /**
-     * Show journal item details
+     * Show journal item details.
      */
     public function show(string $id): Response
     {
@@ -83,7 +86,7 @@ class JournalAdminController extends AbstractController
 
         $journalItem = $this->journalReadRepository->findById($uuid);
 
-        if (!$journalItem) {
+        if (null === $journalItem) {
             throw $this->createNotFoundException('Journal item not found');
         }
 

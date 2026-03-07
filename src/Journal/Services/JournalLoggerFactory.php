@@ -19,22 +19,22 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Factory for creating JournalLogger instances
+ * Factory for creating JournalLogger instances.
  */
 readonly class JournalLoggerFactory
 {
     public function __construct(
         private JournalItemRepositoryInterface $repository,
         private EntityManagerInterface $entityManager
-    ) {
-    }
+    ) {}
 
     /**
-     * Create logger for specific application installation
+     * Create logger for specific application installation.
      */
-    public function createLogger(Uuid $applicationInstallationId): LoggerInterface
+    public function createLogger(string $memberId, Uuid $applicationInstallationId): LoggerInterface
     {
         return new JournalLogger(
+            memberId: $memberId,
             applicationInstallationId: $applicationInstallationId,
             repository: $this->repository,
             entityManager: $this->entityManager

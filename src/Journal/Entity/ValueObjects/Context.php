@@ -11,27 +11,20 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Journal\ValueObjects;
+namespace Bitrix24\Lib\Journal\Entity\ValueObjects;
 
 use Darsyn\IP\Version\Multi as IP;
 
 /**
- * Journal context value object
+ * Journal context value object.
  */
-readonly class JournalContext
+readonly class Context
 {
     public function __construct(
-        private string $label,
         private ?array $payload = null,
         private ?int $bitrix24UserId = null,
         private ?IP $ipAddress = null
-    ) {
-    }
-
-    public function getLabel(): string
-    {
-        return $this->label;
-    }
+    ) {}
 
     public function getPayload(): ?array
     {
@@ -49,12 +42,11 @@ readonly class JournalContext
     }
 
     /**
-     * Convert to array
+     * Convert to array.
      */
     public function toArray(): array
     {
         return [
-            'label' => $this->label,
             'payload' => $this->payload,
             'bitrix24UserId' => $this->bitrix24UserId,
             'ipAddress' => $this->ipAddress?->getCompactedAddress(),

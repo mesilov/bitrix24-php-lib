@@ -15,8 +15,8 @@ namespace Bitrix24\Lib\Journal\Services;
 
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Journal\Entity\LogLevel;
+use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Bitrix24\Lib\Journal\Infrastructure\JournalItemRepositoryInterface;
-use Bitrix24\Lib\Journal\ValueObjects\JournalContext;
 use Darsyn\IP\Version\Multi as IP;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -25,36 +25,40 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * PSR-3 compatible journal logger
- * Writes log entries to the journal repository
+ * Writes log entries to the journal repository.
  */
 class JournalLogger implements LoggerInterface
 {
     use LoggerTrait;
 
     public function __construct(
+        private readonly string $memberId,
         private readonly Uuid $applicationInstallationId,
         private readonly JournalItemRepositoryInterface $repository,
         private readonly EntityManagerInterface $entityManager
-    ) {
-    }
+    ) {}
 
     /**
-     * Logs with an arbitrary level
+     * Logs with an arbitrary level.
      *
-     * @param mixed $level
-     * @param string|\Stringable $message
+     * @param mixed                $level
      * @param array<string, mixed> $context
      */
     #[\Override]
     public function log($level, string|\Stringable $message, array $context = []): void
     {
         $logLevel = $this->convertLevel($level);
+        $label = $context['label'] ?? 'application.log';
+        $userId = $context['userId'] ?? null;
         $journalContext = $this->createContext($context);
 
         $journalItem = JournalItem::create(
+            memberId: $this->memberId,
             applicationInstallationId: $this->applicationInstallationId,
             level: $logLevel,
             message: (string) $message,
+            label: (string) $label,
+            userId: $userId,
             context: $journalContext
         );
 
@@ -63,7 +67,7 @@ class JournalLogger implements LoggerInterface
     }
 
     /**
-     * Convert PSR-3 log level to LogLevel enum
+     * Convert PSR-3 log level to LogLevel enum.
      */
     private function convertLevel(mixed $level): LogLevel
     {
@@ -81,12 +85,10 @@ class JournalLogger implements LoggerInterface
     }
 
     /**
-     * Create JournalContext from PSR-3 context array
+     * Create Context from PSR-3 context array.
      */
-    private function createContext(array $context): JournalContext
+    private function createContext(array $context): Context
     {
-        $label = $context['label'] ?? 'application.log';
-
         $ipAddress = null;
         if (isset($context['ipAddress']) && is_string($context['ipAddress'])) {
             try {
@@ -96,8 +98,7 @@ class JournalLogger implements LoggerInterface
             }
         }
 
-        return new JournalContext(
-            label: $label,
+        return new Context(
             payload: $context['payload'] ?? null,
             bitrix24UserId: isset($context['bitrix24UserId']) ? (int) $context['bitrix24UserId'] : null,
             ipAddress: $ipAddress

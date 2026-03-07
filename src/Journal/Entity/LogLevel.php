@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Journal\Entity;
 
 /**
- * PSR-3 compatible log level enum
+ * PSR-3 compatible log level enum.
  */
 enum LogLevel: string
 {
@@ -28,7 +28,7 @@ enum LogLevel: string
     case debug = 'debug';
 
     /**
-     * Creates LogLevel from PSR-3 log level string
+     * Creates LogLevel from PSR-3 log level string.
      */
     public static function fromPsr3Level(string $level): self
     {
