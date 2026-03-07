@@ -6,6 +6,7 @@ namespace Bitrix24\Lib\ApplicationInstallations\UseCase\Uninstall;
 
 use Bitrix24\Lib\Kernel\ValueObjects\Domain;
 
+
 readonly class Command
 {
     public function __construct(
@@ -15,6 +16,7 @@ readonly class Command
     ) {
         $this->validate();
     }
+
 
     private function validate(): void
     {

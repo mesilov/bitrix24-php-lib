@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall;
 
+use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\Lib\Kernel\ValueObjects\Domain;
 
 /**
@@ -17,7 +18,7 @@ readonly class Command
         public string $memberId,
         public Domain $domainUrl,
         public string $applicationToken,
-        public string $applicationStatus,
+        public ApplicationStatus $applicationStatus,
     ) {
         $this->validate();
     }
@@ -30,10 +31,6 @@ readonly class Command
 
         if ('' === $this->applicationToken) {
             throw new \InvalidArgumentException('ApplicationToken must be a non-empty string.');
-        }
-
-        if ('' === $this->applicationStatus) {
-            throw new \InvalidArgumentException('ApplicationStatus must be a non-empty string.');
         }
     }
 }

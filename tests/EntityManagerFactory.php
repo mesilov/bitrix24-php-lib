@@ -6,8 +6,8 @@ namespace Bitrix24\Lib\Tests;
 
 use Bitrix24\SDK\Core\Exceptions\WrongConfigurationException;
 use Carbon\Doctrine\CarbonImmutableType;
-use Doctrine\DBAL\DriverManager;
 use Darsyn\IP\Doctrine\MultiType;
+use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManager;
@@ -15,6 +15,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Exception\ORMException;
 use Doctrine\ORM\OptimisticLockException;
 use Doctrine\ORM\ORMSetup;
+use Misd\PhoneNumberBundle\Doctrine\DBAL\Types\PhoneNumberType;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 
 class EntityManagerFactory
@@ -65,6 +66,10 @@ class EntityManagerFactory
 
             if (!Type::hasType('carbon_immutable')) {
                 Type::addType('carbon_immutable', CarbonImmutableType::class);
+            }
+
+            if (!Type::hasType('phone_number')) {
+                Type::addType('phone_number', PhoneNumberType::class);
             }
 
             if (!Type::hasType('ip_address')) {

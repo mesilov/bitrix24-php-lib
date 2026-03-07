@@ -13,6 +13,7 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\Applicati
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Bitrix24\SDK\Core\Credentials\Scope;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -31,7 +32,7 @@ class CommandTest extends TestCase
         string  $memberId,
         Domain  $domain,
         string  $applicationToken,
-        string  $applicationStatus,
+        ApplicationStatus  $applicationStatus,
         ?string $expectedException,
     ): void
     {
@@ -54,7 +55,7 @@ class CommandTest extends TestCase
     public static function dataForCommand(): \Generator
     {
         $applicationToken = Uuid::v7()->toRfc4122();
-        $applicationStatus = 'T';
+        $applicationStatus = new ApplicationStatus('T');
 
         (new ApplicationInstallationBuilder())
             ->withApplicationStatus(new ApplicationStatus('F'))
@@ -85,7 +86,7 @@ class CommandTest extends TestCase
             new Domain($bitrix24AccountBuilder->getDomainUrl()),
             $applicationToken,
             $applicationStatus,
-            \InvalidArgumentException::class,
+            InvalidArgumentException::class,
         ];
 
         // Empty applicationToken
@@ -94,16 +95,7 @@ class CommandTest extends TestCase
             new Domain($bitrix24AccountBuilder->getDomainUrl()),
             '',
             $applicationStatus,
-            \InvalidArgumentException::class,
-        ];
-
-        // Empty applicationStatus
-        yield 'emptyApplicationStatus' => [
-            $bitrix24AccountBuilder->getMemberId(),
-            new Domain($bitrix24AccountBuilder->getDomainUrl()),
-            $applicationToken,
-            '',
-            \InvalidArgumentException::class,
+            InvalidArgumentException::class,
         ];
     }
 }
