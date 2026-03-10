@@ -13,9 +13,11 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Journal\Infrastructure;
 
+use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\Lib\Journal\Entity\JournalItemInterface;
 use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Carbon\CarbonImmutable;
+use Knp\Component\Pager\Pagination\PaginationInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**

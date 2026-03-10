@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Tests\Unit\ApplicationInstallations\UseCase\Uninstall;
 
 use Bitrix24\Lib\ApplicationInstallations\UseCase\Uninstall\Command;
-use Bitrix24\Lib\Kernel\ValueObjects\Domain;
+use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Core\Credentials\Scope;

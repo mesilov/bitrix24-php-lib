@@ -98,7 +98,7 @@ $item = JournalItem::create(
 ```php
 use Bitrix24\Lib\Journal\Infrastructure\Doctrine\DoctrineDbalJournalItemRepository;
 
-$repository = new DoctrineDbalJournalItemRepository($entityManager);
+$repository = new DoctrineDbalJournalItemRepository($entityManager, $paginator);
 
 // Сохранение
 $repository->save($journalItem);
@@ -128,9 +128,9 @@ $repository->clear();
 ### 4. Admin UI (ReadModel)
 
 ```php
-use Bitrix24\Lib\Journal\Infrastructure\Doctrine\JournalItemReadRepository;
+use Bitrix24\Lib\Journal\Infrastructure\Doctrine\DoctrineDbalJournalItemRepository;
 
-$readRepo = new JournalItemReadRepository($entityManager, $paginator);
+$readRepo = new DoctrineDbalJournalItemRepository($entityManager, $paginator);
 
 // Получение с фильтрами и пагинацией
 $pagination = $readRepo->findWithFilters(

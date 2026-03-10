@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Kernel\ValueObjects;
+namespace Bitrix24\Lib\Common\ValueObjects;
 
 readonly class Domain
 {

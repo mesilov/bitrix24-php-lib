@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall;
 
 use Bitrix24\SDK\Application\ApplicationStatus;
-use Bitrix24\Lib\Kernel\ValueObjects\Domain;
+use Bitrix24\Lib\Common\ValueObjects\Domain;
 
 /**
  * Command is called when installation occurs through UI.

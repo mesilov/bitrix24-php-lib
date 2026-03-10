@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Tests\Unit\Bitrix24Accounts\UseCase\ChangeDomainUrl;
 
 use Bitrix24\Lib\Bitrix24Accounts\UseCase\ChangeDomainUrl\Command;
-use Bitrix24\Lib\Kernel\ValueObjects\Domain;
+use Bitrix24\Lib\Common\ValueObjects\Domain;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
