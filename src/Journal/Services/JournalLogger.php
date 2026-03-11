@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Journal\Services;
 
 use Bitrix24\Lib\Journal\Entity\JournalItem;
-use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Bitrix24\Lib\Journal\Infrastructure\JournalItemRepositoryInterface;
 use Darsyn\IP\Version\Multi as IP;
@@ -47,15 +46,20 @@ class JournalLogger implements LoggerInterface
     #[\Override]
     public function log($level, string|\Stringable $message, array $context = []): void
     {
-        $logLevel = $this->convertLevel($level);
+        if (!is_string($level)) {
+            throw new \InvalidArgumentException(
+                sprintf('Invalid log level type: %s', get_debug_type($level))
+            );
+        }
+
         $label = $context['label'] ?? 'application.log';
         $userId = $context['userId'] ?? null;
         $journalContext = $this->createContext($context);
 
-        $journalItem = JournalItem::create(
+        $journalItem = new JournalItem(
             memberId: $this->memberId,
             applicationInstallationId: $this->applicationInstallationId,
-            level: $logLevel,
+            level: strtolower($level),
             message: (string) $message,
             label: (string) $label,
             userId: $userId,
@@ -64,24 +68,6 @@ class JournalLogger implements LoggerInterface
 
         $this->repository->save($journalItem);
         $this->entityManager->flush();
-    }
-
-    /**
-     * Convert PSR-3 log level to LogLevel enum.
-     */
-    private function convertLevel(mixed $level): LogLevel
-    {
-        if ($level instanceof LogLevel) {
-            return $level;
-        }
-
-        if (is_string($level)) {
-            return LogLevel::fromPsr3Level($level);
-        }
-
-        throw new \InvalidArgumentException(
-            sprintf('Invalid log level type: %s', get_debug_type($level))
-        );
     }
 
     /**

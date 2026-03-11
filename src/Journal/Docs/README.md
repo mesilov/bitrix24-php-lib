@@ -70,23 +70,20 @@ $logger->debug('Отладочная информация');
 
 ### 2. Entities
 
-**JournalItem** - основная сущность журнала с PSR-3 фабричными методами:
+**JournalItem** - основная сущность журнала:
 
 ```php
 use Bitrix24\Lib\Journal\Entity\JournalItem;
+use Psr\Log\LogLevel;
 
-// Создание через статические методы
-$item = JournalItem::info($memberId, $installationId, 'Сообщение', [
-    'label' => 'custom.label',
-    'payload' => ['key' => 'value']
-]);
-
-// Или через create с явным указанием уровня
-$item = JournalItem::create(
+// Создание через конструктор с явным указанием уровня
+$item = new JournalItem(
     memberId: $memberId,
     applicationInstallationId: $installationId,
-    level: LogLevel::error,
-    message: 'Сообщение об ошибке',
+    level: LogLevel::INFO,
+    message: 'Сообщение',
+    label: 'custom.label',
+    userId: 'user_id',
     context: $context
 );
 ```
@@ -106,7 +103,7 @@ $entityManager->flush();
 
 // Поиск
 $item = $repository->findById($uuid);
-$items = $repository->findByApplicationInstallationId($memberId, $installationId, LogLevel::error, 50, 0);
+$items = $repository->findByApplicationInstallationId($memberId, $installationId, LogLevel::ERROR, 50, 0);
 
 // Очистка
 $deleted = $repository->deleteOlderThan(new CarbonImmutable('-30 days'));
@@ -136,7 +133,7 @@ $readRepo = new DoctrineDbalJournalItemRepository($entityManager, $paginator);
 $pagination = $readRepo->findWithFilters(
     memberId: '66c9893d5f30e6.45265697',
     domain: new Domain('example.bitrix24.ru'),
-    logLevel: LogLevel::error,
+    logLevel: LogLevel::ERROR,
     label: 'b24.api.error',
     page: 1,
     limit: 50

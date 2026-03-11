@@ -12,7 +12,7 @@
 
         <field name="createdAt" type="carbon_immutable" column="created_at_utc" precision="3" nullable="false"/>
 
-        <field name="level" enum-type="string" column="level" nullable="false"/>
+        <field name="level" type="string" column="level" nullable="false"/>
 
         <field name="message" type="text" column="message" nullable="false"/>
         

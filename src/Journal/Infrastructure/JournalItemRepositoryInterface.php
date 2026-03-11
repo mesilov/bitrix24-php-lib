@@ -15,7 +15,6 @@ namespace Bitrix24\Lib\Journal\Infrastructure;
 
 use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\Lib\Journal\Entity\JournalItemInterface;
-use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Carbon\CarbonImmutable;
 use Knp\Component\Pager\Pagination\PaginationInterface;
 use Symfony\Component\Uid\Uuid;
@@ -43,7 +42,7 @@ interface JournalItemRepositoryInterface
     public function findByApplicationInstallationId(
         string $memberId,
         Uuid $applicationInstallationId,
-        ?LogLevel $logLevel = null,
+        ?string $logLevel = null,
         ?int $limit = null,
         ?int $offset = null
     ): array;
@@ -55,7 +54,7 @@ interface JournalItemRepositoryInterface
      */
     public function findByMemberId(
         string $memberId,
-        ?LogLevel $logLevel = null,
+        ?string $logLevel = null,
         ?int $limit = null,
         ?int $offset = null
     ): array;

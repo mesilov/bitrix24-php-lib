@@ -13,11 +13,11 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Unit\Journal\Services;
 
-use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Bitrix24\Lib\Journal\Services\JournalLogger;
 use Bitrix24\Lib\Tests\Unit\Journal\Infrastructure\InMemory\InMemoryJournalItemRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LogLevel;
 use Symfony\Component\Uid\Uuid;
 
 class JournalLoggerTest extends TestCase
@@ -56,7 +56,7 @@ class JournalLoggerTest extends TestCase
 
         $items = $this->repository->findAll();
         $this->assertCount(1, $items);
-        $this->assertSame(LogLevel::info, $items[0]->getLevel());
+        $this->assertSame(LogLevel::INFO, $items[0]->getLevel());
         $this->assertSame($this->memberId, $items[0]->getMemberId());
         $this->assertSame('Test info message', $items[0]->getMessage());
         $this->assertSame('test.label', $items[0]->getLabel());
@@ -71,7 +71,7 @@ class JournalLoggerTest extends TestCase
 
         $items = $this->repository->findAll();
         $this->assertCount(1, $items);
-        $this->assertSame(LogLevel::error, $items[0]->getLevel());
+        $this->assertSame(LogLevel::ERROR, $items[0]->getLevel());
         $this->assertSame('error.label', $items[0]->getLabel());
     }
 
@@ -82,7 +82,7 @@ class JournalLoggerTest extends TestCase
         $this->logger->warning('Test warning message', ['label' => 'warning.label']);
 
         $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::warning, $items[0]->getLevel());
+        $this->assertSame(LogLevel::WARNING, $items[0]->getLevel());
     }
 
     public function testLogDebugMessage(): void
@@ -92,7 +92,7 @@ class JournalLoggerTest extends TestCase
         $this->logger->debug('Test debug message', ['label' => 'debug.label']);
 
         $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::debug, $items[0]->getLevel());
+        $this->assertSame(LogLevel::DEBUG, $items[0]->getLevel());
     }
 
     public function testLogEmergencyMessage(): void
@@ -102,7 +102,7 @@ class JournalLoggerTest extends TestCase
         $this->logger->emergency('Test emergency message', ['label' => 'emergency.label']);
 
         $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::emergency, $items[0]->getLevel());
+        $this->assertSame(LogLevel::EMERGENCY, $items[0]->getLevel());
     }
 
     public function testLogAlertMessage(): void
@@ -112,7 +112,7 @@ class JournalLoggerTest extends TestCase
         $this->logger->alert('Test alert message', ['label' => 'alert.label']);
 
         $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::alert, $items[0]->getLevel());
+        $this->assertSame(LogLevel::ALERT, $items[0]->getLevel());
     }
 
     public function testLogCriticalMessage(): void
@@ -122,7 +122,7 @@ class JournalLoggerTest extends TestCase
         $this->logger->critical('Test critical message', ['label' => 'critical.label']);
 
         $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::critical, $items[0]->getLevel());
+        $this->assertSame(LogLevel::CRITICAL, $items[0]->getLevel());
     }
 
     public function testLogNoticeMessage(): void
@@ -132,7 +132,7 @@ class JournalLoggerTest extends TestCase
         $this->logger->notice('Test notice message', ['label' => 'notice.label']);
 
         $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::notice, $items[0]->getLevel());
+        $this->assertSame(LogLevel::NOTICE, $items[0]->getLevel());
     }
 
     public function testLogWithContext(): void
@@ -196,17 +196,17 @@ class JournalLoggerTest extends TestCase
         $this->logger->log('info', 'Test message', ['label' => 'test.label']);
 
         $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::info, $items[0]->getLevel());
+        $this->assertSame(LogLevel::INFO, $items[0]->getLevel());
     }
 
     public function testLogWithLogLevelEnum(): void
     {
         $this->entityManager->expects($this->once())->method('flush');
 
-        $this->logger->log(LogLevel::error, 'Test message', ['label' => 'test.label']);
+        $this->logger->log(LogLevel::ERROR, 'Test message', ['label' => 'test.label']);
 
         $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::error, $items[0]->getLevel());
+        $this->assertSame(LogLevel::ERROR, $items[0]->getLevel());
     }
 
     public function testLogWithInvalidLevelThrowsException(): void
@@ -219,7 +219,7 @@ class JournalLoggerTest extends TestCase
 
     public function testLogWithInvalidStringLevelThrowsException(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\Bitrix24\SDK\Core\Exceptions\InvalidArgumentException::class);
 
         $this->logger->log('invalid_level', 'Test message');
     }
