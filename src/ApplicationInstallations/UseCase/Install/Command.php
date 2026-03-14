@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\ApplicationInstallations\UseCase\Install;
 
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Bitrix24\SDK\Core\Credentials\AuthToken;

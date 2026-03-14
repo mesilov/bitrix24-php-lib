@@ -14,79 +14,69 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Journal\Services;
 
 use Bitrix24\Lib\Journal\Entity\JournalItem;
-use Bitrix24\Lib\Journal\Entity\LogLevel;
+use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Bitrix24\Lib\Journal\Infrastructure\JournalItemRepositoryInterface;
-use Bitrix24\Lib\Journal\ValueObjects\JournalContext;
 use Darsyn\IP\Version\Multi as IP;
-use Doctrine\ORM\EntityManagerInterface;
+use Bitrix24\Lib\Services\Flusher;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LoggerTrait;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * PSR-3 compatible journal logger
- * Writes log entries to the journal repository
+ * Writes log entries to the journal repository.
  */
 class JournalLogger implements LoggerInterface
 {
     use LoggerTrait;
 
+    private const string DEFAULT_LABEL = 'application.log';
+
     public function __construct(
+        private readonly string $memberId,
         private readonly Uuid $applicationInstallationId,
         private readonly JournalItemRepositoryInterface $repository,
-        private readonly EntityManagerInterface $entityManager
-    ) {
-    }
+        private readonly Flusher $flusher
+    ) {}
 
     /**
-     * Logs with an arbitrary level
+     * Logs with an arbitrary level.
      *
-     * @param mixed $level
-     * @param string|\Stringable $message
+     * @param mixed                $level
      * @param array<string, mixed> $context
      */
     #[\Override]
     public function log($level, string|\Stringable $message, array $context = []): void
     {
-        $logLevel = $this->convertLevel($level);
+        if (!is_string($level)) {
+            throw new \InvalidArgumentException(
+                sprintf('Invalid log level type: %s', get_debug_type($level))
+            );
+        }
+
+        $label = $context['label'] ?? self::DEFAULT_LABEL;
+        $userId = $context['userId'] ?? null;
         $journalContext = $this->createContext($context);
 
-        $journalItem = JournalItem::create(
+        $journalItem = new JournalItem(
+            memberId: $this->memberId,
             applicationInstallationId: $this->applicationInstallationId,
-            level: $logLevel,
+            level: strtolower($level),
             message: (string) $message,
+            label: (string) $label,
+            userId: $userId,
             context: $journalContext
         );
 
         $this->repository->save($journalItem);
-        $this->entityManager->flush();
+        $this->flusher->flush();
     }
 
     /**
-     * Convert PSR-3 log level to LogLevel enum
+     * Create Context from PSR-3 context array.
      */
-    private function convertLevel(mixed $level): LogLevel
+    private function createContext(array $context): Context
     {
-        if ($level instanceof LogLevel) {
-            return $level;
-        }
-
-        if (is_string($level)) {
-            return LogLevel::fromPsr3Level($level);
-        }
-
-        throw new \InvalidArgumentException(
-            sprintf('Invalid log level type: %s', get_debug_type($level))
-        );
-    }
-
-    /**
-     * Create JournalContext from PSR-3 context array
-     */
-    private function createContext(array $context): JournalContext
-    {
-        $label = $context['label'] ?? 'application.log';
-
         $ipAddress = null;
         if (isset($context['ipAddress']) && is_string($context['ipAddress'])) {
             try {
@@ -96,8 +86,7 @@ class JournalLogger implements LoggerInterface
             }
         }
 
-        return new JournalContext(
-            label: $label,
+        return new Context(
             payload: $context['payload'] ?? null,
             bitrix24UserId: isset($context['bitrix24UserId']) ? (int) $context['bitrix24UserId'] : null,
             ipAddress: $ipAddress

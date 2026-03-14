@@ -93,11 +93,17 @@ src/
 3. Follow DDD principles
 4. Use CQRS for write operations
 5. Validate all inputs in command constructors
+6. **After each refactoring task, automatically run linters and tests:**
+   - Run all linters: `make lint-phpstan && make lint-cs-fixer && make lint-rector`
+   - Run unit tests: `make test-run-unit`
+   - Run functional tests: `make test-run-functional`
+   - Fix any errors before proceeding to the next task
+7. After refactoring, summarize changes in `changelog.md`
+8. Check and actualize documentation in related files and README
 
 ## Git Workflow
 - Main branch: `main`
 - Feature branches: `feature/issue-number-description`
-- Current branch: `feature/46-fix-errors`
 
 ## Docker Setup
 - PHP CLI container for development
@@ -122,3 +128,4 @@ The `.env` file contains default values that work out-of-the-box with Docker Com
 - `POSTGRES_VERSION=16`
 
 These defaults allow running functional tests immediately after `make up` without additional configuration.
+- Always update changelog.md

@@ -13,50 +13,58 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Journal\Infrastructure;
 
+use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\Lib\Journal\Entity\JournalItemInterface;
-use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Carbon\CarbonImmutable;
+use Knp\Component\Pager\Pagination\PaginationInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Journal item repository interface for SDK contract extraction
+ * Journal item repository interface for SDK contract extraction.
  */
 interface JournalItemRepositoryInterface
 {
     /**
-     * Save journal item
+     * Save journal item.
      */
     public function save(JournalItemInterface $journalItem): void;
 
     /**
-     * Find journal item by ID
+     * Find journal item by ID.
      */
-    public function findById(Uuid $id): ?JournalItemInterface;
+    public function findById(Uuid $uuid): ?JournalItemInterface;
 
     /**
-     * Find journal items by application installation ID
+     * Find journal items by application installation ID.
      *
      * @return JournalItemInterface[]
      */
     public function findByApplicationInstallationId(
+        string $memberId,
         Uuid $applicationInstallationId,
-        ?LogLevel $level = null,
+        ?string $logLevel = null,
         ?int $limit = null,
         ?int $offset = null
     ): array;
 
     /**
-     * Delete all journal items by application installation ID
+     * Find journal items by member ID.
+     *
+     * @return JournalItemInterface[]
      */
-    public function deleteByApplicationInstallationId(Uuid $applicationInstallationId): int;
+    public function findByMemberId(
+        string $memberId,
+        ?string $logLevel = null,
+        ?int $limit = null,
+        ?int $offset = null
+    ): array;
 
     /**
-     * Delete journal items older than specified date
+     * Delete journal items older than specified date.
      */
-    public function deleteOlderThan(CarbonImmutable $date): int;
-
-    /**
-     * Count journal items by application installation ID
-     */
-    public function countByApplicationInstallationId(Uuid $applicationInstallationId, ?LogLevel $level = null): int;
+    public function deleteOlderThan(
+        string $memberId,
+        Uuid $applicationInstallationId,
+        CarbonImmutable $date
+    ): int;
 }

@@ -1,4 +1,5 @@
 name: "Allowed licenses checks"
+
 on:
   push:
   pull_request:
@@ -6,38 +7,25 @@ on:
 jobs:
   static-analysis:
     name: "composer-license-checker"
-    runs-on: ${{ matrix.operating-system }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        php-version:
-          - "8.3"
-        dependencies: [ highest ]
-        operating-system: [ ubuntu-latest]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ghcr.io/mesilov/bitrix24-php-lib:php-cli
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: "Checkout"
-        uses: "actions/checkout@v2"
+        uses: actions/checkout@v4
 
-      - name: "Install PHP"
-        uses: "shivammathur/setup-php@v2"
-        with:
-          coverage: "none"
-          php-version: "${{ matrix.php-version }}"
-          extensions: json, bcmath, curl, intl, mbstring
-          tools: composer:v2
-
-      - name: "Install lowest dependencies"
-        if: ${{ matrix.dependencies == 'lowest' }}
-        run: "composer update --prefer-lowest --no-interaction --no-progress --no-suggest"
-
-      - name: "Install highest dependencies"
-        if: ${{ matrix.dependencies == 'highest' }}
-        run: "composer update --no-interaction --no-progress --no-suggest"
+      - name: "Install dependencies"
+        run: composer update --no-interaction --no-progress --no-suggest
 
       - name: "composer-license-checker"
-        run: "make lint-allowed-licenses"
+        run: php vendor/bin/composer-license-checker
 
       - name: "is allowed licenses check succeeded"
         if: ${{ success() }}

@@ -20,7 +20,8 @@ $factory = $container->get(JournalLoggerFactory::class);
 
 // Создаем логгер для конкретной установки приложения
 $installationId = Uuid::fromString('...');
-$logger = $factory->createLogger($installationId);
+$memberId = '...';
+$logger = $factory->createLogger($memberId, $installationId);
 
 // Используем как обычный PSR-3 логгер
 $logger->info('Синхронизация завершена', [
@@ -50,6 +51,7 @@ use Bitrix24\Lib\Journal\Services\JournalLogger;
 use Bitrix24\Lib\Journal\Infrastructure\Doctrine\DoctrineDbalJournalItemRepository;
 
 $logger = new JournalLogger(
+    memberId: $memberId,
     applicationInstallationId: $installationId,
     repository: $repository,
     entityManager: $entityManager
@@ -68,22 +70,20 @@ $logger->debug('Отладочная информация');
 
 ### 2. Entities
 
-**JournalItem** - основная сущность журнала с PSR-3 фабричными методами:
+**JournalItem** - основная сущность журнала:
 
 ```php
 use Bitrix24\Lib\Journal\Entity\JournalItem;
+use Psr\Log\LogLevel;
 
-// Создание через статические методы
-$item = JournalItem::info($installationId, 'Сообщение', [
-    'label' => 'custom.label',
-    'payload' => ['key' => 'value']
-]);
-
-// Или через create с явным указанием уровня
-$item = JournalItem::create(
+// Создание через конструктор с явным указанием уровня
+$item = new JournalItem(
+    memberId: $memberId,
     applicationInstallationId: $installationId,
-    level: LogLevel::error,
-    message: 'Сообщение об ошибке',
+    level: LogLevel::INFO,
+    message: 'Сообщение',
+    label: 'custom.label',
+    userId: 'user_id',
     context: $context
 );
 ```
@@ -95,7 +95,7 @@ $item = JournalItem::create(
 ```php
 use Bitrix24\Lib\Journal\Infrastructure\Doctrine\DoctrineDbalJournalItemRepository;
 
-$repository = new DoctrineDbalJournalItemRepository($entityManager);
+$repository = new DoctrineDbalJournalItemRepository($entityManager, $paginator);
 
 // Сохранение
 $repository->save($journalItem);
@@ -103,10 +103,9 @@ $entityManager->flush();
 
 // Поиск
 $item = $repository->findById($uuid);
-$items = $repository->findByApplicationInstallationId($installationId, LogLevel::error, 50, 0);
+$items = $repository->findByApplicationInstallationId($memberId, $installationId, LogLevel::ERROR, 50, 0);
 
 // Очистка
-$deleted = $repository->deleteByApplicationInstallationId($installationId);
 $deleted = $repository->deleteOlderThan(new CarbonImmutable('-30 days'));
 ```
 
@@ -126,14 +125,15 @@ $repository->clear();
 ### 4. Admin UI (ReadModel)
 
 ```php
-use Bitrix24\Lib\Journal\ReadModel\JournalItemReadRepository;
+use Bitrix24\Lib\Journal\Infrastructure\Doctrine\DoctrineDbalJournalItemRepository;
 
-$readRepo = new JournalItemReadRepository($entityManager, $paginator);
+$readRepo = new DoctrineDbalJournalItemRepository($entityManager, $paginator);
 
 // Получение с фильтрами и пагинацией
 $pagination = $readRepo->findWithFilters(
-    domainUrl: 'example.bitrix24.ru',
-    level: LogLevel::error,
+    memberId: '66c9893d5f30e6.45265697',
+    domain: new Domain('example.bitrix24.ru'),
+    logLevel: LogLevel::ERROR,
     label: 'b24.api.error',
     page: 1,
     limit: 50
@@ -185,6 +185,7 @@ class MyTest extends TestCase
         $entityManager = $this->createMock(EntityManagerInterface::class);
 
         $this->logger = new JournalLogger(
+            '66c9893d5f30e6.45265697',
             Uuid::v7(),
             $this->repository,
             $entityManager
@@ -215,6 +216,7 @@ class MyTest extends TestCase
 
 Таблица `journal_item` с полями:
 - `id` (UUID) - PK
+- `member_id` (string) - ID портала Bitrix24
 - `application_installation_id` (UUID) - FK к установке приложения
 - `created_at_utc` (timestamp) - время создания
 - `level` (string) - уровень логирования
@@ -222,6 +224,7 @@ class MyTest extends TestCase
 - `label`, `payload`, `bitrix24_user_id`, `ip_address` - поля контекста
 
 Индексы:
-- `application_installation_id`
+- `member_id, application_installation_id, level, created_at_utc` (composite)
+- `member_id`
 - `created_at_utc`
 - `level`
