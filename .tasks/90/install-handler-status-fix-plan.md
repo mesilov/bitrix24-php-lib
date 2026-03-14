@@ -54,13 +54,19 @@ Issue `#90` описывает баг в `src/ApplicationInstallations/UseCase/I
 
 4. Exact `OnAppInstall` finish-flow
 - `OnAppInstall\Handler` работает по жёсткому алгоритму:
-  - найти pending `ApplicationInstallation` по `memberId` в статусе `new`;
-  - найти master `Bitrix24Account` по `memberId` только в статусе `Bitrix24AccountStatus::new`;
-  - вызвать `ApplicationInstallation::changeApplicationStatus($applicationStatus)`;
-  - вызвать `Bitrix24Account::applicationInstalled($applicationToken)`;
-  - вызвать `ApplicationInstallation::applicationInstalled($applicationToken)`;
-  - сохранить обе сущности;
-  - вызвать `flush`.
+  - сначала найти pending `ApplicationInstallation` по `memberId` в статусе `new`;
+  - если pending installation найдена:
+    - найти master `Bitrix24Account` по `memberId` только в статусе `Bitrix24AccountStatus::new`;
+    - вызвать `ApplicationInstallation::changeApplicationStatus($applicationStatus)`;
+    - вызвать `Bitrix24Account::applicationInstalled($applicationToken)`;
+    - вызвать `ApplicationInstallation::applicationInstalled($applicationToken)`;
+    - сохранить обе сущности;
+    - вызвать `flush`;
+  - если pending installation не найдена:
+    - проверить сценарий already finished installation по `memberId`;
+    - если найден finished pair с тем же `applicationToken`, обработать как `warning + no-op`;
+    - если найден finished pair с другим `applicationToken`, обработать как `warning + no-op`;
+    - если finished pair не найден, завершить обработку контролируемым исключением.
 
 5. Exact account lookup rule in `OnAppInstall`
 - В `src/ApplicationInstallations/UseCase/OnAppInstall/Handler.php` выборка аккаунта должна идти только по `Bitrix24AccountStatus::new`.
@@ -71,7 +77,10 @@ Issue `#90` описывает баг в `src/ApplicationInstallations/UseCase/I
 1. Duplicate `ONAPPINSTALL`
 - Если pending installation в статусе `new` не найдена, но по `memberId` уже существует завершённая `active` installation и `active` master account с тем же `applicationToken`, handler:
   - ничего не меняет;
+  - `ApplicationInstallation::changeApplicationStatus(...)` не вызывается;
   - пишет `warning` в лог;
+  - события не эмитятся;
+  - стейт агрегатов не меняется;
   - завершает обработку как `no-op`.
 
 2. Missing pending installation
@@ -83,6 +92,7 @@ Issue `#90` описывает баг в `src/ApplicationInstallations/UseCase/I
 3. Token mismatch on repeated event
 - Если `ONAPPINSTALL` пришёл для уже завершённой установки, но `applicationToken` отличается от уже сохранённого токена:
   - handler ничего не меняет;
+  - `ApplicationInstallation::changeApplicationStatus(...)` не вызывается;
   - пишет `warning` в лог;
   - события не эмитятся;
   - стейт агрегатов не меняется;
@@ -97,6 +107,9 @@ Issue `#90` описывает баг в `src/ApplicationInstallations/UseCase/I
   - сначала `markAsBlocked('reinstall before finish')`;
   - затем `applicationUninstalled(null)`.
 - Этот путь является обязательным для `lib`, если правим только реализацию `lib` и не меняем интерфейс из SDK.
+- Порядок сохранения и `flush` фиксируется жёстко:
+  - сначала перевести старые сущности в `deleted` и сделать отдельный `flush`;
+  - только после этого создавать и сохранять новую пару сущностей.
 
 5. Reinstall while previous installation is already `active`
 - Поведение остаётся совместимым с текущим reinstall-flow:
@@ -121,12 +134,17 @@ Issue `#90` описывает баг в `src/ApplicationInstallations/UseCase/I
 - пересмотреть выборку аккаунта:
   - finish-path ищет master account только в `Bitrix24AccountStatus::new`;
   - duplicate-event path отдельно проверяет already finished `active` records;
+- порядок ветвления должен быть жёстко зафиксирован:
+  - сначала проверяется pending `new` installation;
+  - затем duplicate/mismatch path по already finished `active` records;
+  - только потом controlled exception path;
 - реализовать exact finish-flow в фиксированном порядке:
   - `changeApplicationStatus(...)`;
   - `Bitrix24Account::applicationInstalled($token)`;
   - `ApplicationInstallation::applicationInstalled($token)`;
   - `save`;
   - `flush`.
+- в duplicate/mismatch path `changeApplicationStatus(...)` не вызывается.
 
 3. Использовать SDK-совместимый delete-flow для pending installation
 - В `Install\Handler` при re-install поверх `new` для `ApplicationInstallation` нужно использовать последовательность:
@@ -134,6 +152,7 @@ Issue `#90` описывает баг в `src/ApplicationInstallations/UseCase/I
   - `applicationUninstalled(null)`.
 - Новый `lib`-only метод в `ApplicationInstallation` не добавляется.
 - Контракт SDK не меняется.
+- Старые сущности должны быть `flush`-нуты отдельно до создания новой пары.
 
 4. Актуализировать unit tests
 - Обновить существующие unit tests `Install`, `OnAppInstall`, `Command` и test helpers.
@@ -148,7 +167,7 @@ Issue `#90` описывает баг в `src/ApplicationInstallations/UseCase/I
 - Исправить следующие functional tests:
   - `tests/Functional/ApplicationInstallations/UseCase/Install/HandlerTest.php`
   - `tests/Functional/ApplicationInstallations/UseCase/OnAppInstall/HandlerTest.php`
-  - `tests/Functional/Bitrix24Accounts/UseCase/InstallFinish/HandlerTest.php` только если после правок он пересекается по контракту с новым finish-flow.
+  - `tests/Functional/Bitrix24Accounts/UseCase/InstallFinish/HandlerTest.php`
 - В `tests/Functional/ApplicationInstallations/UseCase/Install/HandlerTest.php`:
   - сценарий `Install` без токена должен ожидать статус `new`, а не `active`;
   - сценарий `Install` с токеном должен по-прежнему ожидать `active`;
@@ -161,6 +180,7 @@ Issue `#90` описывает баг в `src/ApplicationInstallations/UseCase/I
   - нужно проверить missing pending installation path;
   - нужно проверить repeated-event path с другим токеном: только `warning`, без исключения, без изменения состояния и без новых событий.
 - Если `tests/Functional/Bitrix24Accounts/UseCase/InstallFinish/HandlerTest.php` остаётся в проекте без изменений, это нужно явно проверить и зафиксировать, чтобы не было двух конкурирующих finish-flow.
+- `tests/Functional/Bitrix24Accounts/UseCase/InstallFinish/HandlerTest.php` нужно обновить явно, чтобы он не конфликтовал с новым canonical finish-flow через `OnAppInstall`.
 
 6. Обновить документацию
 - В `src/ApplicationInstallations/Docs` добавить:
@@ -260,11 +280,12 @@ sequenceDiagram
     Install->>ExistingInstallation: applicationUninstalled(null)
     Install->>AccountRepo: save(existing account status=deleted)
     Install->>InstallRepo: save(existing installation status=deleted)
+    Install->>Flusher: flush(old deleted entities)
     Install->>NewAccount: create account(status=new)
     Install->>NewInstallation: create installation(status=new)
     Install->>AccountRepo: save(new account status=new)
     Install->>InstallRepo: save(new installation status=new)
-    Install->>Flusher: flush(old deleted entities, new pending entities)
+    Install->>Flusher: flush(new pending entities)
     Install-->>User: new pending installation created
 ```
 
@@ -283,6 +304,7 @@ sequenceDiagram
 - `US2: OnAppInstall finalizes pending installation`
   - handler ищет installation по `memberId` в `new`;
   - handler ищет master account по `memberId` только в `new`;
+  - duplicate/mismatch path не выполняется, если найден pending `new`;
   - выполняется exact finish-flow;
   - после `handle()` обе сущности в `active`;
   - токен сохранён;
@@ -302,6 +324,9 @@ sequenceDiagram
 4. Corner cases `OnAppInstall`
 - `duplicate ONAPPINSTALL event with same token`
   - `warning + no-op`.
+  - `changeApplicationStatus(...)` не вызывается.
+  - события не эмитятся.
+  - state does not change.
 - `ONAPPINSTALL for missing pending installation`
   - controlled exception.
 - `ONAPPINSTALL when account is not in status new`
@@ -309,6 +334,7 @@ sequenceDiagram
   - partial update state отсутствует.
 - `ONAPPINSTALL with different token for already finished installation`
   - `warning`;
+  - `changeApplicationStatus(...)` не вызывается;
   - события не эмитятся;
   - state does not change;
   - исключение не выбрасывается.
@@ -321,7 +347,7 @@ sequenceDiagram
 6. Functional test coverage to update
 - `tests/Functional/ApplicationInstallations/UseCase/Install/HandlerTest.php`
 - `tests/Functional/ApplicationInstallations/UseCase/OnAppInstall/HandlerTest.php`
-- `tests/Functional/Bitrix24Accounts/UseCase/InstallFinish/HandlerTest.php` при необходимости, если новый контракт делает его устаревшим или конфликтующим
+- `tests/Functional/Bitrix24Accounts/UseCase/InstallFinish/HandlerTest.php`
 
 ### Files to Touch
 - `src/ApplicationInstallations/UseCase/Install/Handler.php`
@@ -329,7 +355,7 @@ sequenceDiagram
 - `src/ApplicationInstallations/Entity/ApplicationInstallation.php`
 - `tests/Functional/ApplicationInstallations/UseCase/Install/HandlerTest.php`
 - `tests/Functional/ApplicationInstallations/UseCase/OnAppInstall/HandlerTest.php`
-- `tests/Functional/Bitrix24Accounts/UseCase/InstallFinish/HandlerTest.php` при необходимости
+- `tests/Functional/Bitrix24Accounts/UseCase/InstallFinish/HandlerTest.php`
 - `tests/Unit/ApplicationInstallations/UseCase/Install/...`
 - `tests/Unit/ApplicationInstallations/UseCase/OnAppInstall/...`
 - `tests/Helpers/...`
@@ -342,9 +368,12 @@ sequenceDiagram
 - `OnAppInstall` является единственным finish-step для двухшаговой установки;
 - выборка master account в finish-path идёт только по `Bitrix24AccountStatus::new`;
 - duplicate `ONAPPINSTALL` с тем же токеном обрабатывается как `warning + no-op`;
+- duplicate `ONAPPINSTALL` с тем же токеном не эмитит события и не меняет состояние;
 - missing pending installation приводит к контролируемой ошибке;
 - repeated `ONAPPINSTALL` с другим токеном обрабатывается как `warning + no-op` без исключения, без новых событий и без изменения состояния;
 - re-install поверх pending `new` переводит старые записи в `deleted` и создаёт новые;
 - для `ApplicationInstallation` при re-install поверх `new` используется путь `markAsBlocked('reinstall before finish') -> applicationUninstalled(null)`;
+- при re-install старые сущности `flush`-ятся отдельно до создания новой пары;
+- в duplicate/mismatch path `applicationStatus` не меняется;
 - unit tests покрывают обе user story и corner cases;
 - документация в `src/ApplicationInstallations/Docs` обновлена и содержит sequence diagrams.
