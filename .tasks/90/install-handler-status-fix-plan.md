@@ -17,6 +17,7 @@ Issue `#90` описывает баг в `src/ApplicationInstallations/UseCase/I
 - исправить `Install\Handler`;
 - исправить `OnAppInstall\Handler`;
 - актуализировать unit tests;
+- актуализировать functional tests, которые закрепляют старое поведение;
 - обновить документацию в `src/ApplicationInstallations/Docs`;
 - добавить sequence diagrams;
 - зафиксировать отдельный follow-up issue для битых pending-инсталляций.
@@ -83,15 +84,19 @@ Issue `#90` описывает баг в `src/ApplicationInstallations/UseCase/I
 - Если `ONAPPINSTALL` пришёл для уже завершённой установки, но `applicationToken` отличается от уже сохранённого токена:
   - handler ничего не меняет;
   - пишет `warning` в лог;
-  - завершает обработку с контролируемым исключением.
+  - события не эмитятся;
+  - стейт агрегатов не меняется;
+  - обработка завершается без исключения.
 
 4. Reinstall while previous installation is still `new`
 - Если по тому же `memberId` уже есть pending installation в статусе `new`, второй вызов `Install` должен:
   - перевести старый `Bitrix24Account` в `deleted`;
   - перевести старую `ApplicationInstallation` в `deleted`;
   - создать новую пару сущностей.
-- Для `ApplicationInstallation` нужно добавить явный доменный переход для удаления pending-installation из статуса `new`.
-- Использовать для этого `applicationUninstalled()` нельзя, потому что сейчас он разрешён только из `active|blocked`.
+- Для `ApplicationInstallation` используется SDK-совместимый путь без добавления нового метода в контракт:
+  - сначала `markAsBlocked('reinstall before finish')`;
+  - затем `applicationUninstalled(null)`.
+- Этот путь является обязательным для `lib`, если правим только реализацию `lib` и не меняем интерфейс из SDK.
 
 5. Reinstall while previous installation is already `active`
 - Поведение остаётся совместимым с текущим reinstall-flow:
@@ -123,12 +128,12 @@ Issue `#90` описывает баг в `src/ApplicationInstallations/UseCase/I
   - `save`;
   - `flush`.
 
-3. Добавить явный доменный переход для удаления pending installation
-- В `ApplicationInstallation` нужно добавить explicit method для перевода сущности из `new` в `deleted` при re-install.
-- Название и API метода должны прямо отражать назначение:
-  - удаление незавершённой installation;
-  - без требования `applicationToken`.
-- Этот переход должен использоваться в `Install\Handler` при re-install поверх `new`.
+3. Использовать SDK-совместимый delete-flow для pending installation
+- В `Install\Handler` при re-install поверх `new` для `ApplicationInstallation` нужно использовать последовательность:
+  - `markAsBlocked('reinstall before finish')`;
+  - `applicationUninstalled(null)`.
+- Новый `lib`-only метод в `ApplicationInstallation` не добавляется.
+- Контракт SDK не меняется.
 
 4. Актуализировать unit tests
 - Обновить существующие unit tests `Install`, `OnAppInstall`, `Command` и test helpers.
@@ -139,7 +144,25 @@ Issue `#90` описывает баг в `src/ApplicationInstallations/UseCase/I
   - corner cases для `OnAppInstall`.
 - Unit tests являются основным способом фиксации нового контракта.
 
-5. Обновить документацию
+5. Актуализировать functional tests
+- Исправить следующие functional tests:
+  - `tests/Functional/ApplicationInstallations/UseCase/Install/HandlerTest.php`
+  - `tests/Functional/ApplicationInstallations/UseCase/OnAppInstall/HandlerTest.php`
+  - `tests/Functional/Bitrix24Accounts/UseCase/InstallFinish/HandlerTest.php` только если после правок он пересекается по контракту с новым finish-flow.
+- В `tests/Functional/ApplicationInstallations/UseCase/Install/HandlerTest.php`:
+  - сценарий `Install` без токена должен ожидать статус `new`, а не `active`;
+  - сценарий `Install` с токеном должен по-прежнему ожидать `active`;
+  - reinstall поверх `new` должен проверять перевод старых записей в `deleted` и создание новых;
+  - reinstall поверх `new` должен явно покрывать путь `markAsBlocked('reinstall before finish') -> applicationUninstalled(null)` для `ApplicationInstallation`.
+- В `tests/Functional/ApplicationInstallations/UseCase/OnAppInstall/HandlerTest.php`:
+  - `OnAppInstall` должен завершать pending installation из `new`;
+  - account должен искаться через новый finish-path по статусу `new`;
+  - нужно проверить duplicate-event path;
+  - нужно проверить missing pending installation path;
+  - нужно проверить repeated-event path с другим токеном: только `warning`, без исключения, без изменения состояния и без новых событий.
+- Если `tests/Functional/Bitrix24Accounts/UseCase/InstallFinish/HandlerTest.php` остаётся в проекте без изменений, это нужно явно проверить и зафиксировать, чтобы не было двух конкурирующих finish-flow.
+
+6. Обновить документацию
 - В `src/ApplicationInstallations/Docs` добавить:
   - описание `US1`;
   - описание `US2`;
@@ -149,7 +172,7 @@ Issue `#90` описывает баг в `src/ApplicationInstallations/UseCase/I
     - `https://github.com/bitrix24/b24phpsdk/blob/v3/src/Application/Contracts/ApplicationInstallations/Docs/ApplicationInstallations.md`
     - `https://apidocs.bitrix24.com/api-reference/common/events/on-app-install.html`
 
-6. Создать follow-up GitHub issue
+7. Создать follow-up GitHub issue
 - Отдельно создать issue на проектирование фонового сборщика битых pending-инсталляций.
 - В issue предложить варианты:
   - worker с TTL и переводом зависших `new`-installations в broken/failed сценарий;
@@ -233,7 +256,8 @@ sequenceDiagram
     Install->>InstallRepo: load existing installation by memberId
     Install->>AccountRepo: load existing accounts by memberId
     Install->>ExistingAccount: applicationUninstalled(null)
-    Install->>ExistingInstallation: delete pending installation via new explicit method
+    Install->>ExistingInstallation: markAsBlocked("reinstall before finish")
+    Install->>ExistingInstallation: applicationUninstalled(null)
     Install->>AccountRepo: save(existing account status=deleted)
     Install->>InstallRepo: save(existing installation status=deleted)
     Install->>NewAccount: create account(status=new)
@@ -266,6 +290,7 @@ sequenceDiagram
 
 3. Corner cases `Install`
 - `reinstall while previous installation is still new`
+  - старая `ApplicationInstallation` проходит путь `markAsBlocked('reinstall before finish') -> applicationUninstalled(null)`;
   - старая пара переводится в `deleted`;
   - новая пара создаётся в `new`.
 - `reinstall while previous installation is already active`
@@ -284,18 +309,27 @@ sequenceDiagram
   - partial update state отсутствует.
 - `ONAPPINSTALL with different token for already finished installation`
   - `warning`;
-  - controlled exception;
-  - state does not change.
+  - события не эмитятся;
+  - state does not change;
+  - исключение не выбрасывается.
 
 5. Test infrastructure
 - использовать in-memory repositories для `ApplicationInstallationRepositoryInterface` и `Bitrix24AccountRepositoryInterface`;
 - добавить logger test double для проверки `warning`;
 - при необходимости добавить flusher test double.
 
+6. Functional test coverage to update
+- `tests/Functional/ApplicationInstallations/UseCase/Install/HandlerTest.php`
+- `tests/Functional/ApplicationInstallations/UseCase/OnAppInstall/HandlerTest.php`
+- `tests/Functional/Bitrix24Accounts/UseCase/InstallFinish/HandlerTest.php` при необходимости, если новый контракт делает его устаревшим или конфликтующим
+
 ### Files to Touch
 - `src/ApplicationInstallations/UseCase/Install/Handler.php`
 - `src/ApplicationInstallations/UseCase/OnAppInstall/Handler.php`
 - `src/ApplicationInstallations/Entity/ApplicationInstallation.php`
+- `tests/Functional/ApplicationInstallations/UseCase/Install/HandlerTest.php`
+- `tests/Functional/ApplicationInstallations/UseCase/OnAppInstall/HandlerTest.php`
+- `tests/Functional/Bitrix24Accounts/UseCase/InstallFinish/HandlerTest.php` при необходимости
 - `tests/Unit/ApplicationInstallations/UseCase/Install/...`
 - `tests/Unit/ApplicationInstallations/UseCase/OnAppInstall/...`
 - `tests/Helpers/...`
@@ -309,6 +343,8 @@ sequenceDiagram
 - выборка master account в finish-path идёт только по `Bitrix24AccountStatus::new`;
 - duplicate `ONAPPINSTALL` с тем же токеном обрабатывается как `warning + no-op`;
 - missing pending installation приводит к контролируемой ошибке;
+- repeated `ONAPPINSTALL` с другим токеном обрабатывается как `warning + no-op` без исключения, без новых событий и без изменения состояния;
 - re-install поверх pending `new` переводит старые записи в `deleted` и создаёт новые;
+- для `ApplicationInstallation` при re-install поверх `new` используется путь `markAsBlocked('reinstall before finish') -> applicationUninstalled(null)`;
 - unit tests покрывают обе user story и corner cases;
 - документация в `src/ApplicationInstallations/Docs` обновлена и содержит sequence diagrams.
