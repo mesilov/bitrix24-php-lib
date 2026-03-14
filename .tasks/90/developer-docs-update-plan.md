@@ -52,7 +52,17 @@
 
 6. Уточнить контракт `ApplicationInstallations\UseCase\OnAppInstall`
 - Сделать `OnAppInstall` use case ответственным за завершение установки в двухшаговом сценарии.
-- После получения `application_token` use case должен переводить агрегаты из `new` в `active` и сохранять токен.
+- После получения `application_token` use case должен завершать установку по жёстко заданному flow:
+  - найти pending `ApplicationInstallation` по `memberId` в статусе `new`;
+  - найти master `Bitrix24Account` по `memberId` в статусе `new`;
+  - обновить `applicationStatus` у `ApplicationInstallation` значением из события;
+  - вызвать `$bitrix24Account->applicationInstalled($applicationToken)`;
+  - вызвать `$applicationInstallation->applicationInstalled($applicationToken)`;
+  - сохранить оба агрегата и выполнить `flush`.
+- В `src/ApplicationInstallations/UseCase/OnAppInstall/Handler.php` выборка аккаунта должна быть пересмотрена и жёстко зафиксирована:
+  - handler ищет master account только среди записей со статусом `Bitrix24AccountStatus::new`;
+  - выборка по `active` для этого use case недопустима;
+  - fallback на другие статусы не допускается.
 - Для двухшагового сценария `OnAppInstall` должен искать master account в состоянии `new`, а не `active`, потому что до прихода события установка ещё не завершена.
 - Завершение двухшаговой установки обязательно должно происходить через вызов use case `OnAppInstall`; обход этого use case прямыми вызовами методов агрегатов вне сценария запрещён.
 - Если событие `ONAPPINSTALL` приходит повторно для уже завершённой установки, use case ничего не делает, пишет `warning` в лог и завершает обработку как `no-op`.
@@ -73,6 +83,26 @@
 9. Добавить unit-тесты на инварианты use case'ов
 - Написать unit-тесты для `Install` и `OnAppInstall`, которые работают через in-memory repositories.
 - Для `US2` проверять состояние после каждого шага: после `Install` и после `OnAppInstall`.
+
+10. Актуализировать unit tests
+- Привести unit-тесты в состояние, где они явно покрывают обе user story:
+  - `US1` для одношаговой установки;
+  - `US2` для двухшаговой установки.
+- Отдельно покрыть corner cases для этих user story.
+- Зафиксировать, что unit-тесты являются основным способом проверки нового контракта `Install` и `OnAppInstall`.
+
+11. Обновить документацию в `ApplicationInstallations/Docs`
+- Добавить user story в папку `Docs` внутри `ApplicationInstallations`.
+- Добавить sequence diagrams в папку `Docs` внутри `ApplicationInstallations`.
+- Зафиксировать в локальной документации актуальный контракт `Install` и `OnAppInstall` для `US1`, `US2` и corner cases.
+
+12. Подготовить sequence diagrams для review
+- Вынести обе sequence diagrams в план и в локальную документацию как отдельный артефакт для согласования.
+- До начала реализации показать диаграммы на review, чтобы проверить:
+  - порядок вызовов в `US1`;
+  - порядок вызовов в `US2`;
+  - точки ветвления для re-install, duplicate `ONAPPINSTALL` и missing-event cases.
+- После согласования использовать эти диаграммы как source of truth для реализации и unit-тестов.
 
 ### Implementation Plan
 1. Обновить `README.md` как главный документ быстрого старта:
@@ -108,9 +138,15 @@
 6. Изменить доменное поведение `ApplicationInstallations\UseCase\OnAppInstall`:
 - use case должен находить агрегаты, созданные на первом шаге;
 - master account должен искаться среди записей в статусе `new`, чтобы pending-установка могла быть завершена корректно;
-- сохранять `applicationToken` в `Bitrix24Account` и `ApplicationInstallation`;
-- переводить оба агрегата в финальное состояние установки;
-- обновлять `applicationStatus` у `ApplicationInstallation`.
+- это правило должно быть реализовано прямо в `src/ApplicationInstallations/UseCase/OnAppInstall/Handler.php` без альтернативных трактовок;
+- finish-flow должен быть детерминированным и одинаковым во всех реализациях:
+  - загрузить pending `ApplicationInstallation` в статусе `new`;
+  - загрузить master `Bitrix24Account` в статусе `new`;
+  - вызвать `changeApplicationStatus(...)` для `ApplicationInstallation`;
+  - вызвать `applicationInstalled($applicationToken)` для `Bitrix24Account`;
+  - вызвать `applicationInstalled($applicationToken)` для `ApplicationInstallation`;
+  - сохранить оба агрегата;
+  - вызвать `flush`.
 - Этот use case является обязательной точкой входа для завершения `US2`; никакой альтернативный путь финализации установки не допускается.
 - при повторном событии для уже завершённой установки use case должен отработать как `no-op` и записать `warning` в лог;
 - отсутствие события для зависшей pending-инсталляции не закрывается в этом change set, а выносится в отдельное GitHub-обсуждение.
@@ -138,6 +174,22 @@
 9. Написать unit-тесты на user stories и инварианты:
 - отдельный тест на `US1` с `applicationToken`;
 - отдельный сценарный тест на `US2`, где последовательно вызываются `Install`, затем `OnAppInstall`, и проверяется состояние после каждого шага.
+
+10. Актуализировать существующие unit-тесты:
+- обновить существующие unit-тесты `Install`, `OnAppInstall`, `Command` и связанные test helpers под новый контракт;
+- убедиться, что тестовый набор покрывает обе user story и corner cases по ним;
+- убрать устаревшие ожидания, завязанные на старое поведение немедленной финализации без `applicationToken`.
+
+11. Обновить документацию в `src/ApplicationInstallations/Docs`:
+- добавить описание `US1` и `US2`;
+- добавить две sequence diagram;
+- описать corner cases, которые влияют на поведение `Install` и `OnAppInstall`;
+- добавить ссылки на внешний контракт `b24phpsdk` и на документацию `ONAPPINSTALL`.
+
+12. Подготовить sequence diagrams к отдельному просмотру:
+- оформить диаграммы так, чтобы их можно было показать отдельно от остального текста;
+- использовать одинаковые названия участников и шагов в плане, документации и тестах;
+- при необходимости добавить третью вспомогательную диаграмму для corner case `reinstall while previous installation is still new`.
 
 ### ApplicationInstallations User Stories
 #### US1. Одношаговая установка
@@ -183,6 +235,7 @@ sequenceDiagram
 - после первого шага токен отсутствует;
 - `OnAppInstall` ищет master account именно в статусе `new`;
 - завершение установки выполняется обязательным вызовом `OnAppInstall`;
+- `OnAppInstall` завершает установку по фиксированному flow: `changeApplicationStatus` -> `Bitrix24Account::applicationInstalled($token)` -> `ApplicationInstallation::applicationInstalled($token)` -> `save` -> `flush`;
 - если во второй вкладке запускают новую установку до прихода `ONAPPINSTALL` по первой, второй вызов `Install` переводит старые pending-записи в `deleted` и создаёт новые записи для новой попытки установки;
 - если `ONAPPINSTALL` не пришёл, инсталляция остаётся pending; дальнейшая стратегия выносится в отдельный GitHub issue про фоновый сборщик битых инсталляций;
 - если `ONAPPINSTALL` пришёл повторно после успешного завершения установки, `OnAppInstall` ничего не делает и пишет `warning` в лог;
@@ -211,14 +264,102 @@ sequenceDiagram
     OnAppInstall->>InstallRepo: save active installation
 ```
 
+### Sequence Diagrams For Review
+#### Diagram 1. US1 One-Step Install
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Installer as Installer / External Caller
+    participant Install as UseCase Install
+    participant Account as Bitrix24Account
+    participant Installation as ApplicationInstallation
+    participant AccountRepo as Bitrix24AccountRepository
+    participant InstallRepo as ApplicationInstallationRepository
+    participant Flusher as Flusher
+
+    Installer->>Install: Install(command with applicationToken)
+    Install->>Account: create account(status=new)
+    Install->>Installation: create installation(status=new)
+    Install->>Account: applicationInstalled(applicationToken)
+    Install->>Installation: applicationInstalled(applicationToken)
+    Install->>AccountRepo: save(account status=active)
+    Install->>InstallRepo: save(installation status=active)
+    Install->>Flusher: flush(account, installation)
+    Install-->>Installer: done
+```
+
+#### Diagram 2. US2 Two-Step Install Via ONAPPINSTALL
+```mermaid
+sequenceDiagram
+    autonumber
+    actor UI as Bitrix24 UI / install.php
+    participant Install as UseCase Install
+    participant Account as Bitrix24Account
+    participant Installation as ApplicationInstallation
+    participant AccountRepo as Bitrix24AccountRepository
+    participant InstallRepo as ApplicationInstallationRepository
+    participant Event as ONAPPINSTALL
+    participant OnAppInstall as UseCase OnAppInstall
+    participant Flusher as Flusher
+
+    UI->>Install: Install(command without applicationToken)
+    Install->>Account: create account(status=new)
+    Install->>Installation: create installation(status=new)
+    Install->>AccountRepo: save(account status=new)
+    Install->>InstallRepo: save(installation status=new)
+    Install->>Flusher: flush(account, installation)
+    Install-->>UI: pending installation created
+
+    Event->>OnAppInstall: OnAppInstall(memberId, applicationToken, applicationStatus)
+    OnAppInstall->>InstallRepo: load pending installation(status=new)
+    OnAppInstall->>AccountRepo: load master account(status=new)
+    OnAppInstall->>Installation: changeApplicationStatus(applicationStatus)
+    OnAppInstall->>Account: applicationInstalled(applicationToken)
+    OnAppInstall->>Installation: applicationInstalled(applicationToken)
+    OnAppInstall->>AccountRepo: save(account status=active)
+    OnAppInstall->>InstallRepo: save(installation status=active)
+    OnAppInstall->>Flusher: flush(account, installation)
+    OnAppInstall-->>Event: done
+```
+
+#### Diagram 3. Reinstall While Previous Installation Is Still New
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User / Second Tab
+    participant Install as UseCase Install
+    participant ExistingAccount as Existing Bitrix24Account(status=new)
+    participant ExistingInstallation as Existing ApplicationInstallation(status=new)
+    participant NewAccount as New Bitrix24Account
+    participant NewInstallation as New ApplicationInstallation
+    participant AccountRepo as Bitrix24AccountRepository
+    participant InstallRepo as ApplicationInstallationRepository
+    participant Flusher as Flusher
+
+    User->>Install: Install(command without applicationToken, same memberId)
+    Install->>InstallRepo: load existing installation by memberId
+    Install->>AccountRepo: load existing accounts by memberId
+    Install->>ExistingAccount: applicationUninstalled(null)
+    Install->>ExistingInstallation: move to deleted according to new contract
+    Install->>AccountRepo: save(existing account status=deleted)
+    Install->>InstallRepo: save(existing installation status=deleted)
+    Install->>NewAccount: create account(status=new)
+    Install->>NewInstallation: create installation(status=new)
+    Install->>AccountRepo: save(new account status=new)
+    Install->>InstallRepo: save(new installation status=new)
+    Install->>Flusher: flush(deleted old entities, new entities)
+    Install-->>User: new pending installation created
+```
+
 ### Documentation Deliverable
 - Новый локальный документ: `src/ApplicationInstallations/Docs/application-installations.md`.
 - Содержимое документа:
   - назначение `Install` и `OnAppInstall`;
   - описание `US1` и `US2`;
-  - обе sequence diagram;
+  - sequence diagrams из раздела `Sequence Diagrams For Review`;
   - явное различие между одношаговой и двухшаговой установкой;
   - явное правило, что для `US2` завершение установки всегда выполняется через use case `OnAppInstall`;
+  - точный finish-flow для `US2` с перечислением вызовов `changeApplicationStatus`, `Bitrix24Account::applicationInstalled($token)` и `ApplicationInstallation::applicationInstalled($token)`;
   - правило реинсталляции: если pending-установка в статусе `new` уже существует и пользователь запускает новую установку, старые записи переводятся в `deleted`, после чего создаются новые;
   - правило обработки повторного `ONAPPINSTALL`: `warning + no-op`;
   - ссылка на отдельный GitHub issue по проектированию фонового сборщика битых инсталляций;
@@ -244,7 +385,9 @@ sequenceDiagram
 - `US2: OnAppInstall finalizes pending installation`
 - после предыдущего шага вызвать `OnAppInstall`;
 - проверить, что use case находит master account в статусе `new`, а не ожидает `active`;
+- проверить, что выборка в `src/ApplicationInstallations/UseCase/OnAppInstall/Handler.php` выполняется именно по `Bitrix24AccountStatus::new`;
 - проверить, что финализация сценария происходит именно через вызов `OnAppInstall`;
+- проверить точный finish-flow: `ApplicationInstallation::changeApplicationStatus(...)`, затем `Bitrix24Account::applicationInstalled($token)`, затем `ApplicationInstallation::applicationInstalled($token)`;
 - проверить, что `Bitrix24Account` перешёл в `active`;
 - проверить, что `ApplicationInstallation` перешёл в `active`;
 - проверить, что токен сохранён;
@@ -281,7 +424,7 @@ sequenceDiagram
 - `ONAPPINSTALL when account is not in status new`
 - подготовить данные, в которых installation найдена, но master account не находится в `new`;
 - проверить, что use case не делает частичного обновления состояния;
-- проверить согласованное поведение: controlled exception или `warning + no-op`, в зависимости от финального контракта.
+- проверить жёстко зафиксированное поведение: handler не завершает установку и завершает обработку с контролируемой ошибкой, потому что выборка аккаунта разрешена только по статусу `new`.
 - `ONAPPINSTALL with token mismatch / repeated different token`
 - после завершения установки вызвать `OnAppInstall` с другим `applicationToken`;
 - проверить, что состояние агрегатов не переписывается бесконтрольно;
