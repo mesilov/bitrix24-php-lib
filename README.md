@@ -92,6 +92,22 @@ src/
 - Docker and Docker Compose
 - Make
 
+### MCP Servers
+
+The project contains project-level MCP server configuration in `.mcp.json`.
+
+Developers using Claude Code or Codex must verify the MCP configuration before starting work on the repository.
+
+Configured servers:
+
+- `bitrix24-dev` - HTTP MCP server at `https://mcp-dev.bitrix24.tech/mcp`
+
+Recommended checks:
+
+- ensure `.mcp.json` is present and contains the expected server list
+- restart the client after pulling changes to `.mcp.json`
+- verify server availability in the client before work starts
+
 ### Running Tests
 
 ```bash
