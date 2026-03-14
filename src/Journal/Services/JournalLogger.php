@@ -17,7 +17,7 @@ use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Bitrix24\Lib\Journal\Infrastructure\JournalItemRepositoryInterface;
 use Darsyn\IP\Version\Multi as IP;
-use Doctrine\ORM\EntityManagerInterface;
+use Bitrix24\Lib\Services\Flusher;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LoggerTrait;
 use Symfony\Component\Uid\Uuid;
@@ -30,11 +30,13 @@ class JournalLogger implements LoggerInterface
 {
     use LoggerTrait;
 
+    private const string DEFAULT_LABEL = 'application.log';
+
     public function __construct(
         private readonly string $memberId,
         private readonly Uuid $applicationInstallationId,
         private readonly JournalItemRepositoryInterface $repository,
-        private readonly EntityManagerInterface $entityManager
+        private readonly Flusher $flusher
     ) {}
 
     /**
@@ -52,7 +54,7 @@ class JournalLogger implements LoggerInterface
             );
         }
 
-        $label = $context['label'] ?? 'application.log';
+        $label = $context['label'] ?? self::DEFAULT_LABEL;
         $userId = $context['userId'] ?? null;
         $journalContext = $this->createContext($context);
 
@@ -67,7 +69,7 @@ class JournalLogger implements LoggerInterface
         );
 
         $this->repository->save($journalItem);
-        $this->entityManager->flush();
+        $this->flusher->flush();
     }
 
     /**

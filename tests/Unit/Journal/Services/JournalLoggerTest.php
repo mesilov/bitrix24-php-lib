@@ -14,12 +14,21 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Tests\Unit\Journal\Services;
 
 use Bitrix24\Lib\Journal\Services\JournalLogger;
+use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\Unit\Journal\Infrastructure\InMemory\InMemoryJournalItemRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
+use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class JournalLoggerTest extends TestCase
 {
     private InMemoryJournalItemRepository $repository;
@@ -32,11 +41,15 @@ class JournalLoggerTest extends TestCase
 
     private JournalLogger $logger;
 
+    private Flusher $flusher;
+
     #[\Override]
     protected function setUp(): void
     {
         $this->repository = new InMemoryJournalItemRepository();
+        $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->flusher = new Flusher($this->entityManager, $this->eventDispatcher);
         $this->applicationInstallationId = Uuid::v7();
         $this->memberId = 'test-member-id';
 
@@ -44,7 +57,7 @@ class JournalLoggerTest extends TestCase
             $this->memberId,
             $this->applicationInstallationId,
             $this->repository,
-            $this->entityManager
+            $this->flusher
         );
     }
 

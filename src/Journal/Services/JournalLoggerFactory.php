@@ -17,6 +17,7 @@ use Bitrix24\Lib\Journal\Infrastructure\JournalItemRepositoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use Bitrix24\Lib\Services\Flusher;
 
 /**
  * Factory for creating JournalLogger instances.
@@ -25,7 +26,7 @@ readonly class JournalLoggerFactory
 {
     public function __construct(
         private JournalItemRepositoryInterface $repository,
-        private EntityManagerInterface $entityManager
+        private Flusher $flusher
     ) {}
 
     /**
@@ -37,7 +38,7 @@ readonly class JournalLoggerFactory
             memberId: $memberId,
             applicationInstallationId: $applicationInstallationId,
             repository: $this->repository,
-            entityManager: $this->entityManager
+            flusher: $this->flusher
         );
     }
 }
