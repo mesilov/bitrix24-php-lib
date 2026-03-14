@@ -1,4 +1,10 @@
-## Unreleased
+## Unreleased 0.5.0
+
+### Fixed
+- Fix start state for Bitrix24 ApplicationAccounts and ApplicationInstall [#90](https://github.com/mesilov/bitrix24-php-lib/issues/90)
+
+
+
 
 ## 0.4.0
 
