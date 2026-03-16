@@ -188,25 +188,6 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
     }
 
     /**
-     * Get available labels from journal.
-     *
-     * @return string[]
-     */
-    public function getAvailableLabels(): array
-    {
-        $queryBuilder = $this->entityManager->createQueryBuilder();
-        $queryBuilder->select('DISTINCT j.label')
-            ->from(JournalItem::class, 'j')
-            ->where('j.label IS NOT NULL')
-            ->orderBy('j.label', 'ASC')
-        ;
-
-        $results = $queryBuilder->getQuery()->getScalarResult();
-
-        return array_filter(array_column($results, 'label'));
-    }
-
-    /**
      * Create query builder with filters.
      */
     private function createFilteredQueryBuilder(
