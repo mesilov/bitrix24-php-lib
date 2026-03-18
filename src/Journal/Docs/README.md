@@ -4,68 +4,40 @@ PSR-3 совместимый модуль для ведения технолог
 
 ## Компоненты
 
-### 1. PSR-3 Logger Service
+### 1. Journal Logger Service
 
-**JournalLogger** - реализация `Psr\Log\LoggerInterface` для записи событий в журнал.
+**JournalLogger** - сервис для записи объектов `JournalItem` в журнал.
 
-#### Использование через фабрику:
-
-```php
-use Bitrix24\Lib\Journal\Services\JournalLoggerFactory;
-use Symfony\Component\Uid\Uuid;
-
-// Получаем фабрику из DI контейнера
-/** @var JournalLoggerFactory $factory */
-$factory = $container->get(JournalLoggerFactory::class);
-
-// Создаем логгер для конкретной установки приложения
-$installationId = Uuid::fromString('...');
-$memberId = '...';
-$logger = $factory->createLogger($memberId, $installationId);
-
-// Используем как обычный PSR-3 логгер
-$logger->info('Синхронизация завершена', [
-    'label' => 'b24.exchange.realtime',
-    'payload' => [
-        'action' => 'sync',
-        'items' => 150,
-        'duration' => '2.5s'
-    ],
-    'bitrix24UserId' => 123,
-    'ipAddress' => '192.168.1.1'
-]);
-
-$logger->error('Ошибка обращения к API', [
-    'label' => 'b24.api.error',
-    'payload' => [
-        'method' => 'crm.deal.list',
-        'error' => 'QUERY_LIMIT_EXCEEDED'
-    ]
-]);
-```
-
-#### Прямое использование:
+#### Использование:
 
 ```php
 use Bitrix24\Lib\Journal\Services\JournalLogger;
-use Bitrix24\Lib\Journal\Infrastructure\Doctrine\DoctrineDbalJournalItemRepository;
+use Bitrix24\Lib\Journal\Entity\JournalItem;
+use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
+use Psr\Log\LogLevel;
+use Symfony\Component\Uid\Uuid;
 
-$logger = new JournalLogger(
-    memberId: $memberId,
-    applicationInstallationId: $installationId,
-    repository: $repository,
-    entityManager: $entityManager
+// Получаем логгер из DI контейнера
+/** @var JournalLogger $logger */
+$logger = $container->get(JournalLogger.class);
+
+// Создаем запись журнала напрямую
+$item = new JournalItem(
+    memberId: '66c9893d5f30e6.45265697',
+    applicationInstallationId: Uuid::v7(),
+    level: LogLevel::INFO,
+    message: 'Синхронизация завершена',
+    label: 'b24.exchange.realtime',
+    userId: '123',
+    context: new Context(
+        payload: ['items' => 150],
+        bitrix24UserId: 123,
+        ipAddress: $ipAddress // объект Darsyn\IP\Version\Multi
+    )
 );
 
-// Все PSR-3 методы доступны
-$logger->emergency('Критическая ошибка системы');
-$logger->alert('Требуется немедленное внимание');
-$logger->critical('Критическое состояние');
-$logger->error('Ошибка выполнения');
-$logger->warning('Предупреждение');
-$logger->notice('Важное уведомление');
-$logger->info('Информационное сообщение');
-$logger->debug('Отладочная информация');
+// Добавляем в журнал
+$logger->add($item);
 ```
 
 ### 2. Entities
@@ -141,14 +113,12 @@ $pagination = $readRepo->findWithFilters(
 
 // Получение списков для фильтров
 $domains = $readRepo->getAvailableDomains();
-$labels = $readRepo->getAvailableLabels();
 ```
 
 ## Структура Context
 
 Context записи может содержать:
 
-- **label** (string|null) - метка для группировки событий (например, 'b24.exchange.realtime')
 - **payload** (array|null) - произвольные данные в формате JSON
 - **bitrix24UserId** (int|null) - ID пользователя Bitrix24
 - **ipAddress** (string|null) - IP адрес (будет сохранен через darsyn/ip library)
@@ -173,6 +143,10 @@ Context записи может содержать:
 ```php
 use Bitrix24\Lib\Journal\Infrastructure\InMemory\InMemoryJournalItemRepository;
 use Bitrix24\Lib\Journal\Services\JournalLogger;
+use Bitrix24\Lib\Journal\Entity\JournalItem;
+use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
+use Psr\Log\LogLevel;
+use Symfony\Component\Uid\Uuid;
 
 class MyTest extends TestCase
 {
@@ -183,18 +157,26 @@ class MyTest extends TestCase
     {
         $this->repository = new InMemoryJournalItemRepository();
         $entityManager = $this->createMock(EntityManagerInterface::class);
+        $flusher = new Flusher($entityManager, $eventDispatcher);
 
         $this->logger = new JournalLogger(
-            '66c9893d5f30e6.45265697',
-            Uuid::v7(),
             $this->repository,
-            $entityManager
+            $flusher
         );
     }
 
     public function testLogging(): void
     {
-        $this->logger->info('Test message');
+        $item = new JournalItem(
+            memberId: '66c9893d5f30e6.45265697',
+            applicationInstallationId: Uuid::v7(),
+            level: LogLevel::INFO,
+            message: 'Test message',
+            label: 'test.label',
+            userId: '123',
+            context: new Context()
+        );
+        $this->logger->add($item);
 
         $items = $this->repository->findAll();
         $this->assertCount(1, $items);
