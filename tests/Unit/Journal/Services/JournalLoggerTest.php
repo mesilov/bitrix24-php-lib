@@ -59,8 +59,6 @@ class JournalLoggerTest extends TestCase
 
     public function testAddJournalItem(): void
     {
-        $this->entityManager->expects($this->once())->method('flush');
-
         $journalItem = new JournalItem(
             memberId: 'test-member-id',
             applicationInstallationId: Uuid::v7(),

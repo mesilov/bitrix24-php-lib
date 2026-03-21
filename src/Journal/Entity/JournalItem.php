@@ -17,7 +17,6 @@ use Bitrix24\Lib\AggregateRoot;
 use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Carbon\CarbonImmutable;
-use Psr\Log\LogLevel;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -26,23 +25,14 @@ use Symfony\Component\Uid\Uuid;
  */
 class JournalItem extends AggregateRoot implements JournalItemInterface
 {
-    private const array ALLOWED_LEVELS = [
-        LogLevel::EMERGENCY,
-        LogLevel::ALERT,
-        LogLevel::CRITICAL,
-        LogLevel::ERROR,
-        LogLevel::WARNING,
-        LogLevel::NOTICE,
-        LogLevel::INFO,
-        LogLevel::DEBUG,
-    ];
     private readonly Uuid $id;
+
     private readonly CarbonImmutable $createdAt;
 
     public function __construct(
         private readonly string $memberId,
         private readonly Uuid $applicationInstallationId,
-        private readonly LogLevel $level,
+        private readonly string $level,
         private readonly string $message,
         private readonly string $label,
         private readonly ?string $userId,
@@ -78,7 +68,7 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     }
 
     #[\Override]
-    public function getLevel(): LogLevel
+    public function getLevel(): string
     {
         return $this->level;
     }
@@ -119,12 +109,6 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
 
         if ('' === trim($this->label)) {
             throw new InvalidArgumentException('Journal label cannot be empty');
-        }
-
-        if (!in_array($this->level, self::ALLOWED_LEVELS, true)) {
-            throw new InvalidArgumentException(
-                sprintf('Invalid PSR-3 log level: %s', $this->level)
-            );
         }
     }
 }

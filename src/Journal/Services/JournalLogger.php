@@ -23,15 +23,11 @@ use Bitrix24\Lib\Services\Flusher;
  */
 class JournalLogger
 {
-
     public function __construct(
         private readonly JournalItemRepositoryInterface $repository,
         private readonly Flusher $flusher
     ) {}
 
-    /**
-     * @param JournalItemInterface $journalItem
-     */
     public function add(JournalItemInterface $journalItem): void
     {
         $this->repository->save($journalItem);
