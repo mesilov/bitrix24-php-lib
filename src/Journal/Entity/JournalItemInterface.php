@@ -15,6 +15,7 @@ namespace Bitrix24\Lib\Journal\Entity;
 
 use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Carbon\CarbonImmutable;
+use Psr\Log\LogLevel;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -30,7 +31,7 @@ interface JournalItemInterface
 
     public function getCreatedAt(): CarbonImmutable;
 
-    public function getLevel(): string;
+    public function getLevel(): LogLevel;
 
     public function getMessage(): string;
 

@@ -42,7 +42,7 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     public function __construct(
         private readonly string $memberId,
         private readonly Uuid $applicationInstallationId,
-        private readonly string $level,
+        private readonly LogLevel $level,
         private readonly string $message,
         private readonly string $label,
         private readonly ?string $userId,
@@ -78,7 +78,7 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     }
 
     #[\Override]
-    public function getLevel(): string
+    public function getLevel(): LogLevel
     {
         return $this->level;
     }
