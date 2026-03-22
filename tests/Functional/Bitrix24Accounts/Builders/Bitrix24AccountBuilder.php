@@ -56,7 +56,7 @@ class Bitrix24AccountBuilder
         $this->isBitrix24UserAdmin = true;
         $this->memberId = Uuid::v4()->toRfc4122();
         $this->domainUrl = Uuid::v4()->toRfc4122().'-example.com';
-        $this->authToken = new AuthToken('old_1', 'old_2', 3600);
+        $this->authToken = new AuthToken('old_1', 'old_2', 3600,time() + 60 * 60 * 24);
         $this->applicationVersion = 1;
         $this->applicationScope = new Scope();
     }

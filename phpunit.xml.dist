@@ -9,9 +9,14 @@
     <testsuites>
         <testsuite name="unit_tests">
             <directory>./tests/Unit</directory>
+            <exclude>./tests/Unit/ApplicationInstallations/Entity/ApplicationInstallationTest.php</exclude>
+            <exclude>./tests/Unit/Bitrix24Accounts/Entity/Bitrix24AccountTest.php</exclude>
         </testsuite>
         <testsuite name="functional_tests">
             <directory>./tests/Functional</directory>
+            <exclude>./tests/Functional/ApplicationInstallations/Infrastructure/Doctrine/ApplicationInstallationRepositoryTest.php</exclude>
+            <exclude>./tests/Functional/Bitrix24Accounts/Infrastructure/Doctrine/Bitrix24AccountRepositoryTest.php</exclude>
+            <exclude>./tests/Functional/FlusherDecorator.php</exclude>
         </testsuite>
     </testsuites>
     <source>

@@ -347,7 +347,9 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function unlinkContactPerson(): void
     {
-        $this->updatedAt = new CarbonImmutable();
+        if (null === $this->contactPersonId) {
+            return;
+        }
 
         $this->events[] = new Events\ApplicationInstallationContactPersonUnlinkedEvent(
             $this->id,
@@ -356,13 +358,14 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         );
 
         $this->contactPersonId = null;
+        $this->updatedAt = new CarbonImmutable();
     }
 
     #[\Override]
     public function linkBitrix24PartnerContactPerson(Uuid $uuid): void
     {
-        $this->updatedAt = new CarbonImmutable();
         $this->bitrix24PartnerContactPersonId = $uuid;
+        $this->updatedAt = new CarbonImmutable();
 
         $this->events[] = new Events\ApplicationInstallationBitrix24PartnerContactPersonLinkedEvent(
             $this->id,
@@ -374,7 +377,9 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
     #[\Override]
     public function unlinkBitrix24PartnerContactPerson(): void
     {
-        $this->updatedAt = new CarbonImmutable();
+        if (null === $this->bitrix24PartnerContactPersonId) {
+            return;
+        }
 
         $this->events[] = new Events\ApplicationInstallationBitrix24PartnerContactPersonUnlinkedEvent(
             $this->id,
@@ -383,13 +388,14 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         );
 
         $this->bitrix24PartnerContactPersonId = null;
+        $this->updatedAt = new CarbonImmutable();
     }
 
     #[\Override]
     public function linkBitrix24Partner(Uuid $uuid): void
     {
-        $this->updatedAt = new CarbonImmutable();
         $this->bitrix24PartnerId = $uuid;
+        $this->updatedAt = new CarbonImmutable();
 
         $this->events[] = new Events\ApplicationInstallationBitrix24PartnerLinkedEvent(
             $this->id,

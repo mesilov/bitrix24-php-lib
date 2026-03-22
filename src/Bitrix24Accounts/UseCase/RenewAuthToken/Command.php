@@ -10,6 +10,6 @@ readonly class Command
 {
     public function __construct(
         public RenewedAuthToken $renewedAuthToken,
-        public int $bitrix24UserId,
+        public ?int $bitrix24UserId = null,
     ) {}
 }

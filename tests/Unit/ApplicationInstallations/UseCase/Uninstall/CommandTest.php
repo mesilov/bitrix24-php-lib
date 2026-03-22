@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Tests\Unit\ApplicationInstallations\UseCase\Uninstall;
 
 use Bitrix24\Lib\ApplicationInstallations\UseCase\Uninstall\Command;
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Core\Credentials\Scope;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -69,7 +70,7 @@ class CommandTest extends TestCase
             '',
             new Domain($bitrix24AccountBuilder->getDomainUrl()),
             $applicationToken,
-            \InvalidArgumentException::class,
+            InvalidArgumentException::class,
         ];
 
         // Empty applicationToken
@@ -77,7 +78,7 @@ class CommandTest extends TestCase
             $bitrix24AccountBuilder->getMemberId(),
             new Domain($bitrix24AccountBuilder->getDomainUrl()),
             '',
-            \InvalidArgumentException::class,
+            InvalidArgumentException::class,
         ];
     }
 }
