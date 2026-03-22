@@ -1,4 +1,41 @@
-## Unreleased
+## Unreleased 0.5.0
+
+### BC
+- Normalize Doctrine table names for library-owned storage and align explicit schema object names [#93](https://github.com/mesilov/bitrix24-php-lib/issues/93)
+    - Tables renamed:
+        - `application_installation` -> `b24lib_application_installations`
+        - `application_settings` -> `b24lib_application_settings`
+        - `bitrix24account` -> `b24lib_bitrix24_accounts`
+        - `contact_person` -> `b24lib_contact_persons`
+    - Explicit schema object names renamed for `b24lib_application_settings`:
+        - `unique_app_setting_scope` -> `b24lib_application_settings_unique_scope`
+        - `idx_application_installation_id` -> `b24lib_application_settings_idx_application_installation_id`
+        - `idx_b24_user_id` -> `b24lib_application_settings_idx_b24_user_id`
+        - `idx_b24_department_id` -> `b24lib_application_settings_idx_b24_department_id`
+        - `idx_key` -> `b24lib_application_settings_idx_key`
+        - `idx_status` -> `b24lib_application_settings_idx_status`
+    - Upgrade note for existing PostgreSQL installations:
+        - Before the first run on `0.5.0`, rename existing tables and explicitly named indexes manually.
+        - Example SQL:
+```sql
+ALTER TABLE application_installation RENAME TO b24lib_application_installations;
+ALTER TABLE application_settings RENAME TO b24lib_application_settings;
+ALTER TABLE bitrix24account RENAME TO b24lib_bitrix24_accounts;
+ALTER TABLE contact_person RENAME TO b24lib_contact_persons;
+
+ALTER INDEX unique_app_setting_scope RENAME TO b24lib_application_settings_unique_scope;
+ALTER INDEX idx_application_installation_id RENAME TO b24lib_application_settings_idx_application_installation_id;
+ALTER INDEX idx_b24_user_id RENAME TO b24lib_application_settings_idx_b24_user_id;
+ALTER INDEX idx_b24_department_id RENAME TO b24lib_application_settings_idx_b24_department_id;
+ALTER INDEX idx_key RENAME TO b24lib_application_settings_idx_key;
+ALTER INDEX idx_status RENAME TO b24lib_application_settings_idx_status;
+```
+
+### Fixed
+- Fix start state for Bitrix24 ApplicationAccounts and ApplicationInstall [#90](https://github.com/mesilov/bitrix24-php-lib/issues/90)
+
+
+
 
 ## 0.4.0
 

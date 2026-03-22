@@ -116,7 +116,7 @@ class ApplicationSettingsItem
 
 ### Database Table
 
-Table: `application_settings`
+Table: `b24lib_application_settings`
 
 ### Key Validation Rules
 
