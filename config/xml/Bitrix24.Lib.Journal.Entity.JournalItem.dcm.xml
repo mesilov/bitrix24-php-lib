@@ -18,8 +18,6 @@
         
         <field name="label" type="string" column="label" nullable="false"/>
 
-        <field name="userId" type="string" column="user_id" nullable="true"/>
-
         <embedded name="context" class="Bitrix24\Lib\Journal\Entity\ValueObjects\Context"/>
 
         <indexes>

@@ -65,15 +65,13 @@ class JournalLoggerTest extends TestCase
             level: LogLevel::INFO,
             message: 'Test message',
             label: 'test.label',
-            userId: 'test-user',
             context: new Context()
         );
 
         $this->logger->add($journalItem);
 
-        $items = $this->repository->findAll();
-        $this->assertCount(1, $items);
-        $this->assertSame($journalItem, $items[0]);
-        $this->assertSame($journalItem->getLevel(), $items[0]->getLevel());
+        $savedItem = $this->repository->findById($journalItem->getId());
+
+        $this->assertTrue($journalItem->equals($savedItem));
     }
 }

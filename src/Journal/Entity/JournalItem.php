@@ -35,7 +35,6 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
         private readonly string $level,
         private readonly string $message,
         private readonly string $label,
-        private readonly ?string $userId,
         private readonly Context $context
     ) {
         $this->validate();
@@ -86,15 +85,37 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     }
 
     #[\Override]
-    public function getUserId(): ?string
-    {
-        return $this->userId;
-    }
-
-    #[\Override]
     public function getContext(): Context
     {
         return $this->context;
+    }
+
+    /**
+     * Returns whether this JournalItem is equal to another.
+     *
+     * @param JournalItem $other the journalItem to compare
+     *
+     * @return bool true if the JournalItem are equal, false otherwise
+     */
+    public function equals(JournalItemInterface $other): bool
+    {
+        if ($this === $other) {
+            return true;
+        }
+
+        return $this->getId()->equals($other->getId())
+            && $this->getApplicationInstallationId()->equals($other->getApplicationInstallationId())
+            && $this->getMemberId() === $other->getMemberId()
+            && $this->createdAtToMilliseconds($this->getCreatedAt()) === $this->createdAtToMilliseconds($other->getCreatedAt())
+            && $this->getLevel() === $other->getLevel()
+            && $this->getMessage() === $other->getMessage()
+            && $this->getLabel() === $other->getLabel()
+            && $this->getContext()->equals($other->getContext());
+    }
+
+    private function createdAtToMilliseconds(CarbonImmutable $date): string
+    {
+        return $date->format('Y-m-d H:i:s');
     }
 
     private function validate(): void

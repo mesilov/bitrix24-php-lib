@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Tests\Functional\Journal\Services\UseCase\Add;
+namespace Bitrix24\Lib\Tests\Functional\Journal\Services;
 
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
@@ -10,7 +10,7 @@ use Bitrix24\Lib\Journal\Infrastructure\Doctrine\DoctrineDbalJournalItemReposito
 use Bitrix24\Lib\Journal\Services\JournalLogger;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
-use Bitrix24\SDK\Core\Response\DTO\Pagination;
+use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\ArgumentAccess\ArgumentAccessInterface;
 use Knp\Component\Pager\Paginator;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -35,20 +35,26 @@ class HandlerTest extends TestCase
 
     private TraceableEventDispatcher $eventDispatcher;
 
+    private EntityManagerInterface $entityManager;
+
     #[\Override]
     protected function setUp(): void
     {
-        $entityManager = EntityManagerFactory::get();
+        $this->entityManager = EntityManagerFactory::get();
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $paginator = new Paginator($this->eventDispatcher, $this->createMock(ArgumentAccessInterface::class));
-        $this->repository = new DoctrineDbalJournalItemRepository($entityManager, $paginator);
-        $this->flusher = new Flusher($entityManager, $this->eventDispatcher);
+        $this->repository = new DoctrineDbalJournalItemRepository($this->entityManager, $paginator);
+        $this->flusher = new Flusher($this->entityManager, $this->eventDispatcher);
         $this->logger = new JournalLogger(
             $this->repository,
             $this->flusher
         );
     }
 
+    /**
+     * This test verifies that a JournalItem can be created and
+     * successfully persisted to the database.
+     */
     #[Test]
     public function testSuccessAdd(): void
     {
@@ -57,7 +63,6 @@ class HandlerTest extends TestCase
         $level = 'info';
         $message = 'Test message';
         $label = 'test-label';
-        $userId = '123';
         $context = new Context(['foo' => 'bar'], 123);
 
         $journalItem = new JournalItem(
@@ -66,23 +71,16 @@ class HandlerTest extends TestCase
             $level,
             $message,
             $label,
-            $userId,
             $context
         );
 
         $this->logger->add($journalItem);
 
+        $this->entityManager->clear();
+
         $savedItem = $this->repository->findById($journalItem->getId());
 
         $this->assertNotNull($savedItem);
-        $this->assertEquals($journalItem->getId(), $savedItem->getId());
-        $this->assertEquals($memberId, $savedItem->getMemberId());
-        $this->assertEquals($uuidV7->toRfc4122(), $savedItem->getApplicationInstallationId()->toRfc4122());
-        $this->assertEquals($level, $savedItem->getLevel());
-        $this->assertEquals($message, $savedItem->getMessage());
-        $this->assertEquals($label, $savedItem->getLabel());
-        $this->assertEquals($userId, $savedItem->getUserId());
-        $this->assertEquals($context->getPayload(), $savedItem->getContext()->getPayload());
-        $this->assertEquals($context->getBitrix24UserId(), $savedItem->getContext()->getBitrix24UserId());
+        $this->assertTrue($journalItem->equals($savedItem));
     }
 }

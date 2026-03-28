@@ -28,7 +28,6 @@ $item = new JournalItem(
     level: LogLevel::INFO,
     message: 'Синхронизация завершена',
     label: 'b24.exchange.realtime',
-    userId: '123',
     context: new Context(
         payload: ['items' => 150],
         bitrix24UserId: 123,
@@ -55,7 +54,6 @@ $item = new JournalItem(
     level: LogLevel::INFO,
     message: 'Сообщение',
     label: 'custom.label',
-    userId: 'user_id',
     context: $context
 );
 ```
@@ -173,7 +171,6 @@ class MyTest extends TestCase
             level: LogLevel::INFO,
             message: 'Test message',
             label: 'test.label',
-            userId: '123',
             context: new Context()
         );
         $this->logger->add($item);

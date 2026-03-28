@@ -167,27 +167,6 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
     }
 
     /**
-     * Get available domain URLs from journal.
-     *
-     * @return string[]
-     */
-    public function getAvailableDomains(): array
-    {
-        // Join with ApplicationInstallation and then Bitrix24Account to get domain URLs
-        $queryBuilder = $this->entityManager->createQueryBuilder();
-        $queryBuilder->select('DISTINCT b24.domainUrl')
-            ->from(JournalItem::class, 'j')
-            ->innerJoin(ApplicationInstallation::class, 'ai', 'WITH', 'ai.id = j.applicationInstallationId')
-            ->innerJoin(Bitrix24Account::class, 'b24', 'WITH', 'b24.id = ai.bitrix24AccountId')
-            ->orderBy('b24.domainUrl', 'ASC')
-        ;
-
-        $results = $queryBuilder->getQuery()->getScalarResult();
-
-        return array_column($results, 'domainUrl');
-    }
-
-    /**
      * Create query builder with filters.
      */
     private function createFilteredQueryBuilder(

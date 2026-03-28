@@ -34,8 +34,6 @@ interface JournalItemInterface
 
     public function getMessage(): string;
 
-    public function getUserId(): ?string;
-
     public function getLabel(): string;
 
     public function getContext(): Context;

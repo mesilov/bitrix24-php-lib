@@ -52,4 +52,26 @@ readonly class Context
             'ipAddress' => $this->ipAddress?->getCompactedAddress(),
         ];
     }
+
+    /**
+     * Returns whether this Context is equal to another.
+     *
+     * @param Context $other the Context to compare
+     *
+     * @return bool true if the Context are equal, false otherwise
+     */
+    public function equals(Context $other): bool
+    {
+        if ($this === $other) {
+            return true;
+        }
+
+        return $this->payload === $other->payload
+            && $this->bitrix24UserId === $other->bitrix24UserId
+            && (
+                null === $this->ipAddress
+                ? null === $other->ipAddress
+                : null !== $other->ipAddress && $this->ipAddress->equals($other->ipAddress)
+            );
+    }
 }
