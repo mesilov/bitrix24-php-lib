@@ -93,7 +93,7 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     /**
      * Returns whether this JournalItem is equal to another.
      *
-     * @param JournalItem $other the journalItem to compare
+     * @param JournalItemInterface $other the journalItem to compare
      *
      * @return bool true if the JournalItem are equal, false otherwise
      */

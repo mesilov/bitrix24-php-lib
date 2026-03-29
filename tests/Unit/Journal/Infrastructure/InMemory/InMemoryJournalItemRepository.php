@@ -13,11 +13,9 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Unit\Journal\Infrastructure\InMemory;
 
-use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\Lib\Journal\Entity\JournalItemInterface;
 use Bitrix24\Lib\Journal\Infrastructure\JournalItemRepositoryInterface;
 use Carbon\CarbonImmutable;
-use Knp\Component\Pager\Pagination\PaginationInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -34,6 +32,18 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
     public function save(JournalItemInterface $journalItem): void
     {
         $this->items[$journalItem->getId()->toRfc4122()] = $journalItem;
+    }
+
+    #[\Override]
+    public function getById(Uuid $uuid): JournalItemInterface
+    {
+        $journalItem = $this->findById($uuid);
+
+        if (null === $journalItem) {
+            throw new \InvalidArgumentException(sprintf('Journal item not found by id %s', $uuid->toRfc4122()));
+        }
+
+        return $journalItem;
     }
 
     #[\Override]

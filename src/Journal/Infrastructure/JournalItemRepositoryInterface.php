@@ -28,6 +28,11 @@ interface JournalItemRepositoryInterface
     public function save(JournalItemInterface $journalItem): void;
 
     /**
+     * Get journal item by ID.
+     */
+    public function getById(Uuid $uuid): JournalItemInterface;
+
+    /**
      * Find journal item by ID.
      */
     public function findById(Uuid $uuid): ?JournalItemInterface;

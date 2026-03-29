@@ -45,6 +45,18 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
     }
 
     #[\Override]
+    public function getById(Uuid $uuid): JournalItemInterface
+    {
+        $journalItem = $this->findById($uuid);
+
+        if (null === $journalItem) {
+            throw new \InvalidArgumentException(sprintf('Journal item not found by id %s', $uuid->toRfc4122()));
+        }
+
+        return $journalItem;
+    }
+
+    #[\Override]
     public function findById(Uuid $uuid): ?JournalItemInterface
     {
         return $this->repository->find($uuid);

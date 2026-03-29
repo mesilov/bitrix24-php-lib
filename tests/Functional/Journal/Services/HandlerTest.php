@@ -78,7 +78,7 @@ class HandlerTest extends TestCase
 
         $this->entityManager->clear();
 
-        $savedItem = $this->repository->findById($journalItem->getId());
+        $savedItem = $this->repository->getById($journalItem->getId());
 
         $this->assertNotNull($savedItem);
         $this->assertTrue($journalItem->equals($savedItem));

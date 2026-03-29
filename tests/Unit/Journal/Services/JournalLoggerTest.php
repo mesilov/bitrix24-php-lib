@@ -70,7 +70,7 @@ class JournalLoggerTest extends TestCase
 
         $this->logger->add($journalItem);
 
-        $savedItem = $this->repository->findById($journalItem->getId());
+        $savedItem = $this->repository->getById($journalItem->getId());
 
         $this->assertTrue($journalItem->equals($savedItem));
     }
