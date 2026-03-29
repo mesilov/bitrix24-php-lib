@@ -1,3 +1,4 @@
+# build DEV image
 FROM php:8.4-cli-alpine
 
 RUN apk add unzip libpq-dev git icu-dev autoconf build-base linux-headers \

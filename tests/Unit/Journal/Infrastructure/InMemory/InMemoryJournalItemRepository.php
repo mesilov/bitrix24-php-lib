@@ -14,13 +14,12 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Tests\Unit\Journal\Infrastructure\InMemory;
 
 use Bitrix24\Lib\Journal\Entity\JournalItemInterface;
-use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Bitrix24\Lib\Journal\Infrastructure\JournalItemRepositoryInterface;
 use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * In-memory implementation of JournalItemRepository for testing
+ * In-memory implementation of JournalItemRepository for testing.
  */
 class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
 {
@@ -36,9 +35,21 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
     }
 
     #[\Override]
-    public function findById(Uuid $id): ?JournalItemInterface
+    public function getById(Uuid $uuid): JournalItemInterface
     {
-        return $this->items[$id->toRfc4122()] ?? null;
+        $journalItem = $this->findById($uuid);
+
+        if (null === $journalItem) {
+            throw new \InvalidArgumentException(sprintf('Journal item not found by id %s', $uuid->toRfc4122()));
+        }
+
+        return $journalItem;
+    }
+
+    #[\Override]
+    public function findById(Uuid $uuid): ?JournalItemInterface
+    {
+        return $this->items[$uuid->toRfc4122()] ?? null;
     }
 
     /**
@@ -46,19 +57,24 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
      */
     #[\Override]
     public function findByApplicationInstallationId(
+        string $memberId,
         Uuid $applicationInstallationId,
-        ?LogLevel $level = null,
+        ?string $logLevel = null,
         ?int $limit = null,
         ?int $offset = null
     ): array {
         $filtered = array_filter(
             $this->items,
-            static function (JournalItemInterface $item) use ($applicationInstallationId, $level): bool {
-                if (!$item->getApplicationInstallationId()->equals($applicationInstallationId)) {
+            static function (JournalItemInterface $journalItem) use ($applicationInstallationId, $memberId, $logLevel): bool {
+                if ($journalItem->getMemberId() !== $memberId) {
                     return false;
                 }
 
-                if ($level !== null && $item->getLevel() !== $level) {
+                if (!$journalItem->getApplicationInstallationId()->equals($applicationInstallationId)) {
+                    return false;
+                }
+
+                if (null !== $logLevel && $journalItem->getLevel() !== $logLevel) {
                     return false;
                 }
 
@@ -67,57 +83,80 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
         );
 
         // Sort by created date descending
-        usort($filtered, static function (JournalItemInterface $a, JournalItemInterface $b): int {
-            return $b->getCreatedAt()->getTimestamp() <=> $a->getCreatedAt()->getTimestamp();
-        });
+        usort($filtered, static fn (JournalItemInterface $a, JournalItemInterface $b): int => $b->getCreatedAt()->getTimestamp() <=> $a->getCreatedAt()->getTimestamp());
 
-        if ($offset !== null) {
+        if (null !== $offset) {
             $filtered = array_slice($filtered, $offset);
         }
 
-        if ($limit !== null) {
-            $filtered = array_slice($filtered, 0, $limit);
+        if (null !== $limit) {
+            return array_slice($filtered, 0, $limit);
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * @return JournalItemInterface[]
+     */
+    #[\Override]
+    public function findByMemberId(
+        string $memberId,
+        ?string $logLevel = null,
+        ?int $limit = null,
+        ?int $offset = null
+    ): array {
+        $filtered = array_filter(
+            $this->items,
+            static function (JournalItemInterface $journalItem) use ($memberId, $logLevel): bool {
+                if ($journalItem->getMemberId() !== $memberId) {
+                    return false;
+                }
+
+                if (null !== $logLevel && $journalItem->getLevel() !== $logLevel) {
+                    return false;
+                }
+
+                return true;
+            }
+        );
+
+        // Sort by created date descending
+        usort($filtered, static fn (JournalItemInterface $a, JournalItemInterface $b): int => $b->getCreatedAt()->getTimestamp() <=> $a->getCreatedAt()->getTimestamp());
+
+        if (null !== $offset) {
+            $filtered = array_slice($filtered, $offset);
+        }
+
+        if (null !== $limit) {
+            return array_slice($filtered, 0, $limit);
         }
 
         return $filtered;
     }
 
     #[\Override]
-    public function deleteByApplicationInstallationId(Uuid $applicationInstallationId): int
-    {
+    public function deleteOlderThan(
+        string $memberId,
+        Uuid $applicationInstallationId,
+        CarbonImmutable $date
+    ): int {
         $count = 0;
         foreach ($this->items as $key => $item) {
-            if ($item->getApplicationInstallationId()->equals($applicationInstallationId)) {
+            if ($item->getMemberId() === $memberId
+                && $item->getApplicationInstallationId()->equals($applicationInstallationId)
+                && $item->getCreatedAt()->isBefore($date)
+            ) {
                 unset($this->items[$key]);
                 ++$count;
             }
         }
 
         return $count;
-    }
-
-    #[\Override]
-    public function deleteOlderThan(CarbonImmutable $date): int
-    {
-        $count = 0;
-        foreach ($this->items as $key => $item) {
-            if ($item->getCreatedAt()->isBefore($date)) {
-                unset($this->items[$key]);
-                ++$count;
-            }
-        }
-
-        return $count;
-    }
-
-    #[\Override]
-    public function countByApplicationInstallationId(Uuid $applicationInstallationId, ?LogLevel $level = null): int
-    {
-        return count($this->findByApplicationInstallationId($applicationInstallationId, $level));
     }
 
     /**
-     * Get all items (for testing purposes)
+     * Get all items (for testing purposes).
      *
      * @return JournalItemInterface[]
      */
@@ -127,7 +166,7 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
     }
 
     /**
-     * Clear all items (for testing purposes)
+     * Clear all items (for testing purposes).
      */
     public function clear(): void
     {

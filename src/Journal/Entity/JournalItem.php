@@ -14,14 +14,14 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Journal\Entity;
 
 use Bitrix24\Lib\AggregateRoot;
-use Bitrix24\Lib\Journal\ValueObjects\JournalContext;
+use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * Journal item entity
- * Each journal record contains domain business events for technical support staff
+ * Each journal record contains domain business events for technical support staff.
  */
 class JournalItem extends AggregateRoot implements JournalItemInterface
 {
@@ -30,15 +30,14 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     private readonly CarbonImmutable $createdAt;
 
     public function __construct(
-        private Uuid $applicationInstallationId,
-        private LogLevel $level,
-        private string $message,
-        private JournalContext $context
+        private readonly string $memberId,
+        private readonly Uuid $applicationInstallationId,
+        private readonly string $level,
+        private readonly string $message,
+        private readonly string $label,
+        private readonly Context $context
     ) {
-        if ('' === trim($this->message)) {
-            throw new InvalidArgumentException('Journal message cannot be empty');
-        }
-
+        $this->validate();
         $this->id = Uuid::v7();
         $this->createdAt = new CarbonImmutable();
     }
@@ -56,13 +55,19 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     }
 
     #[\Override]
+    public function getMemberId(): string
+    {
+        return $this->memberId;
+    }
+
+    #[\Override]
     public function getCreatedAt(): CarbonImmutable
     {
         return $this->createdAt;
     }
 
     #[\Override]
-    public function getLevel(): LogLevel
+    public function getLevel(): string
     {
         return $this->level;
     }
@@ -74,68 +79,57 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     }
 
     #[\Override]
-    public function getContext(): JournalContext
+    public function getLabel(): string
+    {
+        return $this->label;
+    }
+
+    #[\Override]
+    public function getContext(): Context
     {
         return $this->context;
     }
 
     /**
-     * Create journal item with custom log level
+     * Returns whether this JournalItem is equal to another.
+     *
+     * @param JournalItemInterface $other the journalItem to compare
+     *
+     * @return bool true if the JournalItem are equal, false otherwise
      */
-    public static function create(
-        Uuid $applicationInstallationId,
-        LogLevel $level,
-        string $message,
-        JournalContext $context
-    ): self {
-        return new self(
-            applicationInstallationId: $applicationInstallationId,
-            level: $level,
-            message: $message,
-            context: $context
-        );
+    public function equals(JournalItemInterface $other): bool
+    {
+        if ($this === $other) {
+            return true;
+        }
+
+        return $this->getId()->equals($other->getId())
+            && $this->getApplicationInstallationId()->equals($other->getApplicationInstallationId())
+            && $this->getMemberId() === $other->getMemberId()
+            && $this->createdAtToMilliseconds($this->getCreatedAt()) === $this->createdAtToMilliseconds($other->getCreatedAt())
+            && $this->getLevel() === $other->getLevel()
+            && $this->getMessage() === $other->getMessage()
+            && $this->getLabel() === $other->getLabel()
+            && $this->getContext()->equals($other->getContext());
     }
 
-    /**
-     * PSR-3 compatible factory methods
-     */
-    public static function emergency(Uuid $applicationInstallationId, string $message, JournalContext $context): self
+    private function createdAtToMilliseconds(CarbonImmutable $date): string
     {
-        return self::create($applicationInstallationId, LogLevel::emergency, $message, $context);
+        return $date->format('Y-m-d H:i:s');
     }
 
-    public static function alert(Uuid $applicationInstallationId, string $message, JournalContext $context): self
+    private function validate(): void
     {
-        return self::create($applicationInstallationId, LogLevel::alert, $message, $context);
-    }
+        if ('' === trim($this->memberId)) {
+            throw new InvalidArgumentException('memberId cannot be empty');
+        }
 
-    public static function critical(Uuid $applicationInstallationId, string $message, JournalContext $context): self
-    {
-        return self::create($applicationInstallationId, LogLevel::critical, $message, $context);
-    }
+        if ('' === trim($this->message)) {
+            throw new InvalidArgumentException('Journal message cannot be empty');
+        }
 
-    public static function error(Uuid $applicationInstallationId, string $message, JournalContext $context): self
-    {
-        return self::create($applicationInstallationId, LogLevel::error, $message, $context);
-    }
-
-    public static function warning(Uuid $applicationInstallationId, string $message, JournalContext $context): self
-    {
-        return self::create($applicationInstallationId, LogLevel::warning, $message, $context);
-    }
-
-    public static function notice(Uuid $applicationInstallationId, string $message, JournalContext $context): self
-    {
-        return self::create($applicationInstallationId, LogLevel::notice, $message, $context);
-    }
-
-    public static function info(Uuid $applicationInstallationId, string $message, JournalContext $context): self
-    {
-        return self::create($applicationInstallationId, LogLevel::info, $message, $context);
-    }
-
-    public static function debug(Uuid $applicationInstallationId, string $message, JournalContext $context): self
-    {
-        return self::create($applicationInstallationId, LogLevel::debug, $message, $context);
+        if ('' === trim($this->label)) {
+            throw new InvalidArgumentException('Journal label cannot be empty');
+        }
     }
 }

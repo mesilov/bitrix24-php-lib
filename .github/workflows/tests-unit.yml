@@ -10,34 +10,26 @@ env:
 jobs:
   tests:
     name: "PHPUnit tests"
-
-    runs-on: ${{ matrix.operating-system }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        php-version:
-          - "8.3"
-        dependencies: [ highest ]
-        operating-system: [ ubuntu-latest]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ghcr.io/mesilov/bitrix24-php-lib:php-cli
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: "Checkout"
-        uses: "actions/checkout@v2"
-
-      - name: "Install PHP"
-        uses: "shivammathur/setup-php@v2"
-        with:
-          coverage: "none"
-          php-version: "${{ matrix.php-version }}"
-          extensions: json, bcmath, curl, intl, mbstring
+        uses: actions/checkout@v4
 
       - name: "Install dependencies"
         run: |
           composer update ${{ env.COMPOSER_FLAGS }}
 
       - name: "run unit tests"
-        run: "php vendor/bin/phpunit --testsuite=unit_tests --display-warnings --testdox"
+        run: php vendor/bin/phpunit --testsuite=unit_tests --display-warnings --testdox
 
       - name: "is unit tests tests succeeded"
         if: ${{ success() }}
