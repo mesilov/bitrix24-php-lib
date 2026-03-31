@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Unit\Journal\Entity;
 
+use Darsyn\IP\Version\Multi as IP;
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
@@ -26,11 +27,14 @@ class JournalItemTest extends TestCase
 
     private string $memberId;
 
+    private IP $ip;
+
     #[\Override]
     protected function setUp(): void
     {
         $this->applicationInstallationId = Uuid::v7();
         $this->memberId = 'test-member-id';
+        $this->ip = IP::factory('127.0.0.1');
     }
 
     public function testCreateJournalItemWithInfoLevel(): void
@@ -38,6 +42,7 @@ class JournalItemTest extends TestCase
         $message = 'Test info message';
         $label = 'test.label';
         $journalContext = new Context(
+            ipAddress: $this->ip,
             payload: ['key' => 'value'],
             bitrix24UserId: 123
         );
@@ -56,7 +61,7 @@ class JournalItemTest extends TestCase
 
     public function testJournalItemHasUniqueId(): void
     {
-        $journalContext = new Context();
+        $journalContext = new Context($this->ip);
         $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::INFO, 'Message 1', 'test.label', $journalContext);
         $item2 = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::INFO, 'Message 2', 'test.label', $journalContext);
 
@@ -65,7 +70,7 @@ class JournalItemTest extends TestCase
 
     public function testJournalItemHasCreatedAt(): void
     {
-        $journalContext = new Context();
+        $journalContext = new Context($this->ip);
         $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::INFO, 'Test message', 'test.label', $journalContext);
 
         $this->assertNotNull($journalItem->getCreatedAt());
@@ -77,7 +82,7 @@ class JournalItemTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Journal message cannot be empty');
 
-        $journalContext = new Context();
+        $journalContext = new Context($this->ip);
         new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::INFO, '', 'test.label', $journalContext);
     }
 
@@ -86,7 +91,7 @@ class JournalItemTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Journal message cannot be empty');
 
-        $journalContext = new Context();
+        $journalContext = new Context($this->ip);
         new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::INFO, '   ', 'test.label', $journalContext);
     }
 
@@ -95,19 +100,19 @@ class JournalItemTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('memberId cannot be empty');
 
-        $journalContext = new Context();
+        $journalContext = new Context($this->ip);
         new JournalItem('', $this->applicationInstallationId, LogLevel::INFO, 'Message', 'test.label', $journalContext);
     }
 
     public function testJournalItemContextWithoutLabel(): void
     {
-        $journalContext = new Context();
+        $journalContext = new Context($this->ip);
         $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::INFO, 'Test message', 'test.label', $journalContext);
 
         $this->assertSame('test.label', $journalItem->getLabel());
         $this->assertNull($journalItem->getContext()->getPayload());
         $this->assertNull($journalItem->getContext()->getBitrix24UserId());
-        $this->assertNull($journalItem->getContext()->getIpAddress());
+        $this->assertSame($this->ip->getCompactedAddress(), $journalItem->getContext()->getIpAddress()->getCompactedAddress());
     }
 
     public function testJournalItemWithComplexPayload(): void
@@ -121,7 +126,7 @@ class JournalItemTest extends TestCase
             ],
         ];
 
-        $journalContext = new Context(payload: $payload);
+        $journalContext = new Context($this->ip, payload: $payload);
         $journalItem = new JournalItem(
             $this->memberId,
             $this->applicationInstallationId,

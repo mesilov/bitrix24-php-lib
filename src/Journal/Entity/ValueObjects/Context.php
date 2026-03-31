@@ -21,9 +21,9 @@ use Darsyn\IP\Version\Multi as IP;
 readonly class Context
 {
     public function __construct(
+        private IP $ipAddress,
         private ?array $payload = null,
-        private ?int $bitrix24UserId = null,
-        private ?IP $ipAddress = null
+        private ?int $bitrix24UserId = null
     ) {}
 
     public function getPayload(): ?array
@@ -36,7 +36,7 @@ readonly class Context
         return $this->bitrix24UserId;
     }
 
-    public function getIpAddress(): ?IP
+    public function getIpAddress(): IP
     {
         return $this->ipAddress;
     }
@@ -49,7 +49,7 @@ readonly class Context
         return [
             'payload' => $this->payload,
             'bitrix24UserId' => $this->bitrix24UserId,
-            'ipAddress' => $this->ipAddress?->getCompactedAddress(),
+            'ipAddress' => $this->ipAddress->getCompactedAddress(),
         ];
     }
 
@@ -62,16 +62,8 @@ readonly class Context
      */
     public function equals(Context $other): bool
     {
-        if ($this === $other) {
-            return true;
-        }
-
         return $this->payload === $other->payload
             && $this->bitrix24UserId === $other->bitrix24UserId
-            && (
-                null === $this->ipAddress
-                ? null === $other->ipAddress
-                : null !== $other->ipAddress && $this->ipAddress->equals($other->ipAddress)
-            );
+            && $this->ipAddress->equals($other->ipAddress);
     }
 }

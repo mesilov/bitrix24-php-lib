@@ -63,23 +63,24 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
     }
 
     /**
-     * @return JournalItemInterface[]
+     * Find journal items by application installation ID with pagination.
+     *
+     * @return PaginationInterface<JournalItemInterface>
      */
     #[\Override]
     public function findByApplicationInstallationId(
         string $memberId,
         Uuid $applicationInstallationId,
         ?string $logLevel = null,
-        ?int $limit = null,
-        ?int $offset = null
-    ): array {
+        int $page = 1,
+        int $limit = 50
+    ): PaginationInterface {
         $queryBuilder = $this->repository
             ->createQueryBuilder('j')
             ->where('j.memberId = :memberId')
             ->setParameter('memberId', $memberId)
             ->andWhere('j.applicationInstallationId = :appId')
             ->setParameter('appId', $applicationInstallationId)
-            ->orderBy('j.createdAt', 'DESC')
         ;
 
         if (null !== $logLevel) {
@@ -88,32 +89,33 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
             ;
         }
 
-        if (null !== $limit) {
-            $queryBuilder->setMaxResults($limit);
-        }
-
-        if (null !== $offset) {
-            $queryBuilder->setFirstResult($offset);
-        }
-
-        return $queryBuilder->getQuery()->getResult();
+        return $this->paginator->paginate(
+            $queryBuilder,
+            $page,
+            $limit,
+            [
+                'defaultSortFieldName' => 'j.createdAt',
+                'defaultSortDirection' => 'desc',
+            ]
+        );
     }
 
     /**
-     * @return JournalItemInterface[]
+     * Find journal items by member ID with pagination.
+     *
+     * @return PaginationInterface<JournalItemInterface>
      */
     #[\Override]
     public function findByMemberId(
         string $memberId,
         ?string $logLevel = null,
-        ?int $limit = null,
-        ?int $offset = null
-    ): array {
+        int $page = 1,
+        int $limit = 50
+    ): PaginationInterface {
         $queryBuilder = $this->repository
             ->createQueryBuilder('j')
             ->where('j.memberId = :memberId')
             ->setParameter('memberId', $memberId)
-            ->orderBy('j.createdAt', 'DESC')
         ;
 
         if (null !== $logLevel) {
@@ -122,15 +124,15 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
             ;
         }
 
-        if (null !== $limit) {
-            $queryBuilder->setMaxResults($limit);
-        }
-
-        if (null !== $offset) {
-            $queryBuilder->setFirstResult($offset);
-        }
-
-        return $queryBuilder->getQuery()->getResult();
+        return $this->paginator->paginate(
+            $queryBuilder,
+            $page,
+            $limit,
+            [
+                'defaultSortFieldName' => 'j.createdAt',
+                'defaultSortDirection' => 'desc',
+            ]
+        );
     }
 
     #[\Override]

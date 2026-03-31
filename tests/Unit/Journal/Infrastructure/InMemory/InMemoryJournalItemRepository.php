@@ -16,6 +16,8 @@ namespace Bitrix24\Lib\Tests\Unit\Journal\Infrastructure\InMemory;
 use Bitrix24\Lib\Journal\Entity\JournalItemInterface;
 use Bitrix24\Lib\Journal\Infrastructure\JournalItemRepositoryInterface;
 use Carbon\CarbonImmutable;
+use Knp\Component\Pager\Pagination\PaginationInterface;
+use Knp\Component\Pager\Pagination\SlidingPagination;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -53,16 +55,18 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
     }
 
     /**
-     * @return JournalItemInterface[]
+     * Find journal items by application installation ID with pagination.
+     *
+     * @return PaginationInterface<JournalItemInterface>
      */
     #[\Override]
     public function findByApplicationInstallationId(
         string $memberId,
         Uuid $applicationInstallationId,
         ?string $logLevel = null,
-        ?int $limit = null,
-        ?int $offset = null
-    ): array {
+        int $page = 1,
+        int $limit = 50
+    ): PaginationInterface {
         $filtered = array_filter(
             $this->items,
             static function (JournalItemInterface $journalItem) use ($applicationInstallationId, $memberId, $logLevel): bool {
@@ -85,27 +89,21 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
         // Sort by created date descending
         usort($filtered, static fn (JournalItemInterface $a, JournalItemInterface $b): int => $b->getCreatedAt()->getTimestamp() <=> $a->getCreatedAt()->getTimestamp());
 
-        if (null !== $offset) {
-            $filtered = array_slice($filtered, $offset);
-        }
-
-        if (null !== $limit) {
-            return array_slice($filtered, 0, $limit);
-        }
-
-        return $filtered;
+        return $this->createPagination($filtered, $page, $limit);
     }
 
     /**
-     * @return JournalItemInterface[]
+     * Find journal items by member ID with pagination.
+     *
+     * @return PaginationInterface<JournalItemInterface>
      */
     #[\Override]
     public function findByMemberId(
         string $memberId,
         ?string $logLevel = null,
-        ?int $limit = null,
-        ?int $offset = null
-    ): array {
+        int $page = 1,
+        int $limit = 50
+    ): PaginationInterface {
         $filtered = array_filter(
             $this->items,
             static function (JournalItemInterface $journalItem) use ($memberId, $logLevel): bool {
@@ -124,15 +122,23 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
         // Sort by created date descending
         usort($filtered, static fn (JournalItemInterface $a, JournalItemInterface $b): int => $b->getCreatedAt()->getTimestamp() <=> $a->getCreatedAt()->getTimestamp());
 
-        if (null !== $offset) {
-            $filtered = array_slice($filtered, $offset);
-        }
+        return $this->createPagination($filtered, $page, $limit);
+    }
 
-        if (null !== $limit) {
-            return array_slice($filtered, 0, $limit);
-        }
+    /**
+     * Create pagination object.
+     *
+     * @param JournalItemInterface[] $items
+     */
+    private function createPagination(array $items, int $page, int $limit): PaginationInterface
+    {
+        $pagination = new SlidingPagination();
+        $pagination->setCurrentPageNumber($page);
+        $pagination->setItemNumberPerPage($limit);
+        $pagination->setTotalItemCount(count($items));
+        $pagination->setItems(array_slice($items, ($page - 1) * $limit, $limit));
 
-        return $filtered;
+        return $pagination;
     }
 
     #[\Override]

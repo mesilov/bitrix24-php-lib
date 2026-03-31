@@ -15,6 +15,7 @@ namespace Bitrix24\Lib\Journal\Infrastructure;
 
 use Bitrix24\Lib\Journal\Entity\JournalItemInterface;
 use Carbon\CarbonImmutable;
+use Knp\Component\Pager\Pagination\PaginationInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -38,29 +39,29 @@ interface JournalItemRepositoryInterface
     public function findById(Uuid $uuid): ?JournalItemInterface;
 
     /**
-     * Find journal items by application installation ID.
+     * Find journal items by application installation ID with pagination.
      *
-     * @return JournalItemInterface[]
+     * @return PaginationInterface<JournalItemInterface>
      */
     public function findByApplicationInstallationId(
         string $memberId,
         Uuid $applicationInstallationId,
         ?string $logLevel = null,
-        ?int $limit = null,
-        ?int $offset = null
-    ): array;
+        int $page = 1,
+        int $limit = 50
+    ): PaginationInterface;
 
     /**
-     * Find journal items by member ID.
+     * Find journal items by member ID with pagination.
      *
-     * @return JournalItemInterface[]
+     * @return PaginationInterface<JournalItemInterface>
      */
     public function findByMemberId(
         string $memberId,
         ?string $logLevel = null,
-        ?int $limit = null,
-        ?int $offset = null
-    ): array;
+        int $page = 1,
+        int $limit = 50
+    ): PaginationInterface;
 
     /**
      * Delete journal items older than specified date.

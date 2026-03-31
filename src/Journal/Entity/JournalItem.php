@@ -99,23 +99,18 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
      */
     public function equals(JournalItemInterface $other): bool
     {
-        if ($this === $other) {
-            return true;
-        }
-
         return $this->getId()->equals($other->getId())
             && $this->getApplicationInstallationId()->equals($other->getApplicationInstallationId())
             && $this->getMemberId() === $other->getMemberId()
-            && $this->createdAtToMilliseconds($this->getCreatedAt()) === $this->createdAtToMilliseconds($other->getCreatedAt())
             && $this->getLevel() === $other->getLevel()
             && $this->getMessage() === $other->getMessage()
             && $this->getLabel() === $other->getLabel()
             && $this->getContext()->equals($other->getContext());
     }
 
-    private function createdAtToMilliseconds(CarbonImmutable $date): string
+    private function normalizeCreatedAt(CarbonImmutable $date): CarbonImmutable
     {
-        return $date->format('Y-m-d H:i:s');
+        return $date->setMicro(0);
     }
 
     private function validate(): void

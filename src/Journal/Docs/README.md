@@ -29,9 +29,9 @@ $item = new JournalItem(
     message: 'Синхронизация завершена',
     label: 'b24.exchange.realtime',
     context: new Context(
+        ipAddress: $ipAddress, // объект Darsyn\IP\Version\Multi
         payload: ['items' => 150],
-        bitrix24UserId: 123,
-        ipAddress: $ipAddress // объект Darsyn\IP\Version\Multi
+        bitrix24UserId: 123
     )
 );
 

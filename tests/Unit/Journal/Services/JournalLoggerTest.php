@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Unit\Journal\Services;
 
+use Darsyn\IP\Version\Multi as IP;
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Bitrix24\Lib\Journal\Services\JournalLogger;
@@ -65,7 +66,7 @@ class JournalLoggerTest extends TestCase
             level: LogLevel::INFO,
             message: 'Test message',
             label: 'test.label',
-            context: new Context()
+            context: new Context(IP::factory('127.0.0.1'))
         );
 
         $this->logger->add($journalItem);
