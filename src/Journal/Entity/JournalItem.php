@@ -93,6 +93,9 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     /**
      * Returns whether this JournalItem is equal to another.
      *
+     * Compares creation timestamps without microseconds to avoid false mismatches
+     * between in-memory objects and persisted database values.
+     *
      * @param JournalItemInterface $other the journalItem to compare
      *
      * @return bool true if the JournalItem are equal, false otherwise
@@ -105,14 +108,25 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
             && $this->getLevel() === $other->getLevel()
             && $this->getMessage() === $other->getMessage()
             && $this->getLabel() === $other->getLabel()
-            && $this->getContext()->equals($other->getContext());
+            && $this->getContext()->equals($other->getContext())
+            && $this->normalizeCreatedAt($this->getCreatedAt())->equalTo(
+                $this->normalizeCreatedAt($other->getCreatedAt())
+            );
     }
 
+    /**
+     * Normalizes the timestamp for comparison by removing microseconds.
+     */
     private function normalizeCreatedAt(CarbonImmutable $date): CarbonImmutable
     {
         return $date->setMicro(0);
     }
 
+    /**
+     * Validate a label against Kubernetes naming rules:
+     * it must be 63 characters or fewer, start and end with an alphanumeric character,
+     * and may contain only letters, digits, dots, underscores, and hyphens in between.
+     */
     private function validate(): void
     {
         if ('' === trim($this->memberId)) {
@@ -127,10 +141,7 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
             throw new InvalidArgumentException('Journal label cannot be empty');
         }
 
-        // Kubernetes label value:
-        // max 63 chars, must start/end with alphanumeric char,
-        // allowed inside: letters, digits, '.', '_' and '-'
-        if (mb_strlen($this->label, 'UTF-8') > 63) {
+        if (strlen($this->label) > 63) {
             throw new InvalidArgumentException('Journal label must not be longer than 63 characters');
         }
 
