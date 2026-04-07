@@ -6,6 +6,7 @@ namespace Bitrix24\Lib\Tests\Functional\Journal\Services;
 
 use Darsyn\IP\Version\Multi as IP;
 use Bitrix24\Lib\Journal\Entity\JournalItem;
+use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Bitrix24\Lib\Journal\Infrastructure\Doctrine\DoctrineDbalJournalItemRepository;
 use Bitrix24\Lib\Journal\Services\JournalLogger;
@@ -61,7 +62,7 @@ class HandlerTest extends TestCase
     {
         $memberId = 'test-member-id';
         $uuidV7 = Uuid::v7();
-        $level = 'info';
+        $level = LogLevel::info;
         $message = 'Test message';
         $label = 'test-label';
         $context = new Context(IP::factory('127.0.0.1'), ['foo' => 'bar'], 123);

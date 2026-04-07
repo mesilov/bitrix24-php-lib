@@ -15,10 +15,10 @@ namespace Bitrix24\Lib\Tests\Unit\Journal\Entity;
 
 use Darsyn\IP\Version\Multi as IP;
 use Bitrix24\Lib\Journal\Entity\JournalItem;
+use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LogLevel;
 use Symfony\Component\Uid\Uuid;
 
 class JournalItemTest extends TestCase
@@ -47,10 +47,10 @@ class JournalItemTest extends TestCase
             bitrix24UserId: 123
         );
 
-        $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::INFO, $message, $label, $journalContext);
+        $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::info, $message, $label, $journalContext);
 
         $this->assertInstanceOf(JournalItem::class, $journalItem);
-        $this->assertSame(LogLevel::INFO, $journalItem->getLevel());
+        $this->assertSame(LogLevel::info, $journalItem->getLevel());
         $this->assertSame($this->memberId, $journalItem->getMemberId());
         $this->assertSame($message, $journalItem->getMessage());
         $this->assertSame($label, $journalItem->getLabel());
@@ -62,8 +62,8 @@ class JournalItemTest extends TestCase
     public function testJournalItemHasUniqueId(): void
     {
         $journalContext = new Context($this->ip);
-        $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::INFO, 'Message 1', 'test.label', $journalContext);
-        $item2 = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::INFO, 'Message 2', 'test.label', $journalContext);
+        $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::info, 'Message 1', 'test.label', $journalContext);
+        $item2 = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::info, 'Message 2', 'test.label', $journalContext);
 
         $this->assertNotEquals($journalItem->getId()->toRfc4122(), $item2->getId()->toRfc4122());
     }
@@ -71,7 +71,7 @@ class JournalItemTest extends TestCase
     public function testJournalItemHasCreatedAt(): void
     {
         $journalContext = new Context($this->ip);
-        $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::INFO, 'Test message', 'test.label', $journalContext);
+        $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::info, 'Test message', 'test.label', $journalContext);
 
         $this->assertNotNull($journalItem->getCreatedAt());
         $this->assertInstanceOf(\Carbon\CarbonImmutable::class, $journalItem->getCreatedAt());
@@ -83,7 +83,7 @@ class JournalItemTest extends TestCase
         $this->expectExceptionMessage('Journal message cannot be empty');
 
         $journalContext = new Context($this->ip);
-        new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::INFO, '', 'test.label', $journalContext);
+        new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::info, '', 'test.label', $journalContext);
     }
 
     public function testCreateJournalItemWithWhitespaceMessageThrowsException(): void
@@ -92,7 +92,7 @@ class JournalItemTest extends TestCase
         $this->expectExceptionMessage('Journal message cannot be empty');
 
         $journalContext = new Context($this->ip);
-        new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::INFO, '   ', 'test.label', $journalContext);
+        new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::info, '   ', 'test.label', $journalContext);
     }
 
     public function testCreateJournalItemWithEmptyMemberIdThrowsException(): void
@@ -101,13 +101,13 @@ class JournalItemTest extends TestCase
         $this->expectExceptionMessage('memberId cannot be empty');
 
         $journalContext = new Context($this->ip);
-        new JournalItem('', $this->applicationInstallationId, LogLevel::INFO, 'Message', 'test.label', $journalContext);
+        new JournalItem('', $this->applicationInstallationId, LogLevel::info, 'Message', 'test.label', $journalContext);
     }
 
     public function testJournalItemContextWithoutLabel(): void
     {
         $journalContext = new Context($this->ip);
-        $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::INFO, 'Test message', 'test.label', $journalContext);
+        $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::info, 'Test message', 'test.label', $journalContext);
 
         $this->assertSame('test.label', $journalItem->getLabel());
         $this->assertNull($journalItem->getContext()->getPayload());
@@ -130,7 +130,7 @@ class JournalItemTest extends TestCase
         $journalItem = new JournalItem(
             $this->memberId,
             $this->applicationInstallationId,
-            LogLevel::INFO,
+            LogLevel::info,
             'Sync completed',
             'sync.label',
             $journalContext

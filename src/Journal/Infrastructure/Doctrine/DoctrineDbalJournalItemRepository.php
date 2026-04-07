@@ -18,6 +18,7 @@ use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Journal\Entity\JournalItemInterface;
+use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Bitrix24\Lib\Journal\Infrastructure\JournalItemRepositoryInterface;
 use Carbon\CarbonImmutable;
 use Doctrine\ORM\EntityManagerInterface;
@@ -71,7 +72,7 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
     public function findByApplicationInstallationId(
         string $memberId,
         Uuid $applicationInstallationId,
-        ?string $logLevel = null,
+        ?LogLevel $logLevel = null,
         int $page = 1,
         int $limit = 50
     ): PaginationInterface {
@@ -85,7 +86,7 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
 
         if (null !== $logLevel) {
             $queryBuilder->andWhere('j.level = :level')
-                ->setParameter('level', $logLevel)
+                ->setParameter('level', $logLevel->value)
             ;
         }
 
@@ -108,7 +109,7 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
     #[\Override]
     public function findByMemberId(
         string $memberId,
-        ?string $logLevel = null,
+        ?LogLevel $logLevel = null,
         int $page = 1,
         int $limit = 50
     ): PaginationInterface {
@@ -120,7 +121,7 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
 
         if (null !== $logLevel) {
             $queryBuilder->andWhere('j.level = :level')
-                ->setParameter('level', $logLevel)
+                ->setParameter('level', $logLevel->value)
             ;
         }
 
@@ -162,7 +163,7 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
     public function findWithFilters(
         ?string $memberId = null,
         ?Domain $domain = null,
-        ?string $logLevel = null,
+        ?LogLevel $logLevel = null,
         ?string $label = null,
         int $page = 1,
         int $limit = 50
@@ -186,7 +187,7 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
     private function createFilteredQueryBuilder(
         ?string $memberId = null,
         ?Domain $domain = null,
-        ?string $logLevel = null,
+        ?LogLevel $logLevel = null,
         ?string $label = null
     ): QueryBuilder {
         $queryBuilder = $this->entityManager->createQueryBuilder();
@@ -210,7 +211,7 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
 
         if (null !== $logLevel) {
             $queryBuilder->andWhere('j.level = :level')
-                ->setParameter('level', $logLevel)
+                ->setParameter('level', $logLevel->value)
             ;
         }
 

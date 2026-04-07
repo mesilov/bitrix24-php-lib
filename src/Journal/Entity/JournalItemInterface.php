@@ -30,7 +30,7 @@ interface JournalItemInterface
 
     public function getCreatedAt(): CarbonImmutable;
 
-    public function getLevel(): string;
+    public function getLevel(): LogLevel;
 
     public function getMessage(): string;
 

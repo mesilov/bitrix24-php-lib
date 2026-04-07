@@ -32,7 +32,7 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     public function __construct(
         private readonly string $memberId,
         private readonly Uuid $applicationInstallationId,
-        private readonly string $level,
+        private readonly LogLevel $level,
         private readonly string $message,
         private readonly string $label,
         private readonly Context $context
@@ -67,7 +67,7 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     }
 
     #[\Override]
-    public function getLevel(): string
+    public function getLevel(): LogLevel
     {
         return $this->level;
     }
@@ -125,6 +125,19 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
 
         if ('' === trim($this->label)) {
             throw new InvalidArgumentException('Journal label cannot be empty');
+        }
+
+        // Kubernetes label value:
+        // max 63 chars, must start/end with alphanumeric char,
+        // allowed inside: letters, digits, '.', '_' and '-'
+        if (mb_strlen($this->label, 'UTF-8') > 63) {
+            throw new InvalidArgumentException('Journal label must not be longer than 63 characters');
+        }
+
+        if (!preg_match('/^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/', $this->label)) {
+            throw new InvalidArgumentException(
+                'Journal label must contain only letters, digits, dots, underscores, or hyphens, and must start/end with a letter or digit'
+            );
         }
     }
 }

@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Tests\Unit\Journal\Infrastructure\InMemory;
 
 use Bitrix24\Lib\Journal\Entity\JournalItemInterface;
+use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Bitrix24\Lib\Journal\Infrastructure\JournalItemRepositoryInterface;
 use Carbon\CarbonImmutable;
 use Knp\Component\Pager\Pagination\PaginationInterface;
@@ -63,7 +64,7 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
     public function findByApplicationInstallationId(
         string $memberId,
         Uuid $applicationInstallationId,
-        ?string $logLevel = null,
+        ?LogLevel $logLevel = null,
         int $page = 1,
         int $limit = 50
     ): PaginationInterface {
@@ -100,7 +101,7 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
     #[\Override]
     public function findByMemberId(
         string $memberId,
-        ?string $logLevel = null,
+        ?LogLevel $logLevel = null,
         int $page = 1,
         int $limit = 50
     ): PaginationInterface {
