@@ -21,7 +21,7 @@ use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\Unit\Journal\Infrastructure\InMemory\InMemoryJournalItemRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LogLevel;
+use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
@@ -63,7 +63,7 @@ class JournalLoggerTest extends TestCase
         $journalItem = new JournalItem(
             memberId: 'test-member-id',
             applicationInstallationId: Uuid::v7(),
-            level: LogLevel::INFO,
+            level: LogLevel::info,
             message: 'Test message',
             label: 'test.label',
             context: new Context(IP::factory('127.0.0.1'))

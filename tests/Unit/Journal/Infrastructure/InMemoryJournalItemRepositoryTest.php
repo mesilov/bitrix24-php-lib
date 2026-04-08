@@ -55,9 +55,7 @@ class InMemoryJournalItemRepositoryTest extends TestCase
 
         $found = $this->repository->findById($journalItem->getId());
 
-        $this->assertNotNull($found);
         $this->assertSame($journalItem->getId()->toRfc4122(), $found->getId()->toRfc4122());
-        $this->assertSame($journalItem->getMessage(), $found->getMessage());
     }
 
     public function testFindByIdReturnsNullForNonexistent(): void

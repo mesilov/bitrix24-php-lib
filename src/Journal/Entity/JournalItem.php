@@ -93,6 +93,8 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
     /**
      * Returns whether this JournalItem is equal to another.
      *
+     * Now we use this method only for testing purposes.
+     *
      * Compares creation timestamps without microseconds to avoid false mismatches
      * between in-memory objects and persisted database values.
      *
@@ -109,9 +111,7 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
             && $this->getMessage() === $other->getMessage()
             && $this->getLabel() === $other->getLabel()
             && $this->getContext()->equals($other->getContext())
-            && $this->normalizeCreatedAt($this->getCreatedAt())->equalTo(
-                $this->normalizeCreatedAt($other->getCreatedAt())
-            );
+            && $this->normalizeCreatedAt($this->getCreatedAt())->equalTo($this->normalizeCreatedAt($other->getCreatedAt()));
     }
 
     /**

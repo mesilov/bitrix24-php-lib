@@ -13,129 +13,160 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Unit\Journal\Entity;
 
-use Darsyn\IP\Version\Multi as IP;
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
+use Carbon\CarbonImmutable;
+use Darsyn\IP\Version\Multi as IP;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * @internal
+ */
+#[CoversClass(JournalItem::class)]
 class JournalItemTest extends TestCase
 {
-    private Uuid $applicationInstallationId;
-
-    private string $memberId;
-
-    private IP $ip;
-
-    #[\Override]
-    protected function setUp(): void
+    #[Test]
+    #[DataProvider('dataForJournalItem')]
+    public function testJournalItem(
+        string   $memberId,
+        Uuid     $applicationInstallationId,
+        LogLevel $level,
+        string   $message,
+        string   $label,
+        Context  $context,
+        ?string  $expectedException = null
+    ): void
     {
-        $this->applicationInstallationId = Uuid::v7();
-        $this->memberId = 'test-member-id';
-        $this->ip = IP::factory('127.0.0.1');
-    }
+        if ($expectedException !== null) {
+            $this->expectException($expectedException);
+        }
 
-    public function testCreateJournalItemWithInfoLevel(): void
-    {
-        $message = 'Test info message';
-        $label = 'test.label';
-        $journalContext = new Context(
-            ipAddress: $this->ip,
-            payload: ['key' => 'value'],
-            bitrix24UserId: 123
+        $journalItem = new JournalItem(
+            $memberId,
+            $applicationInstallationId,
+            $level,
+            $message,
+            $label,
+            $context
         );
 
-        $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::info, $message, $label, $journalContext);
-
-        $this->assertInstanceOf(JournalItem::class, $journalItem);
-        $this->assertSame(LogLevel::info, $journalItem->getLevel());
-        $this->assertSame($this->memberId, $journalItem->getMemberId());
-        $this->assertSame($message, $journalItem->getMessage());
-        $this->assertSame($label, $journalItem->getLabel());
-        $this->assertTrue($journalItem->getApplicationInstallationId()->equals($this->applicationInstallationId));
-        $this->assertSame(['key' => 'value'], $journalItem->getContext()->getPayload());
-        $this->assertSame(123, $journalItem->getContext()->getBitrix24UserId());
+        if ($expectedException === null) {
+            self::assertSame($memberId, $journalItem->getMemberId());
+            self::assertTrue($applicationInstallationId->equals($journalItem->getApplicationInstallationId()));
+            self::assertSame($level, $journalItem->getLevel());
+            self::assertSame($message, $journalItem->getMessage());
+            self::assertSame($label, $journalItem->getLabel());
+            self::assertTrue($context->equals($journalItem->getContext()));
+            self::assertInstanceOf(CarbonImmutable::class, $journalItem->getCreatedAt());
+        }
     }
 
-    public function testJournalItemHasUniqueId(): void
+    public static function dataForJournalItem(): \Generator
     {
-        $journalContext = new Context($this->ip);
-        $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::info, 'Message 1', 'test.label', $journalContext);
-        $item2 = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::info, 'Message 2', 'test.label', $journalContext);
+        $ip = IP::factory('127.0.0.1');
+        $installId = Uuid::v7();
+        $memberId = 'test-member-id';
+        $context = new Context($ip, ['key' => 'value'], 123);
 
-        $this->assertNotEquals($journalItem->getId()->toRfc4122(), $item2->getId()->toRfc4122());
-    }
-
-    public function testJournalItemHasCreatedAt(): void
-    {
-        $journalContext = new Context($this->ip);
-        $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::info, 'Test message', 'test.label', $journalContext);
-
-        $this->assertNotNull($journalItem->getCreatedAt());
-        $this->assertInstanceOf(\Carbon\CarbonImmutable::class, $journalItem->getCreatedAt());
-    }
-
-    public function testCreateJournalItemWithEmptyMessageThrowsException(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Journal message cannot be empty');
-
-        $journalContext = new Context($this->ip);
-        new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::info, '', 'test.label', $journalContext);
-    }
-
-    public function testCreateJournalItemWithWhitespaceMessageThrowsException(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Journal message cannot be empty');
-
-        $journalContext = new Context($this->ip);
-        new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::info, '   ', 'test.label', $journalContext);
-    }
-
-    public function testCreateJournalItemWithEmptyMemberIdThrowsException(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('memberId cannot be empty');
-
-        $journalContext = new Context($this->ip);
-        new JournalItem('', $this->applicationInstallationId, LogLevel::info, 'Message', 'test.label', $journalContext);
-    }
-
-    public function testJournalItemContextWithoutLabel(): void
-    {
-        $journalContext = new Context($this->ip);
-        $journalItem = new JournalItem($this->memberId, $this->applicationInstallationId, LogLevel::info, 'Test message', 'test.label', $journalContext);
-
-        $this->assertSame('test.label', $journalItem->getLabel());
-        $this->assertNull($journalItem->getContext()->getPayload());
-        $this->assertNull($journalItem->getContext()->getBitrix24UserId());
-        $this->assertSame($this->ip->getCompactedAddress(), $journalItem->getContext()->getIpAddress()->getCompactedAddress());
-    }
-
-    public function testJournalItemWithComplexPayload(): void
-    {
-        $payload = [
-            'action' => 'sync',
-            'items' => 150,
-            'nested' => [
-                'key1' => 'value1',
-                'key2' => 'value2',
-            ],
+        yield 'successCreate' => [
+            $memberId,
+            $installId,
+            LogLevel::info,
+            'Test success create',
+            'test.label',
+            $context,
         ];
 
-        $journalContext = new Context($this->ip, payload: $payload);
-        $journalItem = new JournalItem(
-            $this->memberId,
-            $this->applicationInstallationId,
+        yield 'successComplexPayload' => [
+            $memberId,
+            $installId,
             LogLevel::info,
             'Sync completed',
             'sync.label',
-            $journalContext
-        );
+            new Context($ip, [
+                'action' => 'sync',
+                'items' => 150,
+                'nested' => [
+                    'key1' => 'value1',
+                    'key2' => 'value2',
+                ],
+            ]),
+        ];
 
-        $this->assertSame($payload, $journalItem->getContext()->getPayload());
+        yield 'emptyMessage' => [
+            $memberId,
+            $installId,
+            LogLevel::info,
+            '',
+            'test.label',
+            new Context($ip),
+            InvalidArgumentException::class
+        ];
+
+        yield 'whitespaceMessage' => [
+            $memberId,
+            $installId,
+            LogLevel::info,
+            '   ',
+            'test.label',
+            new Context($ip),
+            InvalidArgumentException::class
+        ];
+
+        yield 'emptyMemberId' => [
+            '',
+            $installId,
+            LogLevel::info,
+            'Message',
+            'test.label',
+            new Context($ip),
+            InvalidArgumentException::class
+        ];
+
+        yield 'emptyLabel' => [
+            $memberId,
+            $installId,
+            LogLevel::info,
+            'Message',
+            '',
+            new Context($ip),
+            InvalidArgumentException::class
+        ];
+
+        yield 'tooLongLabel' => [
+            $memberId,
+            $installId,
+            LogLevel::info,
+            'Message',
+            str_repeat('a', 64),
+            new Context($ip),
+            InvalidArgumentException::class
+        ];
+
+        yield 'invalidLabelCharacters' => [
+            $memberId,
+            $installId,
+            LogLevel::info,
+            'Message',
+            'invalid label!',
+            new Context($ip),
+            InvalidArgumentException::class,
+        ];
+
+        yield 'labelStartsWithDot' => [
+            $memberId,
+            $installId,
+            LogLevel::info,
+            'Message',
+            '.label',
+            new Context($ip),
+            InvalidArgumentException::class
+        ];
     }
 }

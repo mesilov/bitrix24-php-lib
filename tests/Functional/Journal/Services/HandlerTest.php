@@ -82,7 +82,6 @@ class HandlerTest extends TestCase
 
         $savedItem = $this->repository->getById($journalItem->getId());
 
-        $this->assertNotNull($savedItem);
         $this->assertTrue($journalItem->equals($savedItem));
     }
 }
