@@ -16,6 +16,7 @@ use Rector\Naming\Rector\Class_\RenamePropertyToMatchTypeRector;
 use Rector\PHPUnit\Set\PHPUnitSetList;
 use Rector\CodeQuality\Rector\Identical\FlipTypeControlToUseExclusiveTypeRector;
 use Rector\Naming\Rector\ClassMethod\RenameParamToMatchTypeRector;
+use Rector\Naming\Rector\Assign\RenameVariableToMatchMethodCallReturnTypeRector;
 
 return RectorConfig::configure()
     ->withPaths([
@@ -52,4 +53,5 @@ return RectorConfig::configure()
         RenamePropertyToMatchTypeRector::class,
         RenameParamToMatchTypeRector::class,
         FlipTypeControlToUseExclusiveTypeRector::class,
+        RenameVariableToMatchMethodCallReturnTypeRector::class
     ]);

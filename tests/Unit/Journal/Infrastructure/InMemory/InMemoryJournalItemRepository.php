@@ -133,13 +133,13 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
      */
     private function createPagination(array $items, int $page, int $limit): PaginationInterface
     {
-        $pagination = new SlidingPagination();
-        $pagination->setCurrentPageNumber($page);
-        $pagination->setItemNumberPerPage($limit);
-        $pagination->setTotalItemCount(count($items));
-        $pagination->setItems(array_slice($items, ($page - 1) * $limit, $limit));
+        $slidingPagination = new SlidingPagination();
+        $slidingPagination->setCurrentPageNumber($page);
+        $slidingPagination->setItemNumberPerPage($limit);
+        $slidingPagination->setTotalItemCount(count($items));
+        $slidingPagination->setItems(array_slice($items, ($page - 1) * $limit, $limit));
 
-        return $pagination;
+        return $slidingPagination;
     }
 
     #[\Override]

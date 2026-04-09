@@ -145,7 +145,8 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
             throw new InvalidArgumentException('Journal label must not be longer than 63 characters');
         }
 
-        if (!preg_match('/^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/', $this->label)) {
+        $result = preg_match('/^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/', $this->label);
+        if (0 === $result || false === $result) {
             throw new InvalidArgumentException(
                 'Journal label must contain only letters, digits, dots, underscores, or hyphens, and must start/end with a letter or digit'
             );
