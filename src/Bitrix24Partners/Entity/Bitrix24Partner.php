@@ -203,32 +203,6 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         return $this->bitrix24PartnerId;
     }
 
-    /**
-     * @deprecated This method is deprecated and should not be used. Bitrix24PartnerId is immutable.
-     *
-     * @todo Create issue in https://github.com/bitrix24/b24phpsdk to remove this method from interface
-     *
-     * @throws InvalidArgumentException
-     */
-    #[\Override]
-    public function setBitrix24PartnerId(?int $bitrix24PartnerId): void
-    {
-        if (null === $bitrix24PartnerId || $bitrix24PartnerId < 0) {
-            throw new InvalidArgumentException('bitrix24PartnerId cannot be null or negative');
-        }
-
-        $oldId = $this->bitrix24PartnerId;
-        $this->bitrix24PartnerId = $bitrix24PartnerId;
-        $this->updatedAt = new CarbonImmutable();
-
-        if ($oldId !== $bitrix24PartnerId) {
-            $this->events[] = new Bitrix24PartnerIdChangedEvent(
-                $this->id,
-                new CarbonImmutable()
-            );
-        }
-    }
-
     #[\Override]
     public function getOpenLineId(): ?string
     {

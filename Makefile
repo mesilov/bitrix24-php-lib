@@ -77,7 +77,7 @@ composer-install:
 
 composer-update:
 	@echo "update dependencies…"
-	docker-compose run --rm php-cli composer update
+	docker compose run --rm php-cli composer update
 
 composer-dumpautoload:
 	docker-compose run --rm php-cli composer dumpautoload
@@ -109,10 +109,10 @@ test-run-unit:
 
 # functional-tests, work with test database
 test-run-functional: debug-print-env
-	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
-	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:create
-	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:update --dump-sql
-	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
+	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
+	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:create
+	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:update --dump-sql
+	docker compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
 
 # Run one functional test with debugger
 run-one-functional-test: debug-print-env
