@@ -15,12 +15,12 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Component\Uid\Uuid;
 
-class Bitrix24PartnerRepository extends EntityRepository implements Bitrix24PartnerRepositoryInterface
+class Bitrix24PartnerRepository implements Bitrix24PartnerRepositoryInterface
 {
-    public function __construct(
-        EntityManagerInterface $entityManager
-    ) {
-        parent::__construct($entityManager, $entityManager->getClassMetadata(Bitrix24Partner::class));
+    private readonly EntityRepository $repository;
+    public function __construct(private readonly EntityManagerInterface $entityManager)
+    {
+        $this->repository = $this->entityManager->getRepository(Bitrix24Partner::class);
     }
 
     /**
@@ -31,7 +31,7 @@ class Bitrix24PartnerRepository extends EntityRepository implements Bitrix24Part
     #[\Override]
     public function getById(Uuid $uuid): Bitrix24PartnerInterface
     {
-        $partner = $this->getEntityManager()->getRepository(Bitrix24Partner::class)
+        $partner = $this->repository
             ->createQueryBuilder('p')
             ->where('p.id = :id')
             ->andWhere('p.status != :status')
@@ -53,7 +53,7 @@ class Bitrix24PartnerRepository extends EntityRepository implements Bitrix24Part
     #[\Override]
     public function save(Bitrix24PartnerInterface $bitrix24Partner): void
     {
-        $this->getEntityManager()->persist($bitrix24Partner);
+        $this->entityManager->persist($bitrix24Partner);
     }
 
     /**
@@ -63,7 +63,7 @@ class Bitrix24PartnerRepository extends EntityRepository implements Bitrix24Part
     #[\Override]
     public function delete(Uuid $uuid): void
     {
-        $bitrix24Partner = $this->getEntityManager()->getRepository(Bitrix24Partner::class)->find($uuid);
+        $bitrix24Partner = $this->repository->find($uuid);
 
         if (null === $bitrix24Partner) {
             throw new Bitrix24PartnerNotFoundException(
@@ -81,7 +81,7 @@ class Bitrix24PartnerRepository extends EntityRepository implements Bitrix24Part
             );
         }
 
-        $this->getEntityManager()->remove($bitrix24Partner);
+        $this->save($bitrix24Partner);
     }
 
     /**
@@ -94,7 +94,7 @@ class Bitrix24PartnerRepository extends EntityRepository implements Bitrix24Part
             throw new InvalidArgumentException('bitrix24PartnerId cannot be negative');
         }
 
-        return $this->getEntityManager()->getRepository(Bitrix24Partner::class)
+        return $this->repository
             ->createQueryBuilder('p')
             ->where('p.bitrix24PartnerId = :partnerId')
             ->andWhere('p.status != :status')
@@ -117,7 +117,7 @@ class Bitrix24PartnerRepository extends EntityRepository implements Bitrix24Part
             throw new InvalidArgumentException('title cannot be empty');
         }
 
-        return $this->getEntityManager()->getRepository(Bitrix24Partner::class)
+        return $this->repository
             ->createQueryBuilder('p')
             ->where('p.title LIKE :title')
             ->andWhere('p.status != :status')
@@ -140,7 +140,7 @@ class Bitrix24PartnerRepository extends EntityRepository implements Bitrix24Part
             throw new InvalidArgumentException('externalId cannot be empty');
         }
 
-        $qb = $this->getEntityManager()->getRepository(Bitrix24Partner::class)
+        $qb = $this->repository
             ->createQueryBuilder('p')
             ->where('p.externalId = :externalId')
             ->setParameter('externalId', $externalId);

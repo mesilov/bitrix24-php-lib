@@ -145,22 +145,27 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
     }
 
     #[\Override]
-    public function setPhone(?PhoneNumber $phone): void
+    public function setPhone(?PhoneNumber $phoneNumber): void
     {
         $oldPhone = $this->phone;
-        $this->phone = $phone;
+
+        if ($oldPhone === null && $phoneNumber === null) {
+            return;
+        }
+
+        if ($oldPhone !== null && $phoneNumber !== null && $oldPhone->equals($phoneNumber)) {
+            return;
+        }
+
+        $this->phone = $phoneNumber;
         $this->updatedAt = new CarbonImmutable();
 
-        // Compare phone numbers - both null, or both equal
-        $isChanged = !($oldPhone === null && $phone === null)
-            && !($oldPhone !== null && $phone !== null && $oldPhone->equals($phone));
-
-        if ($isChanged) {
-            $this->events[] = new Bitrix24PartnerPhoneChangedEvent(
-                $this->id,
-                new CarbonImmutable()
-            );
-        }
+        $this->events[] = new Bitrix24PartnerPhoneChangedEvent(
+            $this->id,
+            new CarbonImmutable(),
+            $oldPhone,
+            $phoneNumber
+        );
     }
 
     #[\Override]
