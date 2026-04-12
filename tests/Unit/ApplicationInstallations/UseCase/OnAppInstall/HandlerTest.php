@@ -8,7 +8,7 @@ use Bitrix24\Lib\ApplicationInstallations\Entity\ApplicationInstallation;
 use Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall\Command;
 use Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall\Handler;
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\RecordingApplicationInstallationInMemoryRepository;
 use Bitrix24\Lib\Tests\Helpers\Bitrix24Accounts\RecordingBitrix24AccountInMemoryRepository;
 use Bitrix24\Lib\Tests\Helpers\CollectingLogger;

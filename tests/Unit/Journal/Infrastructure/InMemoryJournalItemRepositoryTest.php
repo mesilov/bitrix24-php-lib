@@ -19,14 +19,11 @@ use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Bitrix24\Lib\Tests\Unit\Journal\Infrastructure\InMemory\InMemoryJournalItemRepository;
 use Carbon\CarbonImmutable;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
-/**
- * @internal
- *
- * @coversNothing
- */
+#[CoversNothing]
 class InMemoryJournalItemRepositoryTest extends TestCase
 {
     private InMemoryJournalItemRepository $repository;

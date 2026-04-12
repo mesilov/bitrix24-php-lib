@@ -20,6 +20,7 @@ use Bitrix24\Lib\Journal\Services\JournalLogger;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\Unit\Journal\Infrastructure\InMemory\InMemoryJournalItemRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
@@ -27,11 +28,7 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
 
-/**
- * @internal
- *
- * @coversNothing
- */
+#[CoversNothing]
 class JournalLoggerTest extends TestCase
 {
     private InMemoryJournalItemRepository $repository;
