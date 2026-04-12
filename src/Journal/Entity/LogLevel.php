@@ -14,7 +14,10 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Journal\Entity;
 
 /**
- * PSR-3 compatible log level enum
+ * We use a dedicated enum here instead of a plain string:
+ * - Only PSR-3 levels are allowed;
+ * - Invalid values are impossible at the type level;
+ * - Doctrine can map the value cleanly to the DB.
  */
 enum LogLevel: string
 {
@@ -26,24 +29,4 @@ enum LogLevel: string
     case notice = 'notice';
     case info = 'info';
     case debug = 'debug';
-
-    /**
-     * Creates LogLevel from PSR-3 log level string
-     */
-    public static function fromPsr3Level(string $level): self
-    {
-        return match (strtolower($level)) {
-            'emergency' => self::emergency,
-            'alert' => self::alert,
-            'critical' => self::critical,
-            'error' => self::error,
-            'warning' => self::warning,
-            'notice' => self::notice,
-            'info' => self::info,
-            'debug' => self::debug,
-            default => throw new \InvalidArgumentException(
-                sprintf('Invalid PSR-3 log level: %s', $level)
-            ),
-        };
-    }
 }

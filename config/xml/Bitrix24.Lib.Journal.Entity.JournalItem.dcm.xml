@@ -6,19 +6,24 @@
 
         </id>
 
+        <field name="memberId" type="string" column="member_id" nullable="false"/>
+
         <field name="applicationInstallationId" type="uuid" column="application_installation_id" nullable="false"/>
 
-        <field name="createdAt" type="carbon_immutable" column="created_at_utc" precision="3" nullable="false"/>
+        <field name="createdAt" type="carbon_immutable" column="created_at_utc" nullable="false"/>
 
-        <field name="level" enum-type="string" column="level" nullable="false"/>
+        <field name="level" enum-type="Bitrix24\Lib\Journal\Entity\LogLevel" column="level" nullable="false"/>
 
         <field name="message" type="text" column="message" nullable="false"/>
+        
+        <field name="label" type="string" column="label" nullable="false"/>
 
-        <embedded name="context" class="Bitrix24\Lib\Journal\ValueObjects\JournalContext"/>
+        <embedded name="context" class="Bitrix24\Lib\Journal\Entity\ValueObjects\Context"/>
 
         <indexes>
-            <index name="idx_journal_composite" columns="application_installation_id,level,created_at_utc"/>
+            <index name="idx_journal_composite" columns="member_id,application_installation_id,level,created_at_utc"/>
             <index name="idx_journal_created_at" columns="created_at_utc"/>
+            <index name="idx_journal_member_id" columns="member_id"/>
         </indexes>
     </entity>
 </doctrine-mapping>

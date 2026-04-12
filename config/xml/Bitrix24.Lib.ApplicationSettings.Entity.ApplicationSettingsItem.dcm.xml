@@ -1,0 +1,42 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xs="https://www.w3.org/2001/XMLSchema"
+                  xmlns:orm="https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="Bitrix24\Lib\ApplicationSettings\Entity\ApplicationSettingsItem"
+            table="application_settings">
+        <id name="id" type="uuid" column="id">
+
+        </id>
+
+        <field name="applicationInstallationId" type="uuid" column="application_installation_id" nullable="false"/>
+
+        <field name="key" type="string" column="key" length="255" nullable="false"/>
+
+        <field name="value" type="text" column="value" nullable="false"/>
+
+        <field name="b24UserId" type="integer" column="b24_user_id" nullable="true"/>
+
+        <field name="b24DepartmentId" type="integer" column="b24_department_id" nullable="true"/>
+
+        <field name="changedByBitrix24UserId" type="integer" column="changed_by_b24_user_id" nullable="true"/>
+
+        <field name="isRequired" type="boolean" column="is_required" nullable="false"/>
+
+        <field name="status" enum-type="string" column="status" nullable="false"/>
+
+        <field name="createdAt" type="carbon_immutable" column="created_at_utc" precision="3" nullable="false"/>
+
+        <field name="updatedAt" type="carbon_immutable" column="updated_at_utc" precision="3" nullable="false"/>
+
+        <unique-constraints>
+            <unique-constraint columns="application_installation_id,key,b24_user_id,b24_department_id" name="unique_app_setting_scope"/>
+        </unique-constraints>
+
+        <indexes>
+            <index name="idx_application_installation_id" columns="application_installation_id"/>
+            <index name="idx_b24_user_id" columns="b24_user_id"/>
+            <index name="idx_b24_department_id" columns="b24_department_id"/>
+            <index name="idx_key" columns="key"/>
+            <index name="idx_status" columns="status"/>
+        </indexes>
+    </entity>
+</doctrine-mapping>

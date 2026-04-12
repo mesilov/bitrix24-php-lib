@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Journal\Infrastructure\Doctrine;
 
+use Bitrix24\Lib\ApplicationInstallations\Entity\ApplicationInstallation;
+use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
+use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Journal\Entity\JournalItemInterface;
 use Bitrix24\Lib\Journal\Entity\LogLevel;
@@ -20,96 +23,206 @@ use Bitrix24\Lib\Journal\Infrastructure\JournalItemRepositoryInterface;
 use Carbon\CarbonImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
+use Doctrine\ORM\QueryBuilder;
+use Knp\Component\Pager\Pagination\PaginationInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Component\Uid\Uuid;
 
-class DoctrineDbalJournalItemRepository extends EntityRepository implements JournalItemRepositoryInterface
+class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterface
 {
+    private readonly EntityRepository $repository;
+
     public function __construct(
-        EntityManagerInterface $entityManager
+        private readonly EntityManagerInterface $entityManager,
+        private readonly PaginatorInterface $paginator
     ) {
-        parent::__construct($entityManager, $entityManager->getClassMetadata(JournalItem::class));
+        $this->repository = $this->entityManager->getRepository(JournalItem::class);
     }
 
     #[\Override]
     public function save(JournalItemInterface $journalItem): void
     {
-        $this->getEntityManager()->persist($journalItem);
+        $this->entityManager->persist($journalItem);
     }
 
     #[\Override]
-    public function findById(Uuid $id): ?JournalItemInterface
+    public function getById(Uuid $uuid): JournalItemInterface
     {
-        return $this->getEntityManager()->getRepository(JournalItem::class)->find($id);
+        $journalItem = $this->findById($uuid);
+
+        if (null === $journalItem) {
+            throw new \InvalidArgumentException(sprintf('Journal item not found by id %s', $uuid->toRfc4122()));
+        }
+
+        return $journalItem;
+    }
+
+    #[\Override]
+    public function findById(Uuid $uuid): ?JournalItemInterface
+    {
+        return $this->repository->find($uuid);
     }
 
     /**
-     * @return JournalItemInterface[]
+     * Find journal items by application installation ID with pagination.
+     *
+     * @return PaginationInterface<JournalItemInterface>
      */
     #[\Override]
     public function findByApplicationInstallationId(
+        string $memberId,
         Uuid $applicationInstallationId,
-        ?LogLevel $level = null,
-        ?int $limit = null,
-        ?int $offset = null
-    ): array {
-        $qb = $this->getEntityManager()->getRepository(JournalItem::class)
+        ?LogLevel $logLevel = null,
+        int $page = 1,
+        int $limit = 50
+    ): PaginationInterface {
+        $queryBuilder = $this->repository
             ->createQueryBuilder('j')
-            ->where('j.applicationInstallationId = :appId')
+            ->where('j.memberId = :memberId')
+            ->setParameter('memberId', $memberId)
+            ->andWhere('j.applicationInstallationId = :appId')
             ->setParameter('appId', $applicationInstallationId)
-            ->orderBy('j.createdAt', 'DESC');
+        ;
 
-        if (null !== $level) {
-            $qb->andWhere('j.level = :level')
-                ->setParameter('level', $level);
+        if (null !== $logLevel) {
+            $queryBuilder->andWhere('j.level = :level')
+                ->setParameter('level', $logLevel->value)
+            ;
         }
 
-        if (null !== $limit) {
-            $qb->setMaxResults($limit);
+        return $this->paginator->paginate(
+            $queryBuilder,
+            $page,
+            $limit,
+            [
+                'defaultSortFieldName' => 'j.createdAt',
+                'defaultSortDirection' => 'desc',
+            ]
+        );
+    }
+
+    /**
+     * Find journal items by member ID with pagination.
+     *
+     * @return PaginationInterface<JournalItemInterface>
+     */
+    #[\Override]
+    public function findByMemberId(
+        string $memberId,
+        ?LogLevel $logLevel = null,
+        int $page = 1,
+        int $limit = 50
+    ): PaginationInterface {
+        $queryBuilder = $this->repository
+            ->createQueryBuilder('j')
+            ->where('j.memberId = :memberId')
+            ->setParameter('memberId', $memberId)
+        ;
+
+        if (null !== $logLevel) {
+            $queryBuilder->andWhere('j.level = :level')
+                ->setParameter('level', $logLevel->value)
+            ;
         }
 
-        if (null !== $offset) {
-            $qb->setFirstResult($offset);
-        }
-
-        return $qb->getQuery()->getResult();
+        return $this->paginator->paginate(
+            $queryBuilder,
+            $page,
+            $limit,
+            [
+                'defaultSortFieldName' => 'j.createdAt',
+                'defaultSortDirection' => 'desc',
+            ]
+        );
     }
 
     #[\Override]
-    public function deleteByApplicationInstallationId(Uuid $applicationInstallationId): int
-    {
-        return $this->getEntityManager()->createQueryBuilder()
+    public function deleteOlderThan(
+        string $memberId,
+        Uuid $applicationInstallationId,
+        CarbonImmutable $date
+    ): int {
+        return $this->entityManager->createQueryBuilder()
             ->delete(JournalItem::class, 'j')
-            ->where('j.applicationInstallationId = :appId')
+            ->where('j.memberId = :memberId')
+            ->andWhere('j.applicationInstallationId = :appId')
+            ->andWhere('j.createdAt < :date')
+            ->setParameter('memberId', $memberId)
             ->setParameter('appId', $applicationInstallationId)
-            ->getQuery()
-            ->execute();
-    }
-
-    #[\Override]
-    public function deleteOlderThan(CarbonImmutable $date): int
-    {
-        return $this->getEntityManager()->createQueryBuilder()
-            ->delete(JournalItem::class, 'j')
-            ->where('j.createdAt < :date')
             ->setParameter('date', $date)
             ->getQuery()
-            ->execute();
+            ->execute()
+        ;
     }
 
-    #[\Override]
-    public function countByApplicationInstallationId(Uuid $applicationInstallationId, ?LogLevel $level = null): int
-    {
-        $qb = $this->getEntityManager()->getRepository(JournalItem::class)
-            ->createQueryBuilder('j')
-            ->select('COUNT(j.id)')
-            ->where('j.applicationInstallationId = :appId')
-            ->setParameter('appId', $applicationInstallationId);
+    /**
+     * Find journal items with filters and pagination.
+     *
+     * @return PaginationInterface<JournalItemInterface>
+     */
+    public function findWithFilters(
+        ?string $memberId = null,
+        ?Domain $domain = null,
+        ?LogLevel $logLevel = null,
+        ?string $label = null,
+        int $page = 1,
+        int $limit = 50
+    ): PaginationInterface {
+        $queryBuilder = $this->createFilteredQueryBuilder($memberId, $domain, $logLevel, $label);
 
-        if (null !== $level) {
-            $qb->andWhere('j.level = :level')
-                ->setParameter('level', $level);
+        return $this->paginator->paginate(
+            $queryBuilder,
+            $page,
+            $limit,
+            [
+                'defaultSortFieldName' => 'j.createdAt',
+                'defaultSortDirection' => 'desc',
+            ]
+        );
+    }
+
+    /**
+     * Create query builder with filters.
+     */
+    private function createFilteredQueryBuilder(
+        ?string $memberId = null,
+        ?Domain $domain = null,
+        ?LogLevel $logLevel = null,
+        ?string $label = null
+    ): QueryBuilder {
+        $queryBuilder = $this->entityManager->createQueryBuilder();
+        $queryBuilder->select('j')
+            ->from(JournalItem::class, 'j')
+        ;
+
+        if (null !== $memberId) {
+            $queryBuilder->andWhere('j.memberId = :memberId')
+                ->setParameter('memberId', $memberId)
+            ;
         }
 
-        return (int) $qb->getQuery()->getSingleScalarResult();
+        if (null !== $domain) {
+            $queryBuilder->innerJoin(ApplicationInstallation::class, 'ai', 'WITH', 'ai.id = j.applicationInstallationId')
+                ->innerJoin(Bitrix24Account::class, 'b24', 'WITH', 'b24.id = ai.bitrix24AccountId')
+                ->andWhere('b24.domainUrl = :domainUrl')
+                ->setParameter('domainUrl', $domain->value)
+            ;
+        }
+
+        if (null !== $logLevel) {
+            $queryBuilder->andWhere('j.level = :level')
+                ->setParameter('level', $logLevel->value)
+            ;
+        }
+
+        if (null !== $label) {
+            $queryBuilder->andWhere('j.label = :label')
+                ->setParameter('label', $label)
+            ;
+        }
+
+        $queryBuilder->orderBy('j.createdAt', 'DESC');
+
+        return $queryBuilder;
     }
 }

@@ -4,86 +4,61 @@ PSR-3 совместимый модуль для ведения технолог
 
 ## Компоненты
 
-### 1. PSR-3 Logger Service
+### 1. Journal Logger
 
-**JournalLogger** - реализация `Psr\Log\LoggerInterface` для записи событий в журнал.
+**JournalLogger** - сервис для записи объектов `JournalItem` в журнал.
 
-#### Использование через фабрику:
-
-```php
-use Bitrix24\Lib\Journal\Services\JournalLoggerFactory;
-use Symfony\Component\Uid\Uuid;
-
-// Получаем фабрику из DI контейнера
-/** @var JournalLoggerFactory $factory */
-$factory = $container->get(JournalLoggerFactory::class);
-
-// Создаем логгер для конкретной установки приложения
-$installationId = Uuid::fromString('...');
-$logger = $factory->createLogger($installationId);
-
-// Используем как обычный PSR-3 логгер
-$logger->info('Синхронизация завершена', [
-    'label' => 'b24.exchange.realtime',
-    'payload' => [
-        'action' => 'sync',
-        'items' => 150,
-        'duration' => '2.5s'
-    ],
-    'bitrix24UserId' => 123,
-    'ipAddress' => '192.168.1.1'
-]);
-
-$logger->error('Ошибка обращения к API', [
-    'label' => 'b24.api.error',
-    'payload' => [
-        'method' => 'crm.deal.list',
-        'error' => 'QUERY_LIMIT_EXCEEDED'
-    ]
-]);
-```
-
-#### Прямое использование:
+#### Использование:
 
 ```php
 use Bitrix24\Lib\Journal\Services\JournalLogger;
+use Bitrix24\Lib\Journal\Entity\JournalItem;
+use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
+use Psr\Log\LogLevel;
+use Symfony\Component\Uid\Uuid;
+use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Journal\Infrastructure\Doctrine\DoctrineDbalJournalItemRepository;
 
+$repository = new DoctrineDbalJournalItemRepository($entityManager, $paginator);
+$flusher = new Flusher($entityManager, $eventDispatcher);
 $logger = new JournalLogger(
-    applicationInstallationId: $installationId,
-    repository: $repository,
-    entityManager: $entityManager
+    $repository,
+    $flusher
 );
 
-// Все PSR-3 методы доступны
-$logger->emergency('Критическая ошибка системы');
-$logger->alert('Требуется немедленное внимание');
-$logger->critical('Критическое состояние');
-$logger->error('Ошибка выполнения');
-$logger->warning('Предупреждение');
-$logger->notice('Важное уведомление');
-$logger->info('Информационное сообщение');
-$logger->debug('Отладочная информация');
+// Создаем запись журнала напрямую
+$item = new JournalItem(
+    memberId: '66c9893d5f30e6.45265697',
+    applicationInstallationId: Uuid::v7(),
+    level: LogLevel::INFO,
+    message: 'Синхронизация завершена',
+    label: 'b24.exchange.realtime',
+    context: new Context(
+        ipAddress: $ipAddress, // объект Darsyn\IP\Version\Multi
+        payload: ['items' => 150],
+        bitrix24UserId: 123
+    )
+);
+
+// Добавляем в журнал
+$logger->add($item);
 ```
 
 ### 2. Entities
 
-**JournalItem** - основная сущность журнала с PSR-3 фабричными методами:
+**JournalItem** - основная сущность журнала:
 
 ```php
 use Bitrix24\Lib\Journal\Entity\JournalItem;
+use Psr\Log\LogLevel;
 
-// Создание через статические методы
-$item = JournalItem::info($installationId, 'Сообщение', [
-    'label' => 'custom.label',
-    'payload' => ['key' => 'value']
-]);
-
-// Или через create с явным указанием уровня
-$item = JournalItem::create(
+// Создание через конструктор с явным указанием уровня
+$item = new JournalItem(
+    memberId: $memberId,
     applicationInstallationId: $installationId,
-    level: LogLevel::error,
-    message: 'Сообщение об ошибке',
+    level: LogLevel::INFO,
+    message: 'Сообщение',
+    label: 'custom.label',
     context: $context
 );
 ```
@@ -95,18 +70,18 @@ $item = JournalItem::create(
 ```php
 use Bitrix24\Lib\Journal\Infrastructure\Doctrine\DoctrineDbalJournalItemRepository;
 
-$repository = new DoctrineDbalJournalItemRepository($entityManager);
+$repository = new DoctrineDbalJournalItemRepository($entityManager, $paginator);
+$flusher = new Flusher($entityManager, $eventDispatcher);
 
 // Сохранение
 $repository->save($journalItem);
-$entityManager->flush();
+$flusher->flush();
 
 // Поиск
 $item = $repository->findById($uuid);
-$items = $repository->findByApplicationInstallationId($installationId, LogLevel::error, 50, 0);
+$items = $repository->findByApplicationInstallationId($memberId, $installationId, LogLevel::ERROR, 50, 0);
 
 // Очистка
-$deleted = $repository->deleteByApplicationInstallationId($installationId);
 $deleted = $repository->deleteOlderThan(new CarbonImmutable('-30 days'));
 ```
 
@@ -126,30 +101,26 @@ $repository->clear();
 ### 4. Admin UI (ReadModel)
 
 ```php
-use Bitrix24\Lib\Journal\ReadModel\JournalItemReadRepository;
+use Bitrix24\Lib\Journal\Infrastructure\Doctrine\DoctrineDbalJournalItemRepository;
 
-$readRepo = new JournalItemReadRepository($entityManager, $paginator);
+$readRepo = new DoctrineDbalJournalItemRepository($entityManager, $paginator);
 
 // Получение с фильтрами и пагинацией
 $pagination = $readRepo->findWithFilters(
-    domainUrl: 'example.bitrix24.ru',
-    level: LogLevel::error,
+    memberId: '66c9893d5f30e6.45265697',
+    domain: new Domain('example.bitrix24.ru'),
+    logLevel: LogLevel::ERROR,
     label: 'b24.api.error',
     page: 1,
     limit: 50
 );
-
-// Получение списков для фильтров
-$domains = $readRepo->getAvailableDomains();
-$labels = $readRepo->getAvailableLabels();
 ```
 
 ## Структура Context
 
 Context записи может содержать:
 
-- **label** (string|null) - метка для группировки событий (например, 'b24.exchange.realtime')
-- **payload** (array|null) - произвольные данные в формате JSON
+- **payload** (array|null) - произвольные данные. В БД хранится json
 - **bitrix24UserId** (int|null) - ID пользователя Bitrix24
 - **ipAddress** (string|null) - IP адрес (будет сохранен через darsyn/ip library)
 
@@ -173,6 +144,10 @@ Context записи может содержать:
 ```php
 use Bitrix24\Lib\Journal\Infrastructure\InMemory\InMemoryJournalItemRepository;
 use Bitrix24\Lib\Journal\Services\JournalLogger;
+use Bitrix24\Lib\Journal\Entity\JournalItem;
+use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
+use Psr\Log\LogLevel;
+use Symfony\Component\Uid\Uuid;
 
 class MyTest extends TestCase
 {
@@ -183,17 +158,25 @@ class MyTest extends TestCase
     {
         $this->repository = new InMemoryJournalItemRepository();
         $entityManager = $this->createMock(EntityManagerInterface::class);
+        $flusher = new Flusher($entityManager, $eventDispatcher);
 
         $this->logger = new JournalLogger(
-            Uuid::v7(),
             $this->repository,
-            $entityManager
+            $flusher
         );
     }
 
     public function testLogging(): void
     {
-        $this->logger->info('Test message');
+        $item = new JournalItem(
+            memberId: '66c9893d5f30e6.45265697',
+            applicationInstallationId: Uuid::v7(),
+            level: LogLevel::INFO,
+            message: 'Test message',
+            label: 'test.label',
+            context: new Context()
+        );
+        $this->logger->add($item);
 
         $items = $this->repository->findAll();
         $this->assertCount(1, $items);
@@ -202,26 +185,23 @@ class MyTest extends TestCase
 }
 ```
 
-## Admin Interface
-
-Модуль включает готовый контроллер и Twig-шаблоны для просмотра журнала:
-
-- `/admin/journal` - список с фильтрами (домен, уровень, метка) и пагинацией
-- `/admin/journal/{id}` - детальный просмотр с визуализацией JSON payload
-
-См. `src/Journal/Controller/JournalAdminController.php` и `templates/journal/`.
-
 ## Database Schema
 
 Таблица `journal_item` с полями:
 - `id` (UUID) - PK
+- `member_id` (string) - ID портала Bitrix24
 - `application_installation_id` (UUID) - FK к установке приложения
 - `created_at_utc` (timestamp) - время создания
 - `level` (string) - уровень логирования
 - `message` (text) - сообщение
-- `label`, `payload`, `bitrix24_user_id`, `ip_address` - поля контекста
+- `label`,
+- `payload`, `bitrix24_user_id`, `ip_address` - поля контекста
 
-Индексы:
-- `application_installation_id`
-- `created_at_utc`
-- `level`
+### Индексы
+- `idx_journal_composite (member_id, application_installation_id, level, created_at_utc)`  
+  Используется эффективно по левому префиксу:
+    - `member_id`
+    - `member_id + application_installation_id`
+    - `member_id + application_installation_id + level`
+- `idx_journal_member_id (member_id)`
+- `idx_journal_created_at (created_at_utc)`

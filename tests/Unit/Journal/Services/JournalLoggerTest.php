@@ -13,207 +13,66 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Tests\Unit\Journal\Services;
 
-use Bitrix24\Lib\Journal\Entity\LogLevel;
+use Darsyn\IP\Version\Multi as IP;
+use Bitrix24\Lib\Journal\Entity\JournalItem;
+use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Bitrix24\Lib\Journal\Services\JournalLogger;
+use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\Unit\Journal\Infrastructure\InMemory\InMemoryJournalItemRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
+use Bitrix24\Lib\Journal\Entity\LogLevel;
+use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class JournalLoggerTest extends TestCase
 {
     private InMemoryJournalItemRepository $repository;
 
     private EntityManagerInterface $entityManager;
 
-    private Uuid $applicationInstallationId;
+    private TraceableEventDispatcher $eventDispatcher;
 
     private JournalLogger $logger;
 
+    private Flusher $flusher;
+
+    #[\Override]
     protected function setUp(): void
     {
         $this->repository = new InMemoryJournalItemRepository();
+        $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->applicationInstallationId = Uuid::v7();
+        $this->flusher = new Flusher($this->entityManager, $this->eventDispatcher);
 
         $this->logger = new JournalLogger(
-            $this->applicationInstallationId,
             $this->repository,
-            $this->entityManager
+            $this->flusher
         );
     }
 
-    public function testLogInfoMessage(): void
+    public function testAddJournalItem(): void
     {
-        $this->entityManager->expects($this->once())->method('flush');
+        $journalItem = new JournalItem(
+            memberId: 'test-member-id',
+            applicationInstallationId: Uuid::v7(),
+            level: LogLevel::info,
+            message: 'Test message',
+            label: 'test.label',
+            context: new Context(IP::factory('127.0.0.1'))
+        );
 
-        $this->logger->info('Test info message', ['label' => 'test.label']);
+        $this->logger->add($journalItem);
 
-        $items = $this->repository->findAll();
-        $this->assertCount(1, $items);
-        $this->assertSame(LogLevel::info, $items[0]->getLevel());
-        $this->assertSame('Test info message', $items[0]->getMessage());
-        $this->assertSame('test.label', $items[0]->getContext()->getLabel());
-    }
+        $savedItem = $this->repository->getById($journalItem->getId());
 
-    public function testLogErrorMessage(): void
-    {
-        $this->entityManager->expects($this->once())->method('flush');
-
-        $this->logger->error('Test error message', ['label' => 'error.label']);
-
-        $items = $this->repository->findAll();
-        $this->assertCount(1, $items);
-        $this->assertSame(LogLevel::error, $items[0]->getLevel());
-        $this->assertSame('error.label', $items[0]->getContext()->getLabel());
-    }
-
-    public function testLogWarningMessage(): void
-    {
-        $this->entityManager->expects($this->once())->method('flush');
-
-        $this->logger->warning('Test warning message', ['label' => 'warning.label']);
-
-        $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::warning, $items[0]->getLevel());
-    }
-
-    public function testLogDebugMessage(): void
-    {
-        $this->entityManager->expects($this->once())->method('flush');
-
-        $this->logger->debug('Test debug message', ['label' => 'debug.label']);
-
-        $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::debug, $items[0]->getLevel());
-    }
-
-    public function testLogEmergencyMessage(): void
-    {
-        $this->entityManager->expects($this->once())->method('flush');
-
-        $this->logger->emergency('Test emergency message', ['label' => 'emergency.label']);
-
-        $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::emergency, $items[0]->getLevel());
-    }
-
-    public function testLogAlertMessage(): void
-    {
-        $this->entityManager->expects($this->once())->method('flush');
-
-        $this->logger->alert('Test alert message', ['label' => 'alert.label']);
-
-        $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::alert, $items[0]->getLevel());
-    }
-
-    public function testLogCriticalMessage(): void
-    {
-        $this->entityManager->expects($this->once())->method('flush');
-
-        $this->logger->critical('Test critical message', ['label' => 'critical.label']);
-
-        $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::critical, $items[0]->getLevel());
-    }
-
-    public function testLogNoticeMessage(): void
-    {
-        $this->entityManager->expects($this->once())->method('flush');
-
-        $this->logger->notice('Test notice message', ['label' => 'notice.label']);
-
-        $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::notice, $items[0]->getLevel());
-    }
-
-    public function testLogWithContext(): void
-    {
-        $this->entityManager->expects($this->once())->method('flush');
-
-        $context = [
-            'label' => 'test.label',
-            'payload' => ['key' => 'value'],
-            'bitrix24UserId' => 123,
-            'ipAddress' => '192.168.1.1',
-        ];
-
-        $this->logger->info('Test message with context', $context);
-
-        $items = $this->repository->findAll();
-        $item = $items[0];
-
-        $this->assertSame('test.label', $item->getContext()->getLabel());
-        $this->assertSame(['key' => 'value'], $item->getContext()->getPayload());
-        $this->assertSame(123, $item->getContext()->getBitrix24UserId());
-        $this->assertNotNull($item->getContext()->getIpAddress());
-    }
-
-    public function testLogWithoutLabelUsesDefault(): void
-    {
-        $this->entityManager->expects($this->once())->method('flush');
-
-        $this->logger->info('Test message without label');
-
-        $items = $this->repository->findAll();
-        $this->assertSame('application.log', $items[0]->getContext()->getLabel());
-    }
-
-    public function testLogMultipleMessages(): void
-    {
-        $this->entityManager->expects($this->exactly(3))->method('flush');
-
-        $this->logger->info('Message 1', ['label' => 'test.label']);
-        $this->logger->error('Message 2', ['label' => 'test.label']);
-        $this->logger->debug('Message 3', ['label' => 'test.label']);
-
-        $items = $this->repository->findAll();
-        $this->assertCount(3, $items);
-    }
-
-    public function testLogAssignsCorrectApplicationInstallationId(): void
-    {
-        $this->entityManager->expects($this->once())->method('flush');
-
-        $this->logger->info('Test message', ['label' => 'test.label']);
-
-        $items = $this->repository->findAll();
-        $this->assertTrue($items[0]->getApplicationInstallationId()->equals($this->applicationInstallationId));
-    }
-
-    public function testLogWithStringLevel(): void
-    {
-        $this->entityManager->expects($this->once())->method('flush');
-
-        $this->logger->log('info', 'Test message', ['label' => 'test.label']);
-
-        $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::info, $items[0]->getLevel());
-    }
-
-    public function testLogWithLogLevelEnum(): void
-    {
-        $this->entityManager->expects($this->once())->method('flush');
-
-        $this->logger->log(LogLevel::error, 'Test message', ['label' => 'test.label']);
-
-        $items = $this->repository->findAll();
-        $this->assertSame(LogLevel::error, $items[0]->getLevel());
-    }
-
-    public function testLogWithInvalidLevelThrowsException(): void
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid log level type');
-
-        $this->logger->log(123, 'Test message');
-    }
-
-    public function testLogWithInvalidStringLevelThrowsException(): void
-    {
-        $this->expectException(\InvalidArgumentException::class);
-
-        $this->logger->log('invalid_level', 'Test message');
+        $this->assertTrue($journalItem->equals($savedItem));
     }
 }
