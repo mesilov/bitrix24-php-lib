@@ -10,7 +10,7 @@ use Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall\Command;
 use Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall\Handler;
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\SDK\Application\ApplicationStatus;
