@@ -164,7 +164,7 @@ test-functional: debug-show-env
 
 .PHONY: test-functional-one
 test-functional-one: debug-show-env
-	docker compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testChangeDomainUrlWithHappyPath' tests/Functional/Bitrix24Accounts/UseCase/ChangeDomainUrl/HandlerTest.php
+	docker compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testAddJournalItem' tests/Unit/Journal/Services/JournalLoggerTest.php
 
 .PHONY: doctrine-schema-drop
 doctrine-schema-drop:

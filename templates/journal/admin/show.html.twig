@@ -1,0 +1,169 @@
+{% extends '@Journal/layout.html.twig' %}
+
+{% block title %}Запись журнала {{ item.id }} - Технологический журнал{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ path('journal_admin_list') }}">Журнал</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Запись {{ item.id.toRfc4122|slice(0, 8) }}...</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .level-emergency, .level-alert, .level-critical { background-color: #dc3545 !important; }
+        .level-error { background-color: #fd7e14 !important; }
+        .level-warning { background-color: #ffc107 !important; color: #000 !important; }
+        .level-notice { background-color: #0dcaf0 !important; }
+        .level-info { background-color: #198754 !important; }
+        .level-debug { background-color: #6c757d !important; }
+
+        .json-viewer {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .json-key { color: #3498db; }
+        .json-string { color: #2ecc71; }
+        .json-number { color: #e67e22; }
+        .json-boolean { color: #9b59b6; }
+        .json-null { color: #95a5a6; }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Детальная информация о записи</h5>
+            <span class="badge level-{{ item.level.value }} fs-6">
+                {{ item.level.value }}
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="border-bottom pb-2 mb-2">
+                        <small class="text-muted d-block">ID записи</small>
+                        <code class="d-block">{{ item.id.toRfc4122 }}</code>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="border-bottom pb-2 mb-2">
+                        <small class="text-muted d-block">ID инсталляции</small>
+                        <code class="d-block">{{ item.applicationInstallationId.toRfc4122 }}</code>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="border-bottom pb-2 mb-2">
+                        <small class="text-muted d-block">Дата и время</small>
+                        <strong>{{ item.createdAt.format('d.m.Y H:i:s') }} UTC</strong>
+                        <small class="text-muted d-block">({{ item.createdAt.diffForHumans }})</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="border-bottom pb-2 mb-2">
+                        <small class="text-muted d-block">Уровень</small>
+                        <strong class="text-uppercase">{{ item.level.value }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h6 class="text-muted mb-2">Сообщение</h6>
+                <div class="alert alert-info mb-0" role="alert">
+                    {{ item.message }}
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h6 class="text-muted mb-3">Контекст</h6>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="border-start border-primary border-3 ps-3">
+                            <small class="text-muted d-block">Метка</small>
+                            {% if item.context.label %}
+                                <span class="badge bg-primary">{{ item.context.label }}</span>
+                            {% else %}
+                                <span class="text-muted fst-italic">Не указана</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border-start border-primary border-3 ps-3">
+                            <small class="text-muted d-block">User ID</small>
+                            {% if item.context.bitrix24UserId %}
+                                <strong>{{ item.context.bitrix24UserId }}</strong>
+                            {% else %}
+                                <span class="text-muted fst-italic">Не указан</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border-start border-primary border-3 ps-3">
+                            <small class="text-muted d-block">IP адрес</small>
+                            {% if item.context.ipAddress %}
+                                <code>{{ item.context.ipAddress.compactedAddress }}</code>
+                            {% else %}
+                                <span class="text-muted fst-italic">Не указан</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if item.context.payload %}
+                <div class="mb-4">
+                    <h6 class="text-muted mb-2">Payload (данные события)</h6>
+                    <div class="json-viewer">
+                        <pre class="mb-0">{{ item.context.payload|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES')) }}</pre>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="mt-4">
+                <a href="{{ path('journal_admin_list') }}" class="btn btn-secondary">
+                    ← Вернуться к списку
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        // Highlight JSON syntax
+        document.addEventListener('DOMContentLoaded', function() {
+            const jsonViewer = document.querySelector('.json-viewer pre');
+            if (jsonViewer) {
+                let html = jsonViewer.innerHTML;
+
+                // Highlight keys
+                html = html.replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:');
+
+                // Highlight strings
+                html = html.replace(/: "([^"]*)"/g, ': <span class="json-string">"$1"</span>');
+
+                // Highlight numbers
+                html = html.replace(/: (-?\d+\.?\d*)/g, ': <span class="json-number">$1</span>');
+
+                // Highlight booleans
+                html = html.replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>');
+
+                // Highlight null
+                html = html.replace(/: (null)/g, ': <span class="json-null">$1</span>');
+
+                jsonViewer.innerHTML = html;
+            }
+        });
+    </script>
+{% endblock %}
