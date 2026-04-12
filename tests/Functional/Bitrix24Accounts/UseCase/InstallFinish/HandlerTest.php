@@ -64,8 +64,8 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    #[TestDox('test finish installation application')]
-    public function testFinishInstallationApplication(): void
+    #[TestDox('test installFinish changes only account state and stays separate from OnAppInstall flow')]
+    public function testInstallFinishActivatesPendingAccountOnly(): void
     {
         $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withStatus(Bitrix24AccountStatus::new)

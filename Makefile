@@ -157,7 +157,7 @@ debug-show-env:
 
 .PHONY: test-functional
 test-functional: debug-show-env
-	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
+	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force --full-database
 	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:create
 	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:update --dump-sql
 	docker compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
@@ -168,7 +168,7 @@ test-functional-one: debug-show-env
 
 .PHONY: doctrine-schema-drop
 doctrine-schema-drop:
-	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
+	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force --full-database
 
 .PHONY: doctrine-schema-create
 doctrine-schema-create:
