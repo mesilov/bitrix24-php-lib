@@ -4,7 +4,7 @@ PSR-3 совместимый модуль для ведения технолог
 
 ## Компоненты
 
-### 1. Journal Logger Service
+### 1. Journal Logger
 
 **JournalLogger** - сервис для записи объектов `JournalItem` в журнал.
 
@@ -16,10 +16,15 @@ use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
 use Psr\Log\LogLevel;
 use Symfony\Component\Uid\Uuid;
+use Bitrix24\Lib\Services\Flusher;
+use Bitrix24\Lib\Journal\Infrastructure\Doctrine\DoctrineDbalJournalItemRepository;
 
-// Получаем логгер из DI контейнера
-/** @var JournalLogger $logger */
-$logger = $container->get(JournalLogger.class);
+$repository = new DoctrineDbalJournalItemRepository($entityManager, $paginator);
+$flusher = new Flusher($entityManager, $eventDispatcher);
+$logger = new JournalLogger(
+    $repository,
+    $flusher
+);
 
 // Создаем запись журнала напрямую
 $item = new JournalItem(
@@ -66,10 +71,11 @@ $item = new JournalItem(
 use Bitrix24\Lib\Journal\Infrastructure\Doctrine\DoctrineDbalJournalItemRepository;
 
 $repository = new DoctrineDbalJournalItemRepository($entityManager, $paginator);
+$flusher = new Flusher($entityManager, $eventDispatcher);
 
 // Сохранение
 $repository->save($journalItem);
-$entityManager->flush();
+$flusher->flush();
 
 // Поиск
 $item = $repository->findById($uuid);
@@ -108,16 +114,13 @@ $pagination = $readRepo->findWithFilters(
     page: 1,
     limit: 50
 );
-
-// Получение списков для фильтров
-$domains = $readRepo->getAvailableDomains();
 ```
 
 ## Структура Context
 
 Context записи может содержать:
 
-- **payload** (array|null) - произвольные данные в формате JSON
+- **payload** (array|null) - произвольные данные. В БД хранится json
 - **bitrix24UserId** (int|null) - ID пользователя Bitrix24
 - **ipAddress** (string|null) - IP адрес (будет сохранен через darsyn/ip library)
 
@@ -182,15 +185,6 @@ class MyTest extends TestCase
 }
 ```
 
-## Admin Interface
-
-Модуль включает готовый контроллер и Twig-шаблоны для просмотра журнала:
-
-- `/admin/journal` - список с фильтрами (домен, уровень, метка) и пагинацией
-- `/admin/journal/{id}` - детальный просмотр с визуализацией JSON payload
-
-См. `src/Journal/Controller/JournalAdminController.php` и `templates/journal/`.
-
 ## Database Schema
 
 Таблица `journal_item` с полями:
@@ -200,10 +194,14 @@ class MyTest extends TestCase
 - `created_at_utc` (timestamp) - время создания
 - `level` (string) - уровень логирования
 - `message` (text) - сообщение
-- `label`, `payload`, `bitrix24_user_id`, `ip_address` - поля контекста
+- `label`,
+- `payload`, `bitrix24_user_id`, `ip_address` - поля контекста
 
-Индексы:
-- `member_id, application_installation_id, level, created_at_utc` (composite)
-- `member_id`
-- `created_at_utc`
-- `level`
+### Индексы
+- `idx_journal_composite (member_id, application_installation_id, level, created_at_utc)`  
+  Используется эффективно по левому префиксу:
+    - `member_id`
+    - `member_id + application_installation_id`
+    - `member_id + application_installation_id + level`
+- `idx_journal_member_id (member_id)`
+- `idx_journal_created_at (created_at_utc)`
