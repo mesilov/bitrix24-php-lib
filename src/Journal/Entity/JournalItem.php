@@ -95,9 +95,6 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
      *
      * Now we use this method only for testing purposes.
      *
-     * Compares creation timestamps without microseconds to avoid false mismatches
-     * between in-memory objects and persisted database values.
-     *
      * @param JournalItemInterface $other the journalItem to compare
      *
      * @return bool true if the JournalItem are equal, false otherwise
@@ -111,15 +108,7 @@ class JournalItem extends AggregateRoot implements JournalItemInterface
             && $this->getMessage() === $other->getMessage()
             && $this->getLabel() === $other->getLabel()
             && $this->getContext()->equals($other->getContext())
-            && $this->normalizeCreatedAt($this->getCreatedAt())->equalTo($this->normalizeCreatedAt($other->getCreatedAt()));
-    }
-
-    /**
-     * Normalizes the timestamp for comparison by removing microseconds.
-     */
-    private function normalizeCreatedAt(CarbonImmutable $date): CarbonImmutable
-    {
-        return $date->setMicro(0);
+            && $this->getCreatedAt()->equalTo($other->getCreatedAt());
     }
 
     /**
