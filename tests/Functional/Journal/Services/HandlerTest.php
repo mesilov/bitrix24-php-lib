@@ -44,7 +44,7 @@ class HandlerTest extends TestCase
     {
         $this->entityManager = EntityManagerFactory::get();
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
-        $paginator = new Paginator($this->eventDispatcher, $this->createMock(ArgumentAccessInterface::class));
+        $paginator = new Paginator($this->eventDispatcher, $this->createStub(ArgumentAccessInterface::class));
         $this->repository = new DoctrineDbalJournalItemRepository($this->entityManager, $paginator);
         $this->flusher = new Flusher($this->entityManager, $this->eventDispatcher);
         $this->logger = new JournalLogger(

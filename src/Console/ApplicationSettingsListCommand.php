@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Console;
 
+use Bitrix24\Lib\ApplicationSettings\Entity\ApplicationSettingsItemInterface;
 use Bitrix24\Lib\ApplicationSettings\Infrastructure\Doctrine\ApplicationSettingsItemRepositoryInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -130,13 +131,13 @@ HELP
         $allSettings = $this->applicationSettingRepository->findAllForInstallation($installationId);
 
         if ($globalOnly || (null === $userId && null === $departmentId)) {
-            $settings = array_filter($allSettings, fn ($setting): bool => $setting->isGlobal());
+            $settings = array_filter($allSettings, fn (ApplicationSettingsItemInterface $setting): bool => $setting->isGlobal());
             $scope = 'Global';
         } elseif (null !== $userId) {
-            $settings = array_filter($allSettings, fn ($setting): bool => $setting->isPersonal() && $setting->getB24UserId() === $userId);
+            $settings = array_filter($allSettings, fn (ApplicationSettingsItemInterface $setting): bool => $setting->isPersonal() && $setting->getB24UserId() === $userId);
             $scope = sprintf('Personal (User ID: %d)', $userId);
         } else {
-            $settings = array_filter($allSettings, fn ($setting): bool => $setting->isDepartmental() && $setting->getB24DepartmentId() === $departmentId);
+            $settings = array_filter($allSettings, fn (ApplicationSettingsItemInterface $setting): bool => $setting->isDepartmental() && $setting->getB24DepartmentId() === $departmentId);
             $scope = sprintf('Departmental (Department ID: %d)', $departmentId);
         }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Bitrix24\Lib\Tests\Functional\ContactPersons\Infrastructure\Doctrine;
 
 use Bitrix24\Lib\ContactPersons\Entity\ContactPerson;
