@@ -39,13 +39,13 @@ readonly class Handler
             'application_status' => $command->applicationStatus,
         ]);
 
-        /** @var null|AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $applicationInstallation */
-        // todo fix https://github.com/mesilov/bitrix24-php-lib/issues/59
         $applicationInstallation = $this->applicationInstallationRepository->findByBitrix24AccountMemberId($command->memberId);
 
         if (null === $applicationInstallation) {
             throw $this->buildInstallationNotFoundException($command->memberId);
         }
+
+        assert($applicationInstallation instanceof AggregateRootEventsEmitterInterface);
 
         if (ApplicationInstallationStatus::new === $applicationInstallation->getStatus()) {
             $this->finishPendingInstallation($command, $applicationInstallation);
@@ -65,15 +65,12 @@ readonly class Handler
     }
 
     /**
-     * @param AggregateRootEventsEmitterInterface&ApplicationInstallationInterface $applicationInstallation
-     *
      * @throws Bitrix24AccountNotFoundException|InvalidArgumentException|MultipleBitrix24AccountsFoundException
      */
     private function finishPendingInstallation(
         Command $command,
-        ApplicationInstallationInterface $applicationInstallation
+        AggregateRootEventsEmitterInterface&ApplicationInstallationInterface $applicationInstallation
     ): void {
-        /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account */
         $bitrix24Account = $this->findMasterAccountByMemberId($command->memberId, Bitrix24AccountStatus::new);
 
         $applicationInstallation->changeApplicationStatus($command->applicationStatus);
@@ -87,13 +84,12 @@ readonly class Handler
     }
 
     /**
-     * @param AggregateRootEventsEmitterInterface&ApplicationInstallationInterface $applicationInstallation
-     *
      * @throws Bitrix24AccountNotFoundException|MultipleBitrix24AccountsFoundException
      */
-    private function handleRepeatedEvent(Command $command, ApplicationInstallationInterface $applicationInstallation): void
-    {
-        /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account */
+    private function handleRepeatedEvent(
+        Command $command,
+        AggregateRootEventsEmitterInterface&ApplicationInstallationInterface $applicationInstallation
+    ): void {
         $bitrix24Account = $this->findMasterAccountByMemberId($command->memberId, Bitrix24AccountStatus::active);
 
         $sameToken = $applicationInstallation->isApplicationTokenValid($command->applicationToken)
@@ -114,12 +110,10 @@ readonly class Handler
     private function findMasterAccountByMemberId(
         string $memberId,
         Bitrix24AccountStatus $bitrix24AccountStatus
-    ): Bitrix24AccountInterface {
+    ): AggregateRootEventsEmitterInterface&Bitrix24AccountInterface {
         $bitrix24Accounts = $this->bitrix24AccountRepository->findByMemberId(
             $memberId,
-            $bitrix24AccountStatus,
-            null,
-            null
+            $bitrix24AccountStatus
         );
 
         // Filter for master accounts only
@@ -140,7 +134,10 @@ readonly class Handler
             );
         }
 
-        return reset($masterAccounts);
+        $masterAccount = reset($masterAccounts);
+        assert($masterAccount instanceof AggregateRootEventsEmitterInterface);
+
+        return $masterAccount;
     }
 
     private function buildInstallationNotFoundException(string $memberId): ApplicationInstallationNotFoundException

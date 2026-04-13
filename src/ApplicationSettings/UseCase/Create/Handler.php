@@ -8,7 +8,6 @@ use Bitrix24\Lib\ApplicationSettings\Entity\ApplicationSettingsItem;
 use Bitrix24\Lib\ApplicationSettings\Entity\ApplicationSettingsItemInterface;
 use Bitrix24\Lib\ApplicationSettings\Infrastructure\Doctrine\ApplicationSettingsItemRepositoryInterface;
 use Bitrix24\Lib\Services\Flusher;
-use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 
@@ -71,7 +70,6 @@ readonly class Handler
             'changedBy' => $command->changedByBitrix24UserId,
         ]);
 
-        /** @var AggregateRootEventsEmitterInterface&ApplicationSettingsItemInterface $applicationSettingsItem */
         $this->flusher->flush($applicationSettingsItem);
 
         $this->logger->info('ApplicationSettings.Create.finish', [

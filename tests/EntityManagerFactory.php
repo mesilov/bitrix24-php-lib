@@ -77,6 +77,7 @@ class EntityManagerFactory
             }
 
             $configuration = ORMSetup::createXMLMetadataConfiguration($paths, $isDevMode);
+            $configuration->enableNativeLazyObjects(true);
 
             $connection = DriverManager::getConnection($connectionParams, $configuration);
             self::$entityManager = new EntityManager($connection, $configuration);

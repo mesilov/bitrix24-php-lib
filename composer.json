@@ -34,7 +34,7 @@
     }
   },
   "require": {
-    "php": "8.3.* || 8.4.*",
+    "php": "8.4.* || 8.5.*",
     "ext-bcmath": "*",
     "ext-curl": "*",
     "ext-intl": "*",
@@ -46,7 +46,7 @@
     "doctrine/doctrine-migrations-bundle": "4.0.0",
     "doctrine/orm": "^3",
     "fig/http-message-util": "^1",
-    "giggsey/libphonenumber-for-php": "^8",
+    "giggsey/libphonenumber-for-php": "^8 || ^9",
     "knplabs/knp-paginator-bundle": "^6",
     "moneyphp/money": "^4",
     "nesbot/carbon": "^3",
@@ -66,15 +66,15 @@
     "friendsofphp/php-cs-fixer": "^3.64",
     "lendable/composer-license-checker": "^1.2",
     "monolog/monolog": "^3",
-    "phpstan/phpstan": "^1",
-    "phpunit/phpunit": "^11",
-    "psalm/phar": "^5",
-    "rector/rector": "^1",
+    "phpstan/phpstan": "^2",
+    "phpunit/phpunit": "^13",
+    "psalm/phar": "^6",
+    "rector/rector": "^2",
     "roave/security-advisories": "dev-master",
-    "symfony/debug-bundle": "^7",
-    "symfony/property-access": "^7",
-    "symfony/stopwatch": "^7",
-    "symfony/var-exporter": "^7"
+    "symfony/debug-bundle": "^7 || ^8",
+    "symfony/property-access": "^7 || ^8",
+    "symfony/stopwatch": "^7 || ^8",
+    "symfony/var-exporter": "^7 || ^8"
   },
   "autoload": {
     "psr-4": {
