@@ -1,88 +1,185 @@
 # bitrix24-php-lib
 
-PHP lib for Bitrix24 application development
+PHP library for Bitrix24 application development.
 
 ## Build status
 
-| CI\CD [status](https://github.com/mesilov/bitrix24-php-lib/actions) on `master`                                                                                                                                | 
-|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| 
-| [![allowed licenses check](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/license-check.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/license-check.yml)        | 
-| [![php-cs-fixer check](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-cs-fixer.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-cs-fixer.yml)            |
-| [![phpstan check](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-phpstan.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-phpstan.yml)                   | 
-| [![rector check](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-rector.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-rector.yml)                      |  
-| [![unit-tests status](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/tests-unit.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/tests-unit.yml)                   | 
-| [![functional-tests status](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/tests-functional.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/tests-functional.yml) | 
+| CI\CD [status](https://github.com/mesilov/bitrix24-php-lib/actions) on `main`                                                                                                                                  |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [![allowed licenses check](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/license-check.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/license-check.yml)     |
+| [![php-cs-fixer check](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-cs-fixer.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-cs-fixer.yml)         |
+| [![phpstan check](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-phpstan.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-phpstan.yml)                |
+| [![rector check](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-rector.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/lint-rector.yml)                   |
+| [![unit-tests status](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/tests-unit.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/tests-unit.yml)                |
+| [![functional-tests status](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/tests-functional.yml/badge.svg)](https://github.com/mesilov/bitrix24-php-lib/actions/workflows/tests-functional.yml) |
 
 ## Application Domain
 
-The library is designed for rapid development of Bitrix24 applications. Provides data storage layer in
-[PostgreSQL](https://www.postgresql.org/) database using [Doctrine ORM](https://www.doctrine-project.org/).
+The library is designed for rapid development of Bitrix24 applications. It provides a storage layer in
+[PostgreSQL](https://www.postgresql.org/) using [Doctrine ORM](https://www.doctrine-project.org/).
 
-Implements [contracts](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts) from
-bitrix24-php-sdk.
+The package implements and extends
+[bitrix24-php-sdk application contracts](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts).
 
-## Supported Contracts
+## Supported Bounded Contexts
 
 ### Bitrix24Accounts — ✅
 
-Responsible for
-storing [Bitrix24 accounts](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts/Bitrix24Accounts)
-with portal access tokens.
+Implements
+[Bitrix24Accounts contracts](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts/Bitrix24Accounts)
+for storing Bitrix24 portal accounts and access credentials.
+
+Main entity:
+
+- `Bitrix24Account`
+
+Main use cases:
+
+- `InstallStart`
+- `InstallFinish`
+- `RenewAuthToken`
+- `ChangeDomainUrl`
+- `UpdateVersion`
+- `Uninstall`
 
 ### ApplicationInstallations — ✅
 
-Responsible for
-storing [installation facts](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts/ApplicationInstallations)
-of applications on specific Bitrix24 portals
+Implements
+[ApplicationInstallations contracts](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts/ApplicationInstallations)
+for storing application installation facts and install lifecycle state.
 
-### ContactPersons — ⏳ work in progress
+Main entity:
 
-Responsible for
-storing [contact persons](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts/ContactPersons)
-who performed application installation
+- `ApplicationInstallation`
 
-### Bitrix24Partners — ⏳ work in progress
+Main use cases:
 
-Responsible for
-storing [Bitrix24 partners](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts/Bitrix24Partners) who performed installation or service
-the portal
+- `Install`
+- `OnAppInstall`
+- `Uninstall`
+- `InstallContactPerson`
+- `UnlinkContactPerson`
+
+Reference docs:
+
+- `src/ApplicationInstallations/Docs/application-installations.md`
+
+### ContactPersons — ✅
+
+Implements
+[ContactPersons contracts](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts/ContactPersons)
+for storing people related to application installation.
+
+Main entity and enum:
+
+- `ContactPerson`
+- `ContactPersonType` (`personal` / `partner`)
+
+Main use cases:
+
+- `ChangeProfile`
+- `MarkEmailAsVerified`
+- `MarkMobilePhoneAsVerified`
 
 ### ApplicationSettings — ✅
 
-Responsible for
-storing [application settings](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts/ApplicationSettings)
-for specific Bitrix24 portal
+Implements
+[ApplicationSettings contracts](https://github.com/bitrix24/b24phpsdk/tree/main/src/Application/Contracts/ApplicationSettings)
+for storing application settings per installation and per scope.
+
+Main entity and enum:
+
+- `ApplicationSettingsItem`
+- `ApplicationSettingStatus`
+
+Main services:
+
+- `SettingsFetcher`
+- `DefaultSettingsInstaller`
+
+Main use cases:
+
+- `Create`
+- `Update`
+- `Delete`
+- `OnApplicationDelete`
+
+Reference docs:
+
+- `src/ApplicationSettings/Docs/application-settings.md`
+
+### Journal — ✅
+
+Library-specific bounded context for technical journal entries.
+
+Main entity model:
+
+- `JournalItem`
+- `Context`
+- `LogLevel`
+
+Main services and infrastructure:
+
+- `JournalLogger`
+- `JournalItemRepositoryInterface`
+- `DoctrineDbalJournalItemRepository`
+
+Reference docs:
+
+- `src/Journal/Docs/README.md`
+
+### Shared Value Objects
+
+- `Bitrix24\Lib\Common\ValueObjects\Domain`
+
+### Not Implemented Yet
+
+- `Bitrix24Partners` contracts are not implemented in the current package version
 
 ## Architecture
 
 ### Layers and Abstraction Levels
 
-```
-bitrix24-app-laravel-skeleton – Laravel application template
-bitrix24-app-symfony-skeleton – Symfony application template    
-bitrix24-php-lib – application entities work and their storage in database
-bitrix24-php-sdk – transport layer + transport events (expired token, portal renamed)
+```text
+bitrix24-app-laravel-skeleton  - Laravel application template
+bitrix24-app-symfony-skeleton  - Symfony application template
+bitrix24-php-lib               - domain entities, use cases, services, and persistence
+bitrix24-php-sdk               - transport layer and transport events
 ```
 
-### Bounded Context Folder Structure
+### Current Source Tree
 
-```
+```text
 src/
-    Bitrix24Accounts
-        Controllers
-        Entity
-        Exceptions
-        Events
-        EventListeners
-        Infrastructure
-            ConsoleCommands
-            Doctrine
-                Types
-        Repository
-        ReadModel
-        UseCases
-            SomeUseCase
-        Tests    
+    ApplicationInstallations/
+        Docs/
+        Entity/
+        Infrastructure/
+        UseCase/
+    ApplicationSettings/
+        Docs/
+        Entity/
+        Events/
+        Infrastructure/
+        Services/
+        UseCase/
+    Bitrix24Accounts/
+        Entity/
+        Infrastructure/
+        UseCase/
+    Common/
+        ValueObjects/
+    ContactPersons/
+        Entity/
+        Enum/
+        Infrastructure/
+        UseCase/
+    Journal/
+        Docs/
+        Entity/
+        Infrastructure/
+        Services/
+    Services/
 ```
 
 ## Quick Start
@@ -108,40 +205,51 @@ Recommended checks:
 - restart the client after pulling changes to `.mcp.json`
 - verify server availability in the client before work starts
 
-### Running Tests
+### Running Tests And Linters
+
+Use only `Makefile` entrypoints.
 
 ```bash
-# Initialize and start services
-make up
+# First-time setup
+make docker-init
 
-# Run functional tests (uses default database configuration)
-make test-run-functional
+# Start containers
+make docker-up
 
-# Run linters
-make lint-phpstan
-make lint-cs-fixer
-make lint-rector
+# Run tests
+make test-unit
+make test-functional
+
+# Run all linters
+make lint-all
 ```
+
+Useful additional targets:
+
+- `make docker-down`
+- `make doctrine-schema-drop`
+- `make doctrine-schema-create`
+- `make php-cli-bash`
 
 ### Database Configuration
 
 Default database credentials are pre-configured in `.env`:
 
-- Host: `database` (Docker service)
+- Host: `database`
 - Database: `b24phpLibTest`
 - User: `b24phpLibTest`
 - Password: `b24phpLibTest`
 
-No additional configuration needed for running tests.
+No additional configuration is needed for the default local test run.
 
 ## Infrastructure
 
-- library is made cloud-agnostic
+- library is cloud-agnostic
 
 ## Development Rules
 
-1. We use linters
-2. Library is covered with tests
-3. All work is organized through issues
-4. Development processes are remote first
-5. Think and discuss — then write
+1. We use linters.
+2. The library is covered with tests.
+3. All work is organized through issues.
+4. Development processes are remote-first.
+5. Think and discuss, then write.
