@@ -157,18 +157,18 @@ debug-show-env:
 
 .PHONY: test-functional
 test-functional: debug-show-env
-	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
+	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force --full-database
 	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:create
 	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:update --dump-sql
 	docker compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
 
 .PHONY: test-functional-one
 test-functional-one: debug-show-env
-	docker compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testChangeDomainUrlWithHappyPath' tests/Functional/Bitrix24Accounts/UseCase/ChangeDomainUrl/HandlerTest.php
+	docker compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testAddJournalItem' tests/Unit/Journal/Services/JournalLoggerTest.php
 
 .PHONY: doctrine-schema-drop
 doctrine-schema-drop:
-	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
+	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force --full-database
 
 .PHONY: doctrine-schema-create
 doctrine-schema-create:

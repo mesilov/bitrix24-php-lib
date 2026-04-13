@@ -8,8 +8,10 @@ use Bitrix24\Lib\ApplicationInstallations\Entity\ApplicationInstallation;
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\ApplicationInstallationRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Repository\Bitrix24AccountRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
@@ -48,31 +50,7 @@ readonly class Handler
         $activeInstallation = $this->applicationInstallationRepository->findByBitrix24AccountMemberId($command->memberId);
 
         if (null !== $activeInstallation) {
-            $entitiesToFlush = [];
-
-            $activeInstallation->applicationUninstalled();
-
-            $this->applicationInstallationRepository->save($activeInstallation);
-
-            $entitiesToFlush[] = $activeInstallation;
-
-            /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface[] $b24Accounts */
-            $b24Accounts = $this->bitrix24AccountRepository->findByMemberId($command->memberId);
-
-            if ([] !== $b24Accounts) {
-                foreach ($b24Accounts as $b24Account) {
-                    $b24Account->applicationUninstalled(null);
-                    $this->bitrix24AccountRepository->save($b24Account);
-                    $entitiesToFlush[] = $b24Account;
-                }
-            }
-
-            /*
-            Here flush immediately here, since this condition does not always work,
-            and it was better to at first to deal with accounts and installers
-            which need to be deactivated, and then we are already working with new entities.
-           */
-            $this->flusher->flush(...array_filter($entitiesToFlush, fn ($entity): bool => $entity instanceof AggregateRootEventsEmitterInterface));
+            $this->deactivateCurrentInstallation($command->memberId, $activeInstallation);
         }
 
         $uuidV7 = Uuid::v7();
@@ -91,7 +69,9 @@ readonly class Handler
             true
         );
 
-        $bitrix24Account->applicationInstalled($command->applicationToken);
+        if (null !== $command->applicationToken) {
+            $bitrix24Account->applicationInstalled($command->applicationToken);
+        }
 
         $this->bitrix24AccountRepository->save($bitrix24Account);
 
@@ -109,7 +89,9 @@ readonly class Handler
             true
         );
 
-        $applicationInstallation->applicationInstalled($command->applicationToken);
+        if (null !== $command->applicationToken) {
+            $applicationInstallation->applicationInstalled($command->applicationToken);
+        }
 
         $this->applicationInstallationRepository->save($applicationInstallation);
 
@@ -122,5 +104,45 @@ readonly class Handler
                 'bitrix24AccountId' => $uuidV7,
             ]
         );
+    }
+
+    /**
+     * Flush deleted entities before creating a new installation pair for the same member id.
+     *
+     * @param AggregateRootEventsEmitterInterface&ApplicationInstallationInterface $applicationInstallation
+     *
+     * @throws InvalidArgumentException
+     */
+    private function deactivateCurrentInstallation(
+        string $memberId,
+        ApplicationInstallationInterface $applicationInstallation
+    ): void {
+        $entitiesToFlush = [];
+
+        if (ApplicationInstallationStatus::new === $applicationInstallation->getStatus()) {
+            $applicationInstallation->markAsBlocked('reinstall before finish');
+        }
+
+        $applicationInstallation->applicationUninstalled(null);
+        $this->applicationInstallationRepository->save($applicationInstallation);
+        $entitiesToFlush[] = $applicationInstallation;
+
+        /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface[] $b24Accounts */
+        $b24Accounts = $this->bitrix24AccountRepository->findByMemberId($memberId);
+
+        foreach ($b24Accounts as $b24Account) {
+            if (Bitrix24AccountStatus::deleted === $b24Account->getStatus()) {
+                continue;
+            }
+
+            $b24Account->applicationUninstalled(null);
+            $this->bitrix24AccountRepository->save($b24Account);
+            $entitiesToFlush[] = $b24Account;
+        }
+
+        $this->flusher->flush(...array_filter(
+            $entitiesToFlush,
+            static fn ($entity): bool => $entity instanceof AggregateRootEventsEmitterInterface
+        ));
     }
 }

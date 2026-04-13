@@ -1,4 +1,66 @@
-## Unreleased
+## 0.5.0
+
+### Added
+
+- **Journal bounded context (main feature of 0.5.0)** — [#72](https://github.com/mesilov/bitrix24-php-lib/issues/72)
+    - Added `JournalItem` aggregate and `Context` value object for portal technical logs
+    - Added `Bitrix24\Lib\Journal\Entity\LogLevel` enum with PSR-3 compatible levels
+    - Added `JournalItemRepositoryInterface`, `DoctrineDbalJournalItemRepository`, and `JournalLogger`
+    - Added pagination-aware journal queries by `memberId` and `applicationInstallationId`
+- **Install-flow documentation**
+    - Added `src/ApplicationInstallations/Docs/application-installations.md` with one-step / two-step install contracts, canonical finish-step rules, and corner cases
+
+### Changed
+
+- **Application installation flow** — [#90](https://github.com/mesilov/bitrix24-php-lib/issues/90)
+    - `Install` now distinguishes one-step installs with `applicationToken` from UI/two-step installs without token
+    - `OnAppInstall` is now the canonical finish-step for pending installations created without a token
+    - Duplicate `ONAPPINSTALL` events for already active installations are handled as warning `no-op` calls
+- **Domain value object namespace**
+    - `Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain` moved to `Bitrix24\Lib\Common\ValueObjects\Domain`
+    - Updated install-related commands and tests to use the shared namespace
+- **Developer workflow docs**
+    - Added project-level MCP configuration in `.mcp.json`
+    - Documented MCP checks and mandatory `Makefile` entrypoints for tests and linters in `README.md` and `AGENTS.md`
+
+### BC
+
+- **Doctrine schema naming normalization** — [#93](https://github.com/mesilov/bitrix24-php-lib/issues/93)
+    - Tables renamed:
+        - `application_installation` -> `b24lib_application_installations`
+        - `application_settings` -> `b24lib_application_settings`
+        - `bitrix24account` -> `b24lib_bitrix24_accounts`
+        - `contact_person` -> `b24lib_contact_persons`
+    - Explicit schema object names renamed for `b24lib_application_settings`:
+        - `unique_app_setting_scope` -> `b24lib_application_settings_unique_scope`
+        - `idx_application_installation_id` -> `b24lib_application_settings_idx_application_installation_id`
+        - `idx_b24_user_id` -> `b24lib_application_settings_idx_b24_user_id`
+        - `idx_b24_department_id` -> `b24lib_application_settings_idx_b24_department_id`
+        - `idx_key` -> `b24lib_application_settings_idx_key`
+        - `idx_status` -> `b24lib_application_settings_idx_status`
+    - Existing PostgreSQL installations must rename the existing tables and explicitly named indexes before the first run on `0.5.0`
+    - Example SQL:
+```sql
+ALTER TABLE application_installation RENAME TO b24lib_application_installations;
+ALTER TABLE application_settings RENAME TO b24lib_application_settings;
+ALTER TABLE bitrix24account RENAME TO b24lib_bitrix24_accounts;
+ALTER TABLE contact_person RENAME TO b24lib_contact_persons;
+
+ALTER INDEX unique_app_setting_scope RENAME TO b24lib_application_settings_unique_scope;
+ALTER INDEX idx_application_installation_id RENAME TO b24lib_application_settings_idx_application_installation_id;
+ALTER INDEX idx_b24_user_id RENAME TO b24lib_application_settings_idx_b24_user_id;
+ALTER INDEX idx_b24_department_id RENAME TO b24lib_application_settings_idx_b24_department_id;
+ALTER INDEX idx_key RENAME TO b24lib_application_settings_idx_key;
+ALTER INDEX idx_status RENAME TO b24lib_application_settings_idx_status;
+```
+
+### Fixed
+
+- **Premature activation during install** — [#90](https://github.com/mesilov/bitrix24-php-lib/issues/90)
+    - `Bitrix24Account` and `ApplicationInstallation` no longer switch to `active` when `Install` is called without `applicationToken`
+    - Finish events are no longer emitted before Bitrix24 sends the token-bearing finish step
+- **Reinstall handling**
+    - Reinstall over pending installations now blocks and archives the previous installation pair before creating a new one
 
 ## 0.4.0
 

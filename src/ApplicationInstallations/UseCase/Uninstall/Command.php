@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\ApplicationInstallations\UseCase\Uninstall;
 
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 
 readonly class Command
@@ -17,9 +17,6 @@ readonly class Command
         $this->validate();
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     private function validate(): void
     {
         if ('' === $this->applicationToken) {
