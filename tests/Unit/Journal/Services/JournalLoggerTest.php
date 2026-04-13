@@ -46,7 +46,7 @@ class JournalLoggerTest extends TestCase
     {
         $this->repository = new InMemoryJournalItemRepository();
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->entityManager = $this->createStub(EntityManagerInterface::class);
         $this->flusher = new Flusher($this->entityManager, $this->eventDispatcher);
 
         $this->logger = new JournalLogger(

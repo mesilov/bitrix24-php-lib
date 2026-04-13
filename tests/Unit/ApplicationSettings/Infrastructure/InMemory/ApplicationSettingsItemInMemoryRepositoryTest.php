@@ -82,7 +82,6 @@ class ApplicationSettingsItemInMemoryRepositoryTest extends TestCase
     {
         $result = $this->repository->getAllIncludingDeleted();
 
-        $this->assertIsArray($result);
         $this->assertEmpty($result);
     }
 }

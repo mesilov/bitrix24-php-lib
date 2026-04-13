@@ -31,7 +31,6 @@ readonly class Handler
             'bitrix24_user_id' => $command->bitrix24UserId,
         ]);
 
-        /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account */
         $bitrix24Account = $this->getSingleAccountByMemberId(
             $command->renewedAuthToken->domain,
             $command->renewedAuthToken->memberId,
@@ -57,8 +56,11 @@ readonly class Handler
     /**
      * @throws MultipleBitrix24AccountsFoundException
      */
-    private function getSingleAccountByMemberId(string $domainUrl, string $memberId, ?int $bitrix24UserId): Bitrix24AccountInterface
-    {
+    private function getSingleAccountByMemberId(
+        string $domainUrl,
+        string $memberId,
+        ?int $bitrix24UserId
+    ): AggregateRootEventsEmitterInterface&Bitrix24AccountInterface {
         $accounts = $this->bitrix24AccountRepository->findByMemberId(
             $memberId,
             Bitrix24AccountStatus::active,
@@ -86,6 +88,9 @@ readonly class Handler
             );
         }
 
-        return $accounts[0];
+        $account = $accounts[0];
+        assert($account instanceof AggregateRootEventsEmitterInterface);
+
+        return $account;
     }
 }

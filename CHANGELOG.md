@@ -1,3 +1,28 @@
+## 0.5.1
+
+### Changed
+
+- **Dependency refresh for PHP 8.5 and current QA toolchain**
+    - Raised root PHP constraint from `8.3.* || 8.4.*` to `8.4.* || 8.5.*`
+    - Allowed `giggsey/libphonenumber-for-php` `^9` in addition to `^8`
+    - Updated dev tooling to current major versions: `phpstan` `^2`, `phpunit` `^13`, `psalm` `^6`, `rector` `^2`
+    - Expanded Symfony dev constraints to support both `^7` and `^8` for `debug-bundle`, `property-access`, `stopwatch`, and `var-exporter`
+- **Static-analysis compatibility cleanups**
+    - Narrowed install/account handler internals with explicit assertions and intersection types for aggregate roots that emit domain events
+    - Added explicit callback parameter types in `ApplicationSettingsListCommand`
+    - Removed deprecated `strictBooleans` prepared set from `rector.php`
+
+### Fixed
+
+- **Functional test bootstrap compatibility with Doctrine ORM 3 on PHP 8.4+**
+    - Enabled Doctrine native lazy objects in test `EntityManager` configuration
+    - Restored successful `make test-functional` runs with current Symfony `var-exporter`
+- **PHPUnit 13 test-suite compatibility**
+    - Reworked unit and functional tests to stop using no-expectation mocks where stubs/fakes are more appropriate
+    - Removed PHPUnit notices from `make test-unit` and `make test-functional`
+- **ApplicationSettings repository functional coverage**
+    - Replaced the previously skipped PostgreSQL unique-constraint test with an assertion of the actual database behavior for duplicate global settings with `NULL` scope values
+
 ## 0.5.0
 
 ### Added

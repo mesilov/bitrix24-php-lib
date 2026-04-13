@@ -299,7 +299,6 @@ abstract class ApplicationSettingsItemRepositoryInterfaceContractTest extends Te
 
         $results = $this->repository->findAllForInstallationByKey($uuidV7, 'non.existent.key');
 
-        $this->assertIsArray($results);
         $this->assertEmpty($results);
     }
 
@@ -374,7 +373,7 @@ abstract class ApplicationSettingsItemRepositoryInterfaceContractTest extends Te
         $this->assertCount(3, $results);
 
         // Verify each scope is present
-        $values = array_map(fn($s): string => $s->getValue(), $results);
+        $values = array_map(fn(\Bitrix24\Lib\ApplicationSettings\Entity\ApplicationSettingsItemInterface $s): string => $s->getValue(), $results);
         $this->assertContains('global', $values);
         $this->assertContains('personal', $values);
         $this->assertContains('departmental', $values);

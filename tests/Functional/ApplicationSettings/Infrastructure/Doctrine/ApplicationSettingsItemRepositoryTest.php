@@ -7,7 +7,6 @@ namespace Bitrix24\Lib\Tests\Functional\ApplicationSettings\Infrastructure\Doctr
 use Bitrix24\Lib\ApplicationSettings\Entity\ApplicationSettingsItem;
 use Bitrix24\Lib\ApplicationSettings\Infrastructure\Doctrine\ApplicationSettingsItemRepository;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -36,25 +35,32 @@ class ApplicationSettingsItemRepositoryTest extends TestCase
         EntityManagerFactory::get()->clear();
     }
 
-    /**
-     * Test Doctrine-specific unique constraint on (installation_id, key, user_id, department_id).
-     *
-     * Note: This test verifies that the unique constraint is enforced at the database level.
-     * PostgreSQL treats NULL as unique values (NULL != NULL), so for global settings
-     * (where user_id and department_id are NULL) multiple records can exist with the same key.
-     * This is expected behavior.
-     */
-    public function testUniqueConstraintOnApplicationInstallationIdAndKeyAndScope(): void
+    public function testDuplicateGlobalSettingsWithSameKeyAreAllowedByDatabaseConstraint(): void
     {
-        // This test is intentionally simplified as the unique constraint is primarily
-        // enforced at the application level in the Create use case handler.
-        // The database constraint serves as a safety net for personal and departmental settings.
+        $uuidV7 = Uuid::v7();
 
-        $this->markTestSkipped(
-            'Unique constraint behavior with NULL values in PostgreSQL is complex. ' .
-            'Application-level validation is primary, database constraint is secondary. ' .
-            'See Create/Handler tests for application-level uniqueness validation.'
+        $firstSetting = new ApplicationSettingsItem(
+            $uuidV7,
+            'shared.key',
+            'first_value',
+            false
         );
+
+        $secondSetting = new ApplicationSettingsItem(
+            $uuidV7,
+            'shared.key',
+            'second_value',
+            false
+        );
+
+        $this->repository->save($firstSetting);
+        $this->repository->save($secondSetting);
+        EntityManagerFactory::get()->flush();
+        EntityManagerFactory::get()->clear();
+
+        $allSettings = $this->repository->findAllForInstallationByKey($uuidV7, 'shared.key');
+
+        $this->assertCount(2, $allSettings);
     }
 
     /**

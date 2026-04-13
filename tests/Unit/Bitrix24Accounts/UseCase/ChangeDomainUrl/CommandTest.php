@@ -26,7 +26,7 @@ class CommandTest extends TestCase
     ): void {
         new Domain($oldDomain);
         new Domain($newDomain);
-        $this->assertTrue(true);
+        $this->expectNotToPerformAssertions();
     }
 
     #[Test]
@@ -37,7 +37,6 @@ class CommandTest extends TestCase
         ?string $expectedException,
         ?string $expectedExceptionMessage
     ): void {
-
         if ($expectedException !== null) {
             $this->expectException($expectedException);
         }
@@ -48,7 +47,6 @@ class CommandTest extends TestCase
 
         new Domain($oldDomain);
         new Domain($newDomain);
-
     }
 
     public static function dataForValidateValidDomain(): \Generator

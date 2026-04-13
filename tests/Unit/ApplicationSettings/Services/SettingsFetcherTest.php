@@ -95,7 +95,6 @@ class SettingsFetcherTest extends TestCase
 
     private SerializerInterface $serializer;
 
-    /** @var LoggerInterface&\PHPUnit\Framework\MockObject\MockObject */
     private LoggerInterface $logger;
 
     #[\Override]
@@ -112,7 +111,7 @@ class SettingsFetcherTest extends TestCase
         $encoders = [new JsonEncoder()];
 
         $this->serializer = new Serializer($normalizers, $encoders);
-        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->logger = $this->createStub(LoggerInterface::class);
         $this->fetcher = new SettingsFetcher($this->repository, $this->serializer, $this->logger);
         $this->installationId = Uuid::v7();
     }
@@ -339,6 +338,8 @@ class SettingsFetcherTest extends TestCase
     public function testGetValueLogsDeserializationFailure(): void
     {
         $jsonValue = 'invalid json{';
+        $logger = $this->createMock(LoggerInterface::class);
+        $settingsFetcher = new SettingsFetcher($this->repository, $this->serializer, $logger);
 
         $applicationSettingsItem = new ApplicationSettingsItem(
             $this->installationId,
@@ -349,7 +350,7 @@ class SettingsFetcherTest extends TestCase
 
         $this->repository->save($applicationSettingsItem);
 
-        $this->logger->expects($this->once())
+        $logger->expects($this->once())
             ->method('error')
             ->with('SettingsFetcher.getValue.deserializationFailed', $this->callback(fn($context): bool => isset($context['key'], $context['class'], $context['error'])
                 && 'broken.setting' === $context['key']
@@ -357,7 +358,7 @@ class SettingsFetcherTest extends TestCase
 
         $this->expectException(\Throwable::class);
 
-        $this->fetcher->getValue(
+        $settingsFetcher->getValue(
             $this->installationId,
             'broken.setting',
             class: TestConfigDto::class
@@ -506,7 +507,6 @@ class SettingsFetcherTest extends TestCase
         );
 
         $this->assertInstanceOf(IntTypeDto::class, $intTypeDto);
-        $this->assertIsInt($intTypeDto->count);
         $this->assertEquals(42, $intTypeDto->count);
     }
 
@@ -530,7 +530,6 @@ class SettingsFetcherTest extends TestCase
         );
 
         $this->assertInstanceOf(FloatTypeDto::class, $floatTypeDto);
-        $this->assertIsFloat($floatTypeDto->price);
         $this->assertEquals(99.99, $floatTypeDto->price);
     }
 
