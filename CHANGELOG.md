@@ -1,4 +1,4 @@
-## 0.5.1
+## 0.5.2
 
 ### BC
 
@@ -9,7 +9,7 @@
         - `idx_journal_composite` -> `b24lib_journal_idx_composite`
         - `idx_journal_created_at` -> `b24lib_journal_idx_created_at`
         - `idx_journal_member_id` -> `b24lib_journal_idx_member_id`
-    - Existing PostgreSQL installations created from `0.5.0` must rename the existing journal table and indexes before the first run on `0.5.1`
+    - Existing PostgreSQL installations created from `0.5.0` or `0.5.1` must rename the existing journal table and indexes before the first run on `0.5.2`
     - Example SQL:
 ```sql
 ALTER TABLE journal RENAME TO b24lib_journal;
@@ -18,6 +18,14 @@ ALTER INDEX idx_journal_composite RENAME TO b24lib_journal_idx_composite;
 ALTER INDEX idx_journal_created_at RENAME TO b24lib_journal_idx_created_at;
 ALTER INDEX idx_journal_member_id RENAME TO b24lib_journal_idx_member_id;
 ```
+
+### Changed
+
+- **Repository-local maintainer workflow for agents**
+    - Added `.claude/skills/bitrix24-php-lib-maintainer/SKILL.md` as the default local skill for issue-driven and maintainer tasks
+    - Documented local-skill precedence and project MCP checks in `AGENTS.md` and `CLAUDE.md`
+
+## 0.5.1
 
 ### Changed
 
@@ -30,9 +38,6 @@ ALTER INDEX idx_journal_member_id RENAME TO b24lib_journal_idx_member_id;
     - Narrowed install/account handler internals with explicit assertions and intersection types for aggregate roots that emit domain events
     - Added explicit callback parameter types in `ApplicationSettingsListCommand`
     - Removed deprecated `strictBooleans` prepared set from `rector.php`
-- **Repository-local maintainer workflow for agents**
-    - Added `.claude/skills/bitrix24-php-lib-maintainer/SKILL.md` as the default local skill for issue-driven and maintainer tasks
-    - Documented local-skill precedence and project MCP checks in `AGENTS.md` and `CLAUDE.md`
 
 ### Fixed
 
