@@ -36,6 +36,11 @@ Before doing issue-driven work, confirm the repository-level setup:
 3. The MCP server is available in the current client.
 4. If `.mcp.json` changed after the last pull, restart the client before continuing.
 
+Availability check rule:
+
+- do not treat an empty generic MCP resource listing as proof that `bitrix24-dev` is unavailable
+- confirm availability with a lightweight live tool call such as `mcp__bitrix24_dev__bitrix_search`
+
 Project rule: run linters and tests only through `Makefile` entrypoints. Do not call tool binaries directly when an equivalent `make` target exists.
 
 Primary quality commands:
@@ -67,6 +72,26 @@ When given an issue number, load it first via GitHub tools and read:
 Do not start implementation from a short user summary if the issue already contains the authoritative scope.
 
 If the issue affects Bitrix24 install flow, auth flow, lifecycle events, or SDK-backed contracts, expand context from official Bitrix24 documentation through the `bitrix24-dev` MCP server before planning the change.
+
+If the issue changes Composer dependency constraints or package versions:
+
+1. inspect the current `composer.json` metadata first, especially:
+   - `minimum-stability`
+   - existing exact or ranged constraints
+   - nearby locked packages that may restrict the upgrade path
+2. verify installability through `Makefile` entrypoints before finalizing the implementation:
+
+```bash
+make composer "show <package>"
+make composer "update <package> --dry-run"
+```
+
+3. if the issue asks for a version range that is not currently installable in this repository, do not copy the requested constraint blindly
+4. choose the narrowest installable constraint that satisfies the actual goal
+5. document the deviation explicitly in:
+   - the `.tasks/<issue-number>/...-plan.md`
+   - `CHANGELOG.md` when release-facing behavior changes
+   - the pull request description
 
 Useful MCP tools:
 
@@ -290,6 +315,7 @@ Check the plan for:
 - unambiguity
 - internal consistency
 - full coverage of tests and docs
+- installability of any dependency/version changes under the current Composer metadata
 
 ### Step 7 — Get approval
 
@@ -390,6 +416,12 @@ List which commands were run and whether they passed:
 - `make test-functional`
 
 If some checks were intentionally skipped, state exactly why.
+
+If the final implementation intentionally differs from the literal issue text, state that explicitly in the PR body with the technical reason. Example cases:
+
+- requested package version is not yet tagged stable
+- requested constraint conflicts with `minimum-stability`
+- requested change needs a narrower installable range because of a related locked package
 
 ### Step 4 — Create the PR against the correct base branch
 
