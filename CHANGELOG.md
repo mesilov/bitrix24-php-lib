@@ -1,3 +1,13 @@
+## 0.5.3
+
+### Changed
+
+- **Symfony 8 boot compatibility for consumer applications** — [#106](https://github.com/mesilov/bitrix24-php-lib/issues/106)
+    - Relaxed `doctrine/doctrine-bundle` from `3.2.2` to `^3.2.2 || ^3.3@dev`
+    - Keeps stable installs on `3.2.2` while allowing Symfony 8 consumer applications to opt into the `3.3.x-dev` line
+    - Documents explicit compatibility with Symfony `8.0.*` consumer applications
+    - Removes the previously observed Doctrine bundle bootstrap blocker during kernel boot
+
 ## 0.5.2
 
 ### BC
