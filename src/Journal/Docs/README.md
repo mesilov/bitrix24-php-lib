@@ -187,7 +187,7 @@ class MyTest extends TestCase
 
 ## Database Schema
 
-Таблица `journal_item` с полями:
+Таблица `b24lib_journal` с полями:
 - `id` (UUID) - PK
 - `member_id` (string) - ID портала Bitrix24
 - `application_installation_id` (UUID) - FK к установке приложения
@@ -198,10 +198,10 @@ class MyTest extends TestCase
 - `payload`, `bitrix24_user_id`, `ip_address` - поля контекста
 
 ### Индексы
-- `idx_journal_composite (member_id, application_installation_id, level, created_at_utc)`  
+- `b24lib_journal_idx_composite (member_id, application_installation_id, level, created_at_utc)`  
   Используется эффективно по левому префиксу:
     - `member_id`
     - `member_id + application_installation_id`
     - `member_id + application_installation_id + level`
-- `idx_journal_member_id (member_id)`
-- `idx_journal_created_at (created_at_utc)`
+- `b24lib_journal_idx_member_id (member_id)`
+- `b24lib_journal_idx_created_at (created_at_utc)`

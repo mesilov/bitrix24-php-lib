@@ -1,5 +1,12 @@
 # Claude Code Knowledge Base - bitrix24-php-lib
 
+## Local Skills
+- Repository-local skills live in `.claude/skills/`.
+- Before starting issue-driven, maintainer, or repository workflow tasks, always check whether `.claude/skills/**/SKILL.md` exists and load the relevant local skill first.
+- When both a local repository skill and a generic built-in skill apply, prefer the local repository skill.
+- Default maintainer workflow for this repository: `.claude/skills/bitrix24-php-lib-maintainer/SKILL.md`.
+- If a local skill defines a stricter workflow than this file, follow the local skill.
+
 ## Project Overview
 PHP library for rapid Bitrix24 application development using PostgreSQL and Doctrine ORM.
 

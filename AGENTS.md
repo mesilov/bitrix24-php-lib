@@ -1,5 +1,21 @@
 # AGENTS
 
+## Local Skills
+
+This repository contains local workflow skills in `.claude/skills/`.
+
+Before starting issue-driven, maintainer, or repository workflow tasks, agents must:
+
+- check whether `.claude/skills/**/SKILL.md` exists
+- load and follow the relevant local skill before relying on generic built-in skills
+- treat repository-local skills as higher priority than generic platform skills when both apply
+
+Default local maintainer skill for this repository:
+
+- `.claude/skills/bitrix24-php-lib-maintainer/SKILL.md`
+
+If a local skill defines a stricter workflow than `AGENTS.md`, follow the local skill.
+
 ## MCP Servers
 
 This repository includes project-level MCP server configuration in `.mcp.json`.
