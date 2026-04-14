@@ -1,13 +1,3 @@
-## 0.5.3
-
-### Changed
-
-- **Symfony 8 boot compatibility for consumer applications** — [#106](https://github.com/mesilov/bitrix24-php-lib/issues/106)
-    - Relaxed `doctrine/doctrine-bundle` from `3.2.2` to `^3.2.2 || ^3.3@dev`
-    - Keeps stable installs on `3.2.2` while allowing Symfony 8 consumer applications to opt into the `3.3.x-dev` line
-    - Documents explicit compatibility with Symfony `8.0.*` consumer applications
-    - Removes the previously observed Doctrine bundle bootstrap blocker during kernel boot
-
 ## 0.5.2
 
 ### BC
@@ -31,6 +21,11 @@ ALTER INDEX idx_journal_member_id RENAME TO b24lib_journal_idx_member_id;
 
 ### Changed
 
+- **Symfony 8 boot compatibility for consumer applications** — [#106](https://github.com/mesilov/bitrix24-php-lib/issues/106)
+    - Relaxed `doctrine/doctrine-bundle` from `3.2.2` to `^3.2.2 || ^3.3@dev`
+    - Keeps stable installs on `3.2.2` while allowing Symfony 8 consumer applications to opt into the `3.3.x-dev` line
+    - Documents explicit compatibility with Symfony `8.0.*` consumer applications
+    - Removes the previously observed Doctrine bundle bootstrap blocker during kernel boot
 - **Repository-local maintainer workflow for agents**
     - Added `.claude/skills/bitrix24-php-lib-maintainer/SKILL.md` as the default local skill for issue-driven and maintainer tasks
     - Documented local-skill precedence and project MCP checks in `AGENTS.md` and `CLAUDE.md`
