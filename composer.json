@@ -42,7 +42,7 @@
     "bitrix24/b24phpsdk": "dev-v3-dev",
     "darsyn/ip": "^6",
     "darsyn/ip-doctrine": "^6",
-    "doctrine/doctrine-bundle": "3.2.2",
+    "doctrine/doctrine-bundle": "^3.2.2 || ^3.3@dev",
     "doctrine/doctrine-migrations-bundle": "4.0.0",
     "doctrine/orm": "^3",
     "fig/http-message-util": "^1",
