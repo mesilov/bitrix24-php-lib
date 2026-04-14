@@ -1,3 +1,35 @@
+## 0.5.2
+
+### BC
+
+- **Journal table namespacing fix** — [#102](https://github.com/mesilov/bitrix24-php-lib/issues/102)
+    - Table renamed:
+        - `journal` -> `b24lib_journal`
+    - Explicit schema object names renamed:
+        - `idx_journal_composite` -> `b24lib_journal_idx_composite`
+        - `idx_journal_created_at` -> `b24lib_journal_idx_created_at`
+        - `idx_journal_member_id` -> `b24lib_journal_idx_member_id`
+    - Existing PostgreSQL installations created from `0.5.0` or `0.5.1` must rename the existing journal table and indexes before the first run on `0.5.2`
+    - Example SQL:
+```sql
+ALTER TABLE journal RENAME TO b24lib_journal;
+
+ALTER INDEX idx_journal_composite RENAME TO b24lib_journal_idx_composite;
+ALTER INDEX idx_journal_created_at RENAME TO b24lib_journal_idx_created_at;
+ALTER INDEX idx_journal_member_id RENAME TO b24lib_journal_idx_member_id;
+```
+
+### Changed
+
+- **Symfony 8 boot compatibility for consumer applications** — [#106](https://github.com/mesilov/bitrix24-php-lib/issues/106)
+    - Relaxed `doctrine/doctrine-bundle` from `3.2.2` to `^3.2.2 || ^3.3@dev`
+    - Keeps stable installs on `3.2.2` while allowing Symfony 8 consumer applications to opt into the `3.3.x-dev` line
+    - Documents explicit compatibility with Symfony `8.0.*` consumer applications
+    - Removes the previously observed Doctrine bundle bootstrap blocker during kernel boot
+- **Repository-local maintainer workflow for agents**
+    - Added `.claude/skills/bitrix24-php-lib-maintainer/SKILL.md` as the default local skill for issue-driven and maintainer tasks
+    - Documented local-skill precedence and project MCP checks in `AGENTS.md` and `CLAUDE.md`
+
 ## 0.5.1
 
 ### Changed
