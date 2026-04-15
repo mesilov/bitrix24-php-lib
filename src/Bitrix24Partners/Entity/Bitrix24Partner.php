@@ -105,7 +105,9 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         if ($oldTitle !== $title) {
             $this->events[] = new Bitrix24PartnerTitleChangedEvent(
                 $this->id,
-                new CarbonImmutable()
+                new CarbonImmutable(),
+                $oldTitle,
+                $title
             );
         }
     }
@@ -133,7 +135,9 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         if ($oldSite !== $site) {
             $this->events[] = new Bitrix24PartnerSiteChangedEvent(
                 $this->id,
-                new CarbonImmutable()
+                new CarbonImmutable(),
+                $oldSite,
+                $site
             );
         }
     }
@@ -191,7 +195,9 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         if ($oldEmail !== $email) {
             $this->events[] = new Bitrix24PartnerEmailChangedEvent(
                 $this->id,
-                new CarbonImmutable()
+                new CarbonImmutable(),
+                $oldEmail,
+                $email
             );
         }
     }
@@ -231,7 +237,9 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         if ($oldOpenLineId !== $openLineId) {
             $this->events[] = new Bitrix24PartnerOpenLineIdChangedEvent(
                 $this->id,
-                new CarbonImmutable()
+                new CarbonImmutable(),
+                $oldOpenLineId,
+                $openLineId
             );
         }
     }
@@ -259,7 +267,9 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         if ($oldExternalId !== $externalId) {
             $this->events[] = new Bitrix24PartnerExternalIdChangedEvent(
                 $this->id,
-                new CarbonImmutable()
+                new CarbonImmutable(),
+                $oldExternalId,
+                $externalId
             );
         }
     }
@@ -285,8 +295,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
 
         $this->events[] = new Bitrix24PartnerUnblockedEvent(
             $this->id,
-            new CarbonImmutable(),
-            $this->comment
+            new CarbonImmutable()
         );
     }
 
@@ -306,8 +315,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
 
         $this->events[] = new Bitrix24PartnerBlockedEvent(
             $this->id,
-            new CarbonImmutable(),
-            $this->comment
+            new CarbonImmutable()
         );
     }
 
@@ -327,8 +335,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
 
         $this->events[] = new Bitrix24PartnerDeletedEvent(
             $this->id,
-            new CarbonImmutable(),
-            $this->comment
+            new CarbonImmutable()
         );
     }
 
