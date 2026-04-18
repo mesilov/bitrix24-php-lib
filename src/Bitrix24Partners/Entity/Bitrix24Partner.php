@@ -21,7 +21,6 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerCr
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerDeletedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerEmailChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerExternalIdChangedEvent;
-use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerIdChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerOpenLineIdChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerPhoneChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerSiteChangedEvent;
@@ -35,14 +34,18 @@ use Symfony\Component\Uid\Uuid;
 class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
 {
     private readonly Uuid $id;
+
     private readonly CarbonImmutable $createdAt;
+
     private CarbonImmutable $updatedAt;
+
     private Bitrix24PartnerStatus $status = Bitrix24PartnerStatus::active;
+
     private ?string $comment = null;
 
     public function __construct(
         private string $title,
-        private int $bitrix24PartnerId,
+        private readonly int $bitrix24PartnerId,
         private ?string $site = null,
         private ?PhoneNumber $phone = null,
         private ?string $email = null,
@@ -153,11 +156,11 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
     {
         $oldPhone = $this->phone;
 
-        if ($oldPhone === null && $phoneNumber === null) {
+        if (null === $oldPhone && null === $phoneNumber) {
             return;
         }
 
-        if ($oldPhone !== null && $phoneNumber !== null && $oldPhone->equals($phoneNumber)) {
+        if (null !== $oldPhone && null !== $phoneNumber && $oldPhone->equals($phoneNumber)) {
             return;
         }
 
@@ -338,5 +341,4 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
             new CarbonImmutable()
         );
     }
-
 }

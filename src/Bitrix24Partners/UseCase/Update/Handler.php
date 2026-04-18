@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Update;
 
 use Bitrix24\Lib\Services\Flusher;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Entity\Bitrix24PartnerInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Repository\Bitrix24PartnerRepositoryInterface;
+use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Psr\Log\LoggerInterface;
 
 readonly class Handler
@@ -22,6 +24,7 @@ readonly class Handler
             'partner_id' => $command->id->toRfc4122(),
         ]);
 
+        /** @var AggregateRootEventsEmitterInterface|Bitrix24PartnerInterface $partner */
         $partner = $this->bitrix24PartnerRepository->getById($command->id);
 
         if (null !== $command->title) {
@@ -49,7 +52,7 @@ readonly class Handler
         }
 
         $this->bitrix24PartnerRepository->save($partner);
-        $this->flusher->flush($partner);
+        $this->flusher->flush();
 
         $this->logger->info('Bitrix24Partners.Update.finish', [
             'partner_id' => $command->id->toRfc4122(),

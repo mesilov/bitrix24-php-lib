@@ -18,6 +18,7 @@ use Symfony\Component\Uid\Uuid;
 class Bitrix24PartnerRepository implements Bitrix24PartnerRepositoryInterface
 {
     private readonly EntityRepository $repository;
+
     public function __construct(private readonly EntityManagerInterface $entityManager)
     {
         $this->repository = $this->entityManager->getRepository(Bitrix24Partner::class);
@@ -121,7 +122,7 @@ class Bitrix24PartnerRepository implements Bitrix24PartnerRepositoryInterface
             ->createQueryBuilder('p')
             ->where('p.title LIKE :title')
             ->andWhere('p.status != :status')
-            ->setParameter('title', '%' . $title . '%')
+            ->setParameter('title', '%'.$title.'%')
             ->setParameter('status', Bitrix24PartnerStatus::deleted)
             ->getQuery()
             ->getResult()
@@ -143,14 +144,17 @@ class Bitrix24PartnerRepository implements Bitrix24PartnerRepositoryInterface
         $qb = $this->repository
             ->createQueryBuilder('p')
             ->where('p.externalId = :externalId')
-            ->setParameter('externalId', $externalId);
+            ->setParameter('externalId', $externalId)
+        ;
 
         if (null !== $status) {
             $qb->andWhere('p.status = :status')
-                ->setParameter('status', $status);
+                ->setParameter('status', $status)
+            ;
         } else {
             $qb->andWhere('p.status != :status')
-                ->setParameter('status', Bitrix24PartnerStatus::deleted);
+                ->setParameter('status', Bitrix24PartnerStatus::deleted)
+            ;
         }
 
         return $qb->getQuery()->getResult();

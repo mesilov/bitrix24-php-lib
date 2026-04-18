@@ -31,8 +31,14 @@ readonly class Command
             throw new \InvalidArgumentException('site must be null or non-empty string');
         }
 
-        if (null !== $this->email && '' === trim($this->email)) {
-            throw new \InvalidArgumentException('email must be null or non-empty string');
+        if (null !== $this->email) {
+            if ('' === trim($this->email)) {
+                throw new \InvalidArgumentException('email must be null or non-empty string');
+            }
+
+            if (false === filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
+                throw new \InvalidArgumentException(sprintf('email %s is invalid', $this->email));
+            }
         }
 
         if (null !== $this->openLineId && '' === trim($this->openLineId)) {

@@ -67,14 +67,15 @@
     "monolog/monolog": "^3",
     "fakerphp/faker": "^1",
     "phpstan/phpstan": "^1",
-    "phpunit/phpunit": "^11",
+    "phpunit/phpunit": "^12",
     "doctrine/migrations": "^3",
     "psalm/phar": "^5",
     "rector/rector": "^1",
     "roave/security-advisories": "dev-master",
     "symfony/debug-bundle": "^7",
     "symfony/stopwatch": "^7",
-    "symfony/var-exporter": "^7"
+    "symfony/var-exporter": "^7",
+    "symfony/http-kernel": "^7"
   },
   "autoload": {
     "psr-4": {
