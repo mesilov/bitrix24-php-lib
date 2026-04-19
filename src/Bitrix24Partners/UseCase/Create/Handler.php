@@ -35,7 +35,7 @@ readonly class Handler
         );
 
         $this->bitrix24PartnerRepository->save($bitrix24Partner);
-        $this->flusher->flush();
+        $this->flusher->flush($bitrix24Partner);
 
         $this->logger->info('Bitrix24Partners.Create.finish', [
             'partner_id' => $bitrix24Partner->getId()->toRfc4122(),

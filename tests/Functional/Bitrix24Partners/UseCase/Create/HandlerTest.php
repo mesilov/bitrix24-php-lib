@@ -71,9 +71,10 @@ class HandlerTest extends TestCase
             'line-123',
             'ext-123'
         );
+
         $this->handler->handle($command);
 
-      //  $this->entityManager->clear();
+        $this->entityManager->clear();
 
         $this->assertContains(
             Bitrix24PartnerCreatedEvent::class,

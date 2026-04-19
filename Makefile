@@ -73,11 +73,11 @@ php-cli-bash:
 # composer operations
 composer-install:
 	@echo "install dependencies…"
-	docker-compose run --rm php-cli composer install
+	docker compose run --rm php-cli composer install
 
 composer-update:
 	@echo "update dependencies…"
-	docker compose run --rm php-cli composer update
+	docker compose run --rm php-cli composer update --with-all-dependencies
 
 composer-dumpautoload:
 	docker-compose run --rm php-cli composer dumpautoload
@@ -114,9 +114,12 @@ test-run-functional: debug-print-env
 	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:update --dump-sql
 	docker compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
 
+test-run-partners:
+	docker compose run --rm php-cli php bin/console bitrix24:partners:scrape
+
 # Run one functional test with debugger
 run-one-functional-test: debug-print-env
-	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testChangeDomainUrlWithHappyPath' tests/Functional/Bitrix24Accounts/UseCase/ChangeDomainUrl/HandlerTest.php
+	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testCreatePartner' tests/Functional/Bitrix24Partners/UseCase/Create/HandlerTest.php
 
 schema-drop:
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
