@@ -45,34 +45,35 @@ class ImportPartnersCsvCommand extends Command
                 's',
                 InputOption::VALUE_NONE,
                 'Skip rows with errors and continue processing'
-            );
+            )
+        ;
     }
 
     #[\Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $symfonyStyle = new SymfonyStyle($input, $output);
 
         $file = $input->getArgument('file');
         $skipErrors = $input->getOption('skip-errors');
 
         if (!file_exists($file)) {
-            $io->error(sprintf('File not found: %s', $file));
+            $symfonyStyle->error(sprintf('File not found: %s', $file));
 
             return Command::FAILURE;
         }
 
-        $io->title('Importing Bitrix24 Partners from CSV');
-        $io->info(sprintf('Reading file: %s', $file));
+        $symfonyStyle->title('Importing Bitrix24 Partners from CSV');
+        $symfonyStyle->info(sprintf('Reading file: %s', $file));
 
         try {
-            $imported = $this->importFromCsv($file, $skipErrors, $io, $output);
+            $imported = $this->importFromCsv($file, $skipErrors, $symfonyStyle, $output);
 
-            $io->success(sprintf('Successfully imported %d partners', $imported));
+            $symfonyStyle->success(sprintf('Successfully imported %d partners', $imported));
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
-            $io->error(sprintf('Error: %s', $e->getMessage()));
+        } catch (\Exception $exception) {
+            $symfonyStyle->error(sprintf('Error: %s', $exception->getMessage()));
 
             return Command::FAILURE;
         }
@@ -88,7 +89,7 @@ class ImportPartnersCsvCommand extends Command
         $skipped = 0;
 
         // Validate header
-        $expectedHeaders = ['title', 'site', 'phone', 'email', 'bitrix24_partner_id', 'open_line_id', 'external_id'];
+        $expectedHeaders = ['title', 'site', 'phone', 'email', 'bitrix24_partner_number', 'open_line_id', 'external_id'];
         $actualHeaders = $csv->getHeader();
         if ($actualHeaders !== $expectedHeaders) {
             $io->warning(sprintf(
@@ -119,28 +120,28 @@ class ImportPartnersCsvCommand extends Command
         $lineNumber = 1; // Header is line 1
 
         foreach ($records as $record) {
-            $lineNumber++;
+            ++$lineNumber;
             $progressBar->advance();
 
             try {
                 // Skip empty rows
-                if (empty(array_filter($record))) {
+                if ([] === array_filter($record)) {
                     continue;
                 }
 
                 // Parse row data
-                $title = isset($record['title']) ? trim($record['title']) : '';
-                $siteRaw = isset($record['site']) ? trim($record['site']) : '';
+                $title = isset($record['title']) ? trim((string) $record['title']) : '';
+                $siteRaw = isset($record['site']) ? trim((string) $record['site']) : '';
                 $site = '' !== $siteRaw ? $siteRaw : null;
-                $phoneStringRaw = isset($record['phone']) ? trim($record['phone']) : '';
+                $phoneStringRaw = isset($record['phone']) ? trim((string) $record['phone']) : '';
                 $phoneString = '' !== $phoneStringRaw ? $phoneStringRaw : null;
-                $emailRaw = isset($record['email']) ? trim($record['email']) : '';
+                $emailRaw = isset($record['email']) ? trim((string) $record['email']) : '';
                 $email = '' !== $emailRaw ? $emailRaw : null;
-                $bitrix24PartnerIdRaw = isset($record['bitrix24_partner_id']) ? trim($record['bitrix24_partner_id']) : '';
-                $bitrix24PartnerId = '' !== $bitrix24PartnerIdRaw ? (int) $bitrix24PartnerIdRaw : null;
-                $openLineIdRaw = isset($record['open_line_id']) ? trim($record['open_line_id']) : '';
+                $bitrix24PartnerNumberRaw = isset($record['bitrix24_partner_number']) ? trim((string) $record['bitrix24_partner_number']) : '';
+                $bitrix24PartnerNumber = '' !== $bitrix24PartnerNumberRaw ? (int) $bitrix24PartnerNumberRaw : null;
+                $openLineIdRaw = isset($record['open_line_id']) ? trim((string) $record['open_line_id']) : '';
                 $openLineId = '' !== $openLineIdRaw ? $openLineIdRaw : null;
-                $externalIdRaw = isset($record['external_id']) ? trim($record['external_id']) : '';
+                $externalIdRaw = isset($record['external_id']) ? trim((string) $record['external_id']) : '';
                 $externalId = '' !== $externalIdRaw ? $externalIdRaw : null;
 
                 // Validate required fields
@@ -148,8 +149,8 @@ class ImportPartnersCsvCommand extends Command
                     throw new \InvalidArgumentException('Title is required');
                 }
 
-                if (null === $bitrix24PartnerId) {
-                    throw new \InvalidArgumentException('Bitrix24 Partner ID is required');
+                if (null === $bitrix24PartnerNumber) {
+                    throw new \InvalidArgumentException('Bitrix24 Partner Number is required');
                 }
 
                 // Parse phone number
@@ -165,6 +166,7 @@ class ImportPartnersCsvCommand extends Command
                                 $e
                             );
                         }
+
                         $phone = null;
                     }
                 }
@@ -172,7 +174,7 @@ class ImportPartnersCsvCommand extends Command
                 // Create partner
                 $command = new CreateCommand(
                     $title,
-                    $bitrix24PartnerId,
+                    $bitrix24PartnerNumber,
                     $site,
                     $phone,
                     $email,
@@ -181,10 +183,11 @@ class ImportPartnersCsvCommand extends Command
                 );
 
                 $this->createHandler->handle($command);
-                $imported++;
+                ++$imported;
             } catch (\Exception $e) {
                 if (!$skipErrors) {
                     $progressBar->finish();
+
                     throw new \RuntimeException(
                         sprintf('Error on line %d: %s', $lineNumber, $e->getMessage()),
                         0,
@@ -192,7 +195,7 @@ class ImportPartnersCsvCommand extends Command
                     );
                 }
 
-                $skipped++;
+                ++$skipped;
             }
         }
 

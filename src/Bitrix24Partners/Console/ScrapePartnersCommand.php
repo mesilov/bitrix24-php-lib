@@ -41,19 +41,20 @@ class ScrapePartnersCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 'URL to scrape partners from',
                 'https://www.bitrix24.ru/partners/'
-            );
+            )
+        ;
     }
 
     #[\Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $symfonyStyle = new SymfonyStyle($input, $output);
 
         $url = $input->getOption('url');
         $outputFile = $input->getOption('output');
 
-        $io->title('Scraping Bitrix24 Partners');
-        $io->info(sprintf('Fetching partners from: %s', $url));
+        $symfonyStyle->title('Scraping Bitrix24 Partners');
+        $symfonyStyle->info(sprintf('Fetching partners from: %s', $url));
 
         try {
             // Fetch HTML content
@@ -62,8 +63,8 @@ class ScrapePartnersCommand extends Command
             // Parse partners from HTML
             $partners = $this->parsePartners($html);
 
-            if (empty($partners)) {
-                $io->warning('No partners found');
+            if ([] === $partners) {
+                $symfonyStyle->warning('No partners found');
 
                 return Command::FAILURE;
             }
@@ -71,11 +72,11 @@ class ScrapePartnersCommand extends Command
             // Save to CSV
             $this->saveToCsv($partners, $outputFile);
 
-            $io->success(sprintf('Successfully scraped %d partners and saved to %s', count($partners), $outputFile));
+            $symfonyStyle->success(sprintf('Successfully scraped %d partners and saved to %s', count($partners), $outputFile));
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
-            $io->error(sprintf('Error: %s', $e->getMessage()));
+        } catch (\Exception $exception) {
+            $symfonyStyle->error(sprintf('Error: %s', $exception->getMessage()));
 
             return Command::FAILURE;
         }
@@ -109,22 +110,22 @@ class ScrapePartnersCommand extends Command
         $partners = [];
 
         // Create DOMDocument to parse HTML
-        $dom = new \DOMDocument();
+        $domDocument = new \DOMDocument();
         // Suppress warnings from malformed HTML
-        @$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
+        @$domDocument->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
 
-        $xpath = new \DOMXPath($dom);
+        $domxPath = new \DOMXPath($domDocument);
 
         // Try to find partner cards/blocks
         // This is a generic pattern - may need adjustment based on actual HTML structure
-        $partnerNodes = $xpath->query("//*[contains(@class, 'partner')]");
+        $partnerNodes = $domxPath->query("//*[contains(@class, 'partner')]");
 
         if (0 === $partnerNodes->length) {
             // Try alternative selectors
-            $partnerNodes = $xpath->query("//article|//div[contains(@class, 'card')]");
+            $partnerNodes = $domxPath->query("//article|//div[contains(@class, 'card')]");
         }
 
-        foreach ($partnerNodes as $node) {
+        foreach ($partnerNodes as $partnerNode) {
             $partner = [
                 'title' => '',
                 'site' => '',
@@ -133,36 +134,36 @@ class ScrapePartnersCommand extends Command
             ];
 
             // Extract title
-            $titleNode = $xpath->query(".//*[contains(@class, 'title')]|.//h1|.//h2|.//h3", $node);
+            $titleNode = $domxPath->query(".//*[contains(@class, 'title')]|.//h1|.//h2|.//h3", $partnerNode);
             if ($titleNode->length > 0) {
                 $partner['title'] = trim($titleNode->item(0)->textContent);
             }
 
             // Extract website
-            $linkNode = $xpath->query(".//a[contains(@href, 'http')]", $node);
+            $linkNode = $domxPath->query(".//a[contains(@href, 'http')]", $partnerNode);
             if ($linkNode->length > 0) {
                 $href = $linkNode->item(0)->getAttribute('href');
-                if (!empty($href) && str_contains($href, 'http')) {
+                if (!empty($href) && str_contains((string) $href, 'http')) {
                     $partner['site'] = $href;
                 }
             }
 
             // Extract email
-            $emailNode = $xpath->query(".//a[contains(@href, 'mailto:')]", $node);
+            $emailNode = $domxPath->query(".//a[contains(@href, 'mailto:')]", $partnerNode);
             if ($emailNode->length > 0) {
                 $email = str_replace('mailto:', '', $emailNode->item(0)->getAttribute('href'));
                 $partner['email'] = $email;
             }
 
             // Extract phone
-            $phoneNode = $xpath->query(".//a[contains(@href, 'tel:')]", $node);
+            $phoneNode = $domxPath->query(".//a[contains(@href, 'tel:')]", $partnerNode);
             if ($phoneNode->length > 0) {
                 $phone = str_replace('tel:', '', $phoneNode->item(0)->getAttribute('href'));
                 $partner['phone'] = $phone;
             }
 
             // Only add if we have at least a title
-            if (!empty($partner['title'])) {
+            if (isset($partner['title']) && ('' !== $partner['title'] && '0' !== $partner['title'])) {
                 $partners[] = $partner;
             }
         }

@@ -34,7 +34,7 @@
     }
   },
   "require": {
-    "php": "^8.3",
+    "php": "8.4.* || 8.5.*",
     "ext-json": "*",
     "ext-curl": "*",
     "ext-bcmath": "*",
@@ -45,7 +45,7 @@
     "darsyn/ip": "^5",
     "nesbot/carbon": "^3",
     "moneyphp/money": "^4",
-    "bitrix24/b24phpsdk": "dev-dev",
+    "bitrix24/b24phpsdk": "dev-v3-dev",
     "doctrine/orm": "^3",
     "doctrine/doctrine-bundle": "*",
     "doctrine/doctrine-migrations-bundle": "*",

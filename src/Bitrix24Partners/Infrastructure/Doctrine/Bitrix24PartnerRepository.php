@@ -89,17 +89,17 @@ class Bitrix24PartnerRepository implements Bitrix24PartnerRepositoryInterface
      * @throws InvalidArgumentException
      */
     #[\Override]
-    public function findByBitrix24PartnerId(int $bitrix24PartnerId): ?Bitrix24PartnerInterface
+    public function findByBitrix24PartnerNumber(int $bitrix24PartnerNumber): ?Bitrix24PartnerInterface
     {
-        if ($bitrix24PartnerId < 0) {
-            throw new InvalidArgumentException('bitrix24PartnerId cannot be negative');
+        if ($bitrix24PartnerNumber < 0) {
+            throw new InvalidArgumentException('bitrix24PartnerNumber cannot be negative');
         }
 
         return $this->repository
             ->createQueryBuilder('p')
-            ->where('p.bitrix24PartnerId = :partnerId')
+            ->where('p.bitrix24PartnerNumber = :partnerNumber')
             ->andWhere('p.status != :status')
-            ->setParameter('partnerId', $bitrix24PartnerId)
+            ->setParameter('partnerNumber', $bitrix24PartnerNumber)
             ->setParameter('status', Bitrix24PartnerStatus::deleted)
             ->getQuery()
             ->getOneOrNullResult()

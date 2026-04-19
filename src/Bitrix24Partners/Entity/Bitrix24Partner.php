@@ -45,7 +45,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
 
     public function __construct(
         private string $title,
-        private readonly int $bitrix24PartnerId,
+        private readonly int $bitrix24PartnerNumber,
         private ?string $site = null,
         private ?PhoneNumber $phone = null,
         private ?string $email = null,
@@ -212,9 +212,9 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
     }
 
     #[\Override]
-    public function getBitrix24PartnerId(): int
+    public function getBitrix24PartnerNumber(): int
     {
-        return $this->bitrix24PartnerId;
+        return $this->bitrix24PartnerNumber;
     }
 
     #[\Override]
@@ -340,5 +340,28 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
             $this->id,
             new CarbonImmutable()
         );
+    }
+
+    /**
+     * Returns whether this Bitrix24Partner is equal to another.
+     *
+     * Now we use this method only for testing purposes.
+     *
+     * @param Bitrix24PartnerInterface $other the Bitrix24Partner to compare
+     *
+     * @return bool true if the Bitrix24Partner are equal, false otherwise
+     */
+    public function equals(Bitrix24PartnerInterface $other): bool
+    {
+        return $this->getTitle() === $other->getTitle()
+            && $this->getBitrix24PartnerNumber() === $other->getBitrix24PartnerNumber()
+            && $this->getSite() === $other->getSite()
+            && (
+                (null === $this->getPhone() && null === $other->getPhone())
+                || (null !== $this->getPhone() && null !== $other->getPhone() && $this->getPhone()->equals($other->getPhone()))
+            )
+            && $this->getEmail() === $other->getEmail()
+            && $this->getOpenLineId() === $other->getOpenLineId()
+            && $this->getExternalId() === $other->getExternalId();
     }
 }

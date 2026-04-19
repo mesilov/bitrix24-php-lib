@@ -14,7 +14,7 @@
 
         <field name="email" type="string" column="email" nullable="true"/>
 
-        <field name="bitrix24PartnerId" type="integer" column="b24_partner_id" nullable="false">
+        <field name="bitrix24PartnerNumber" type="integer" column="b24_partner_number" nullable="false">
             <options>
                 <option name="unique">true</option>
             </options>

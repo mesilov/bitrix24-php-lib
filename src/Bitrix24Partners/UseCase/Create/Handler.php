@@ -21,12 +21,12 @@ readonly class Handler
     {
         $this->logger->info('Bitrix24Partners.Create.start', [
             'title' => $command->title,
-            'bitrix24_partner_id' => $command->bitrix24PartnerId,
+            'bitrix24_partner_id' => $command->bitrix24PartnerNumber,
         ]);
 
         $bitrix24Partner = new Bitrix24Partner(
             $command->title,
-            $command->bitrix24PartnerId,
+            $command->bitrix24PartnerNumber,
             $command->site,
             $command->phone,
             $command->email,
