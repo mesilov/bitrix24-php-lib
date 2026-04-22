@@ -64,7 +64,7 @@ class HandlerTest extends TestCase
     {
         $command = new Bitrix24Partners\UseCase\Create\Command(
             'Test Partner',
-            12345,
+            rand(1000, 9999),
             'https://example.com',
             null,
             'test@example.com',
@@ -92,7 +92,8 @@ class HandlerTest extends TestCase
             ->withEmail($command->email)
             ->withOpenLineId($command->openLineId)
             ->withExternalId($command->externalId)
-            ->build();
+            ->build()
+        ;
 
         $this->assertTrue($createdPartner->equals($expectedPartner));
     }

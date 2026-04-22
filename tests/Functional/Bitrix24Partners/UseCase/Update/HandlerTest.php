@@ -12,11 +12,14 @@ use Bitrix24\Lib\Tests\Functional\Bitrix24Partners\Builders\Bitrix24PartnerBuild
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerEmailChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerExternalIdChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerOpenLineIdChangedEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerPhoneChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerSiteChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerTitleChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Repository\Bitrix24PartnerRepositoryInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Doctrine\ORM\EntityManagerInterface;
+use libphonenumber\PhoneNumber;
+use libphonenumber\PhoneNumberUtil;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -60,10 +63,12 @@ class HandlerTest extends TestCase
     #[DataProvider('updateDataProvider')]
     public function testUpdatePartner(
         string $newTitle,
-        string $newSite,
-        string $newEmail,
-        string $newOpenLineId,
-        string $newExternalId,
+        ?string $newSite,
+        ?PhoneNumber $newPhone,
+        ?string $newEmail,
+        ?string $newOpenLineId,
+        ?string $newExternalId,
+        ?string $newLogoUrl,
         array $expectedEvents
     ): void {
 
@@ -71,9 +76,11 @@ class HandlerTest extends TestCase
             ->withTitle('Original Title')
             ->withBitrix24PartnerNumber(123)
             ->withSite('https://original.com')
+            ->withPhone(PhoneNumberUtil::getInstance()->parse('+79001112233', 'RU'))
             ->withEmail('original@example.com')
             ->withOpenLineId('line-orig')
             ->withExternalId('ext-orig')
+            ->withLogoUrl('https://original.com/logo.png')
             ->build();
 
         $this->repository->save($partner);
@@ -86,10 +93,11 @@ class HandlerTest extends TestCase
             $id,
             $newTitle,
             $newSite,
-            null,
+            $newPhone,
             $newEmail,
             $newOpenLineId,
-            $newExternalId
+            $newExternalId,
+            $newLogoUrl
         );
 
         $this->handler->handle($command);
@@ -108,9 +116,15 @@ class HandlerTest extends TestCase
         $updatedPartner = $this->repository->getById($id);
         $this->assertEquals($newTitle, $updatedPartner->getTitle());
         $this->assertEquals($newSite, $updatedPartner->getSite());
+        if (null === $newPhone) {
+            $this->assertNull($updatedPartner->getPhone());
+        } else {
+            $this->assertTrue($newPhone->equals($updatedPartner->getPhone()));
+        }
         $this->assertEquals($newEmail, $updatedPartner->getEmail());
         $this->assertEquals($newOpenLineId, $updatedPartner->getOpenLineId());
         $this->assertEquals($newExternalId, $updatedPartner->getExternalId());
+        $this->assertEquals($newLogoUrl, $updatedPartner->getLogoUrl());
     }
 
     #[Test]
@@ -118,9 +132,11 @@ class HandlerTest extends TestCase
     public function testUpdatePartnerWithInvalidData(
         ?string $newTitle,
         ?string $newSite,
+        ?PhoneNumber $newPhone,
         ?string $newEmail,
         ?string $newOpenLineId,
         ?string $newExternalId,
+        ?string $newLogoUrl,
         string $expectedExceptionMessage
     ): void {
         $partner = (new Bitrix24PartnerBuilder())
@@ -140,22 +156,19 @@ class HandlerTest extends TestCase
             $id,
             $newTitle,
             $newSite,
-            null,
+            $newPhone,
             $newEmail,
             $newOpenLineId,
-            $newExternalId
+            $newExternalId,
+            $newLogoUrl
         );
     }
 
     public static function invalidUpdateDataProvider(): \Generator
     {
-        yield 'empty title' => ['', null, null, null, null, 'title must be null or non-empty string'];
-        yield 'blank title' => ['  ', null, null, null, null, 'title must be null or non-empty string'];
-        yield 'empty site' => [null, '', null, null, null, 'site must be null or non-empty string'];
-        yield 'empty email' => [null, null, '', null, null, 'email must be null or non-empty string'];
-        yield 'invalid email' => [null, null, 'invalid-email', null, null, 'is invalid'];
-        yield 'empty openLineId' => [null, null, null, '', null, 'openLineId must be null or non-empty string'];
-        yield 'empty externalId' => [null, null, null, null, '', 'externalId must be null or non-empty string'];
+        yield 'empty title' => ['', null, null, null, null, null, null, 'title must be non-empty string'];
+        yield 'blank title' => ['  ', null, null, null, null, null, null, 'title must be non-empty string'];
+        yield 'invalid email' => ['Valid Title', null, null, 'invalid-email', null, null, null, 'is invalid'];
     }
 
     public static function updateDataProvider(): \Generator
@@ -163,12 +176,15 @@ class HandlerTest extends TestCase
         yield 'update all fields' => [
             'Updated Title',
             'https://updated.com',
+            PhoneNumberUtil::getInstance()->parse('+79001112244', 'RU'),
             'updated@example.com',
             'line-updated',
             'ext-updated',
+            'https://updated.com/logo.png',
             [
                 Bitrix24PartnerTitleChangedEvent::class,
                 Bitrix24PartnerSiteChangedEvent::class,
+                Bitrix24PartnerPhoneChangedEvent::class,
                 Bitrix24PartnerEmailChangedEvent::class,
                 Bitrix24PartnerOpenLineIdChangedEvent::class,
                 Bitrix24PartnerExternalIdChangedEvent::class,
@@ -178,9 +194,11 @@ class HandlerTest extends TestCase
         yield 'update only title' => [
             'Only Title Updated',
             'https://original.com',
+            PhoneNumberUtil::getInstance()->parse('+79001112233', 'RU'),
             'original@example.com',
             'line-orig',
             'ext-orig',
+            'https://original.com/logo.png',
             [
                 Bitrix24PartnerTitleChangedEvent::class,
             ],

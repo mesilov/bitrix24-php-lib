@@ -33,12 +33,14 @@ class Bitrix24PartnerBuilder
     private ?string $openLineId = null;
 
     private ?string $externalId = null;
+    
+    private ?string $logoUrl = null;
 
     private ?Bitrix24PartnerStatus $status = null;
 
     public function __construct()
     {
-        $this->title = 'Test Partner ' . Uuid::v4()->toRfc4122();
+        $this->title = 'Test Partner '.Uuid::v4()->toRfc4122();
         $this->bitrix24PartnerNumber = random_int(1, 1_000_000);
     }
 
@@ -91,6 +93,13 @@ class Bitrix24PartnerBuilder
         return $this;
     }
 
+    public function withLogoUrl(?string $logoUrl): self
+    {
+        $this->logoUrl = $logoUrl;
+
+        return $this;
+    }
+
     public function withStatus(Bitrix24PartnerStatus $status): self
     {
         $this->status = $status;
@@ -107,14 +116,15 @@ class Bitrix24PartnerBuilder
             $this->phone,
             $this->email,
             $this->openLineId,
-            $this->externalId
+            $this->externalId,
+            $this->logoUrl
         );
 
-        if ($this->status === Bitrix24PartnerStatus::blocked) {
+        if (Bitrix24PartnerStatus::blocked === $this->status) {
             $bitrix24Partner->markAsBlocked(null);
         }
 
-        if ($this->status === Bitrix24PartnerStatus::deleted) {
+        if (Bitrix24PartnerStatus::deleted === $this->status) {
             $bitrix24Partner->markAsDeleted(null);
         }
 

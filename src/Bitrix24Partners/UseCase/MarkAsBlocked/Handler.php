@@ -6,6 +6,7 @@ namespace Bitrix24\Lib\Bitrix24Partners\UseCase\MarkAsBlocked;
 
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Entity\Bitrix24PartnerInterface;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Exceptions\Bitrix24PartnerNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Repository\Bitrix24PartnerRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Psr\Log\LoggerInterface;
@@ -24,15 +25,25 @@ readonly class Handler
             'partner_id' => $command->id->toRfc4122(),
         ]);
 
-        /** @var AggregateRootEventsEmitterInterface|Bitrix24PartnerInterface $partner */
-        $partner = $this->bitrix24PartnerRepository->getById($command->id);
-        $partner->markAsBlocked($command->comment);
+        try {
+            /** @var AggregateRootEventsEmitterInterface|Bitrix24PartnerInterface $partner */
+            $partner = $this->bitrix24PartnerRepository->getById($command->id);
+            $partner->markAsBlocked($command->comment);
 
-        $this->bitrix24PartnerRepository->save($partner);
-        $this->flusher->flush();
+            $this->bitrix24PartnerRepository->save($partner);
+            $this->flusher->flush($partner);
 
-        $this->logger->info('Bitrix24Partners.MarkAsBlocked.finish', [
-            'partner_id' => $command->id->toRfc4122(),
-        ]);
+        } catch (Bitrix24PartnerNotFoundException $exception) {
+            $this->logger->warning('Bitrix24Partners.MarkAsBlocked.partnerNotFound', [
+                'id' => $command->id->toRfc4122(),
+                'message' => $exception->getMessage(),
+            ]);
+
+            throw $exception;
+        } finally {
+            $this->logger->info('Bitrix24Partners.MarkAsBlocked.finish', [
+                'partner_id' => $command->id->toRfc4122(),
+            ]);
+        }
     }
 }

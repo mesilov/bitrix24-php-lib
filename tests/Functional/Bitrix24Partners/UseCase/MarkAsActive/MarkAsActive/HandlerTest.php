@@ -56,24 +56,23 @@ class HandlerTest extends TestCase
     public function testMarkAsActive(): void
     {
         $partner = (new Bitrix24PartnerBuilder())
-            ->withTitle('Blocked Partner')
-            ->withBitrix24PartnerNumber(123)
+            ->withTitle('Blocked Partner for activation test')
             ->withStatus(Bitrix24PartnerStatus::blocked)
             ->build();
+
         $this->repository->save($partner);
         $this->flusher->flush();
 
-        $this->entityManager->clear();
-
         $this->handler->handle(new Bitrix24Partners\UseCase\MarkAsActive\Command($partner->getId(), 'Activation comment'));
 
-        $this->entityManager->clear();
 
         $this->assertContains(
             Bitrix24PartnerUnblockedEvent::class,
             $this->eventDispatcher->getOrphanedEvents(),
             sprintf('not found expected domain event «%s»', Bitrix24PartnerUnblockedEvent::class)
         );
+
+        $this->entityManager->clear();
 
         $activePartner = $this->repository->getById($partner->getId());
 
@@ -84,13 +83,10 @@ class HandlerTest extends TestCase
     public function testActivateActivePartnerExpectException(): void
     {
         $partner = (new Bitrix24PartnerBuilder())
-            ->withTitle('Already Active Partner')
-            ->withBitrix24PartnerNumber(789)
+            ->withTitle('Already Active Partner for activation test exception')
             ->build();
         $this->repository->save($partner);
         $this->flusher->flush();
-
-        $this->entityManager->clear();
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('you can activate partner only in status «blocked»');
@@ -98,6 +94,7 @@ class HandlerTest extends TestCase
             new Bitrix24Partners\UseCase\MarkAsActive\Command(
                 $partner->getId(),
                 'Activation attempt'
-            ));
+            )
+        );
     }
 }

@@ -24,6 +24,8 @@
 
         <field name="externalId" type="string" column="external_id" nullable="true"/>
 
+        <field name="logoUrl" type="string" column="logo_url" nullable="true"/>
+
         <field name="status" enum-type="string" column="status" nullable="false"/>
 
         <field name="comment" type="text" column="comment" nullable="true"/>

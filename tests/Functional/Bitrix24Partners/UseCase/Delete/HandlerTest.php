@@ -9,6 +9,7 @@ use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerReposit
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\Lib\Tests\Functional\Bitrix24Partners\Builders\Bitrix24PartnerBuilder;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Entity\Bitrix24PartnerStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerDeletedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Exceptions\Bitrix24PartnerNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Repository\Bitrix24PartnerRepositoryInterface;
@@ -56,14 +57,12 @@ class HandlerTest extends TestCase
     public function testDeletePartner(): void
     {
         $partner = (new Bitrix24PartnerBuilder())
-            ->withTitle('To be deleted')
-            ->withBitrix24PartnerNumber(123)
-            ->build();
+            ->withTitle('Partner for delete test')
+            ->build()
+        ;
 
         $this->repository->save($partner);
         $this->flusher->flush();
-
-        $this->entityManager->clear();
 
         $this->handler->handle(
             new Bitrix24Partners\UseCase\Delete\Command(
@@ -72,32 +71,30 @@ class HandlerTest extends TestCase
             )
         );
 
-        $this->entityManager->clear();
-
         $this->assertContains(
             Bitrix24PartnerDeletedEvent::class,
-            $this->eventDispatcher->getOrphanedEvents(),
-            sprintf('not found expected domain event «%s»', Bitrix24PartnerDeletedEvent::class)
+            $this->eventDispatcher->getOrphanedEvents()
         );
+
+        $this->entityManager->clear();
 
         $this->expectException(Bitrix24PartnerNotFoundException::class);
         $this->repository->getById($partner->getId());
     }
 
     #[Test]
-    public function testDeleteActivePartnerExpectException(): void
+    public function testDeleteDeletedPartnerExpectException(): void
     {
         $partner = (new Bitrix24PartnerBuilder())
-            ->withTitle('Active partner')
-            ->withBitrix24PartnerNumber(456)
-            ->build();
+            ->withTitle('Active partner for delete test exception')
+            ->withStatus(Bitrix24PartnerStatus::deleted)
+            ->build()
+        ;
 
         $this->repository->save($partner);
         $this->flusher->flush();
 
-        $this->entityManager->clear();
-
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(Bitrix24PartnerNotFoundException::class);
         $this->handler->handle(
             new Bitrix24Partners\UseCase\Delete\Command(
                 $partner->getId(),

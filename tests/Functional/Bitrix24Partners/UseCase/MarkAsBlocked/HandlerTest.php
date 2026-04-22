@@ -11,6 +11,7 @@ use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\Lib\Tests\Functional\Bitrix24Partners\Builders\Bitrix24PartnerBuilder;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Entity\Bitrix24PartnerStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerBlockedEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Exceptions\Bitrix24PartnerNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Repository\Bitrix24PartnerRepositoryInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -56,23 +57,25 @@ class HandlerTest extends TestCase
     public function testMarkAsBlocked(): void
     {
         $partner = (new Bitrix24PartnerBuilder())
-            ->withTitle('Active Partner')
-            ->withBitrix24PartnerNumber(123)
+            ->withTitle('Active Partner for blocking test')
             ->build();
+
         $this->repository->save($partner);
         $this->flusher->flush();
 
-        $this->entityManager->clear();
-
-        $this->handler->handle(new Bitrix24Partners\UseCase\MarkAsBlocked\Command( $partner->getId(), 'Block comment'));
-
-        $this->entityManager->clear();
+        $this->handler->handle(
+            new Bitrix24Partners\UseCase\MarkAsBlocked\Command(
+                $partner->getId(),
+                'Block comment'
+            )
+        );
 
         $this->assertContains(
             Bitrix24PartnerBlockedEvent::class,
             $this->eventDispatcher->getOrphanedEvents(),
-            sprintf('not found expected domain event «%s»', Bitrix24PartnerBlockedEvent::class)
         );
+
+        $this->entityManager->clear();
 
         $blockedPartner = $this->repository->getById($partner->getId());
         $this->assertEquals(Bitrix24PartnerStatus::blocked, $blockedPartner->getStatus());
@@ -82,21 +85,36 @@ class HandlerTest extends TestCase
     public function testBlockDeletedPartnerExpectException(): void
     {
         $partner = (new Bitrix24PartnerBuilder())
-            ->withTitle('Deleted Partner')
-            ->withBitrix24PartnerNumber(321)
+            ->withTitle('Deleted Partner for blocking test exception')
             ->withStatus(Bitrix24PartnerStatus::deleted)
             ->build();
         $this->repository->save($partner);
         $this->flusher->flush();
 
-        $this->entityManager->clear();
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('you cannot block partner in status «deleted»');
+        $this->expectException(Bitrix24PartnerNotFoundException::class);
         $this->handler->handle(
             new Bitrix24Partners\UseCase\MarkAsBlocked\Command(
             $partner->getId(),
             'Blocking deleted'
+            )
+        );
+    }
+
+    #[Test]
+    public function testBlockBlockedPartnerExpectException(): void
+    {
+        $partner = (new Bitrix24PartnerBuilder())
+            ->withTitle('Blocked Partner for blocking test exception')
+            ->withStatus(Bitrix24PartnerStatus::blocked)
+            ->build();
+        $this->repository->save($partner);
+        $this->flusher->flush();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->handler->handle(
+            new Bitrix24Partners\UseCase\MarkAsBlocked\Command(
+                $partner->getId(),
+                'Blocking deleted'
             )
         );
     }
