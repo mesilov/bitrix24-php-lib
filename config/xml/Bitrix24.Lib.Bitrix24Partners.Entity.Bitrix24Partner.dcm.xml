@@ -1,7 +1,7 @@
 <doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
                   xmlns:xs="https://www.w3.org/2001/XMLSchema"
                   xmlns:orm="https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
-    <entity name="Bitrix24\Lib\Bitrix24Partners\Entity\Bitrix24Partner" table="bitrix24_partners">
+    <entity name="Bitrix24\Lib\Bitrix24Partners\Entity\Bitrix24Partner" table="b24lib_bitrix24_partners">
         <id name="id" type="uuid" column="id">
 
         </id>
