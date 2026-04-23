@@ -8,12 +8,19 @@ use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommand;
 use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommand_V2;
 use Symfony\Component\HttpClient\HttpClient;
 
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
 $application = new Application();
 
 $httpClient = HttpClient::create();
 
+// Настройка логирования в файл app.log в корне проекта
+$logger = new Logger('bitrix24-lib');
+$logger->pushHandler(new StreamHandler(__DIR__ . '/../app.log', Logger::DEBUG));
+
 // ... зарегистрируйте команды
-$application->addCommand(new ScrapePartnersCommand($httpClient));
-$application->addCommand(new ScrapePartnersCommand_V2($httpClient));
+$application->addCommand(new ScrapePartnersCommand($httpClient, $logger));
+$application->addCommand(new ScrapePartnersCommand_V2($httpClient, $logger));
 
 $application->run();
