@@ -1,0 +1,19 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Symfony\Component\Console\Application;
+use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommand;
+use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommand_V2;
+use Symfony\Component\HttpClient\HttpClient;
+
+$application = new Application();
+
+$httpClient = HttpClient::create();
+
+// ... зарегистрируйте команды
+$application->addCommand(new ScrapePartnersCommand($httpClient));
+$application->addCommand(new ScrapePartnersCommand_V2($httpClient));
+
+$application->run();

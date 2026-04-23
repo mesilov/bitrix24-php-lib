@@ -11,7 +11,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
-
 #[AsCommand(
     name: 'bitrix24:partners:scrape',
     description: 'Scrape partners from bitrix24.ru/partners and generate CSV file'

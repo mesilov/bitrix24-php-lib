@@ -38,6 +38,7 @@
     "ext-json": "*",
     "ext-curl": "*",
     "ext-bcmath": "*",
+    "ext-dom": "*",
     "ext-intl": "*",
     "psr/log": "^3",
     "fig/http-message-util": "^1",
