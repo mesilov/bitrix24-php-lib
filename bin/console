@@ -5,7 +5,6 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Symfony\Component\Console\Application;
 use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommand;
-use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommand_V2;
 use Symfony\Component\HttpClient\HttpClient;
 
 use Monolog\Logger;
@@ -21,6 +20,5 @@ $logger->pushHandler(new StreamHandler(__DIR__ . '/../app.log', Logger::DEBUG));
 
 // ... зарегистрируйте команды
 $application->addCommand(new ScrapePartnersCommand($httpClient, $logger));
-$application->addCommand(new ScrapePartnersCommand_V2($httpClient, $logger));
 
 $application->run();
