@@ -35,12 +35,13 @@ class Bitrix24PartnerTest extends Bitrix24PartnerInterfaceTest
         CarbonImmutable       $updatedAt,
         Bitrix24PartnerStatus $bitrix24PartnerStatus,
         string                $title,
-        ?int                  $bitrix24PartnerNumber,
+        int                  $bitrix24PartnerNumber,
         ?string               $site,
         ?PhoneNumber          $phoneNumber,
         ?string               $email,
         ?string               $openLineId,
-        ?string               $externalId
+        ?string               $externalId,
+        ?string               $logoUrl = null
     ): Bitrix24PartnerInterface {
         return new Bitrix24Partner(
             $title,
@@ -49,7 +50,8 @@ class Bitrix24PartnerTest extends Bitrix24PartnerInterfaceTest
             $phoneNumber,
             $email,
             $openLineId,
-            $externalId
+            $externalId,
+            $logoUrl
         );
     }
 }

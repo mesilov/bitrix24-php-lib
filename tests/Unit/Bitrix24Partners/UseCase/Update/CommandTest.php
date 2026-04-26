@@ -26,6 +26,7 @@ class CommandTest extends TestCase
         ?string $email,
         ?string $openLineId,
         ?string $externalId,
+        ?string $logoUrl,
         ?string $expectedException,
         ?string $expectedExceptionMessage
     ): void {
@@ -44,7 +45,8 @@ class CommandTest extends TestCase
             null, // phone
             $email,
             $openLineId,
-            $externalId
+            $externalId,
+            $logoUrl
         );
 
         if (null === $expectedException) {
@@ -54,6 +56,7 @@ class CommandTest extends TestCase
             $this->assertEquals($email, $command->email);
             $this->assertEquals($openLineId, $command->openLineId);
             $this->assertEquals($externalId, $command->externalId);
+            $this->assertEquals($logoUrl, $command->logoUrl);
         }
     }
 
@@ -68,12 +71,14 @@ class CommandTest extends TestCase
             'test@example.com',
             'line-123',
             'ext-123',
+            'https://example.com/logo.png',
             null,
             null,
         ];
 
-        yield 'nullValues' => [
+        yield 'nullValuesExceptTitle' => [
             $id,
+            'Updated Partner',
             null,
             null,
             null,
@@ -90,30 +95,9 @@ class CommandTest extends TestCase
             'test@example.com',
             'line-123',
             'ext-123',
+            null,
             \InvalidArgumentException::class,
-            'title must be null or non-empty string',
-        ];
-
-        yield 'emptySite' => [
-            $id,
-            'Updated Partner',
-            '',
-            'test@example.com',
-            'line-123',
-            'ext-123',
-            \InvalidArgumentException::class,
-            'site must be null or non-empty string',
-        ];
-
-        yield 'emptyEmail' => [
-            $id,
-            'Updated Partner',
-            'https://example.com',
-            '',
-            'line-123',
-            'ext-123',
-            \InvalidArgumentException::class,
-            'email must be null or non-empty string',
+            'title must be non-empty string',
         ];
 
         yield 'invalidEmail' => [
@@ -123,30 +107,9 @@ class CommandTest extends TestCase
             'invalid-email',
             'line-123',
             'ext-123',
+            null,
             \InvalidArgumentException::class,
             'email invalid-email is invalid',
-        ];
-
-        yield 'emptyOpenLineId' => [
-            $id,
-            'Updated Partner',
-            'https://example.com',
-            'test@example.com',
-            '',
-            'ext-123',
-            \InvalidArgumentException::class,
-            'openLineId must be null or non-empty string',
-        ];
-
-        yield 'emptyExternalId' => [
-            $id,
-            'Updated Partner',
-            'https://example.com',
-            'test@example.com',
-            'line-123',
-            '',
-            \InvalidArgumentException::class,
-            'externalId must be null or non-empty string',
         ];
     }
 }

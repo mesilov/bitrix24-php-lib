@@ -21,6 +21,7 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerCr
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerDeletedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerEmailChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerExternalIdChangedEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerLogoUrlChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerOpenLineIdChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerPhoneChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerSiteChangedEvent;
@@ -92,11 +93,8 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         return $this->title;
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     #[\Override]
-    public function setTitle(string $title): void
+    public function changeTitle(string $title): void
     {
         if ('' === trim($title)) {
             throw new InvalidArgumentException('title cannot be empty');
@@ -130,6 +128,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         return $this->logoUrl;
     }
 
+    #[\Override]
     public function changeLogoUrl(?string $logoUrl): void
     {
         if (null !== $logoUrl) {
@@ -148,8 +147,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         $this->logoUrl = $logoUrl;
         $this->updatedAt = new CarbonImmutable();
 
-        // TODO заменить на событие Bitrix24PartnerLogoUrlChangedEvent когда добавят в sdk
-        $this->events[] = new Bitrix24PartnerSiteChangedEvent(
+        $this->events[] = new Bitrix24PartnerLogoUrlChangedEvent(
             $this->id,
             new CarbonImmutable(),
             $oldLogoUrl,
@@ -157,11 +155,8 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         );
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     #[\Override]
-    public function setSite(?string $site): void
+    public function changeSite(?string $site): void
     {
         if (null !== $site) {
             $site = trim($site);
@@ -193,8 +188,18 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         return $this->phone;
     }
 
+    /**
+     * Changes the contact's mobile phone number.
+     *
+     * Note: This method does not validate the phone number.
+     * Make sure to use it through the appropriate use case,
+     * where validation is performed.
+     *
+     * If you use this method outside a use case,
+     * ensure that you pass a valid mobile phone number.
+     */
     #[\Override]
-    public function setPhone(?PhoneNumber $phoneNumber): void
+    public function changePhone(?PhoneNumber $phoneNumber): void
     {
         $oldPhone = $this->phone;
 
@@ -223,11 +228,8 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         return $this->email;
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     #[\Override]
-    public function setEmail(?string $email): void
+    public function changeEmail(?string $email): void
     {
         if (null !== $email) {
             $email = trim($email);
@@ -271,11 +273,8 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         return $this->openLineId;
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     #[\Override]
-    public function setOpenLineId(?string $openLineId): void
+    public function changeOpenLineId(?string $openLineId): void
     {
         if (null !== $openLineId) {
             $openLineId = trim($openLineId);
@@ -307,11 +306,8 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         return $this->externalId;
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     #[\Override]
-    public function setExternalId(?string $externalId): void
+    public function changeExternalId(?string $externalId): void
     {
         if (null !== $externalId) {
             $externalId = trim($externalId);
@@ -418,7 +414,9 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
      */
     public function equals(Bitrix24PartnerInterface $other): bool
     {
-        return $this->getTitle() === $other->getTitle()
+        return
+            $this->getId()->equals($other->getId())
+            && $this->getTitle() === $other->getTitle()
             && $this->getBitrix24PartnerNumber() === $other->getBitrix24PartnerNumber()
             && $this->getSite() === $other->getSite()
             && (

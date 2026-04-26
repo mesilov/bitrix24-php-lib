@@ -8,6 +8,10 @@ use Bitrix24\Lib\Bitrix24Partners\Entity\Bitrix24Partner;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Exceptions\Bitrix24PartnerNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Repository\Bitrix24PartnerRepositoryInterface;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
+use libphonenumber\PhoneNumber;
+use libphonenumber\PhoneNumberType;
+use libphonenumber\PhoneNumberUtil;
 use Psr\Log\LoggerInterface;
 
 readonly class Handler
@@ -15,6 +19,7 @@ readonly class Handler
     public function __construct(
         private Bitrix24PartnerRepositoryInterface $bitrix24PartnerRepository,
         private Flusher $flusher,
+        private PhoneNumberUtil $phoneNumberUtil,
         private LoggerInterface $logger
     ) {}
 
@@ -25,6 +30,10 @@ readonly class Handler
         ]);
 
         try {
+            if (null !== $command->phone) {
+                $this->guardMobilePhoneNumber($command->phone);
+            }
+
             $bitrix24Partner = new Bitrix24Partner(
                 $command->title,
                 $command->bitrix24PartnerNumber,
@@ -51,6 +60,25 @@ readonly class Handler
             throw $exception;
         } finally {
             $this->logger->info('Bitrix24Partners.Create.finish');
+        }
+    }
+
+    private function guardMobilePhoneNumber(PhoneNumber $phoneNumber): void
+    {
+        if (!$this->phoneNumberUtil->isValidNumber($phoneNumber)) {
+            $this->logger->warning('ContactPerson.Create.InvalidMobilePhoneNumber', [
+                'mobilePhoneNumber' => (string) $phoneNumber,
+            ]);
+
+            throw new InvalidArgumentException('Invalid mobile phone number.');
+        }
+
+        if (PhoneNumberType::MOBILE !== $this->phoneNumberUtil->getNumberType($phoneNumber)) {
+            $this->logger->warning('ContactPerson.Create.MobilePhoneNumberMustBeMobile', [
+                'mobilePhoneNumber' => (string) $phoneNumber,
+            ]);
+
+            throw new InvalidArgumentException('Phone number must be mobile.');
         }
     }
 }

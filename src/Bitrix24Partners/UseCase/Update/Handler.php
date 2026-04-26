@@ -10,11 +10,16 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Exceptions\Bitrix24Partn
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Repository\Bitrix24PartnerRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Psr\Log\LoggerInterface;
+use libphonenumber\PhoneNumberType;
+use libphonenumber\PhoneNumberUtil;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
+use libphonenumber\PhoneNumber;
 readonly class Handler
 {
     public function __construct(
         private Bitrix24PartnerRepositoryInterface $bitrix24PartnerRepository,
         private Flusher $flusher,
+        private PhoneNumberUtil $phoneNumberUtil,
         private LoggerInterface $logger
     ) {}
 
@@ -36,27 +41,28 @@ readonly class Handler
             $partner = $this->bitrix24PartnerRepository->getById($command->id);
 
             if ($command->title !== $partner->getTitle()) {
-                $partner->setTitle($command->title);
+                $partner->changeTitle($command->title);
             }
 
             if ($command->site !== $partner->getSite()) {
-                $partner->setSite($command->site);
+                $partner->changeSite($command->site);
             }
 
-            if (null !== $command->phone && !$command->phone->equals($partner->getPhone())) {
-                $partner->setPhone($command->phone);
+            $this->guardMobilePhoneNumber($command->phone);
+            if (!$command->phone->equals($partner->getPhone())) {
+                $partner->changePhone($command->phone);
             }
 
             if ($command->email !== $partner->getEmail()) {
-                $partner->setEmail($command->email);
+                $partner->changeEmail($command->email);
             }
 
             if ($command->openLineId !== $partner->getOpenLineId()) {
-                $partner->setOpenLineId($command->openLineId);
+                $partner->changeOpenLineId($command->openLineId);
             }
 
             if ($command->externalId !== $partner->getExternalId()) {
-                $partner->setExternalId($command->externalId);
+                $partner->changeExternalId($command->externalId);
             }
 
             if ($command->logoUrl !== $partner->getLogoUrl()) {
@@ -89,6 +95,25 @@ readonly class Handler
             $this->logger->info('Bitrix24Partners.Update.finish', [
                 'id' => $command->id->toRfc4122(),
             ]);
+        }
+    }
+
+    private function guardMobilePhoneNumber(PhoneNumber $phoneNumber): void
+    {
+        if (!$this->phoneNumberUtil->isValidNumber($phoneNumber)) {
+            $this->logger->warning('ContactPerson.ChangeProfile.InvalidMobilePhoneNumber', [
+                'mobilePhoneNumber' => (string) $phoneNumber,
+            ]);
+
+            throw new InvalidArgumentException('Invalid mobile phone number.');
+        }
+
+        if (PhoneNumberType::MOBILE !== $this->phoneNumberUtil->getNumberType($phoneNumber)) {
+            $this->logger->warning('ContactPerson.ChangeProfile.MobilePhoneNumberMustBeMobile', [
+                'mobilePhoneNumber' => (string) $phoneNumber,
+            ]);
+
+            throw new InvalidArgumentException('Phone number must be mobile.');
         }
     }
 }

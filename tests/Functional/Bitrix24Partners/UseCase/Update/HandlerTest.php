@@ -11,6 +11,7 @@ use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\Lib\Tests\Functional\Bitrix24Partners\Builders\Bitrix24PartnerBuilder;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerEmailChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerExternalIdChangedEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerLogoUrlChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerOpenLineIdChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerPhoneChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerSiteChangedEvent;
@@ -45,6 +46,8 @@ class HandlerTest extends TestCase
 
     private EntityManagerInterface $entityManager;
 
+    private PhoneNumberUtil $phoneNumberUtil;
+
     #[\Override]
     protected function setUp(): void
     {
@@ -52,9 +55,11 @@ class HandlerTest extends TestCase
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $this->repository = new Bitrix24PartnerRepository($this->entityManager);
         $this->flusher = new Flusher($this->entityManager, $this->eventDispatcher);
+        $this->phoneNumberUtil = PhoneNumberUtil::getInstance();
         $this->handler = new Bitrix24Partners\UseCase\Update\Handler(
             $this->repository,
             $this->flusher,
+            $this->phoneNumberUtil,
             new NullLogger()
         );
     }
@@ -188,6 +193,7 @@ class HandlerTest extends TestCase
                 Bitrix24PartnerEmailChangedEvent::class,
                 Bitrix24PartnerOpenLineIdChangedEvent::class,
                 Bitrix24PartnerExternalIdChangedEvent::class,
+                Bitrix24PartnerLogoUrlChangedEvent::class,
             ],
         ];
 
