@@ -14,11 +14,7 @@
 
         <field name="email" type="string" column="email" nullable="true"/>
 
-        <field name="bitrix24PartnerNumber" type="integer" column="b24_partner_number" nullable="false">
-            <options>
-                <option name="unique">true</option>
-            </options>
-        </field>
+        <field name="bitrix24PartnerNumber" type="integer" column="b24_partner_number" nullable="false" unique="true"/>
 
         <field name="openLineId" type="string" column="open_line_id" nullable="true"/>
 

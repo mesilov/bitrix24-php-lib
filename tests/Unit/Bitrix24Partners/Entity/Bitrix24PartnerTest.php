@@ -44,6 +44,7 @@ class Bitrix24PartnerTest extends Bitrix24PartnerInterfaceTest
         ?string               $logoUrl = null
     ): Bitrix24PartnerInterface {
         return new Bitrix24Partner(
+            $uuid,
             $title,
             $bitrix24PartnerNumber,
             $site,

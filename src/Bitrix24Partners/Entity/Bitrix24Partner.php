@@ -34,8 +34,6 @@ use Symfony\Component\Uid\Uuid;
 
 class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
 {
-    private readonly Uuid $id;
-
     private readonly CarbonImmutable $createdAt;
 
     private CarbonImmutable $updatedAt;
@@ -45,6 +43,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
     private ?string $comment = null;
 
     public function __construct(
+        private readonly Uuid $id,
         private string $title,
         private readonly int $bitrix24PartnerNumber,
         private ?string $site = null,
@@ -54,7 +53,6 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         private ?string $externalId = null,
         private ?string $logoUrl = null,
     ) {
-        $this->id = Uuid::v7();
         $this->createdAt = new CarbonImmutable();
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24PartnerCreatedEvent(

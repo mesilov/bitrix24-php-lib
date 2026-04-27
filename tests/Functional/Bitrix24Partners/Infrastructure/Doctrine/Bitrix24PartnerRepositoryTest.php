@@ -50,6 +50,7 @@ class Bitrix24PartnerRepositoryTest extends Bitrix24PartnerRepositoryInterfaceTe
         ?string               $externalId
     ): Bitrix24PartnerInterface {
        return new Bitrix24Partner(
+            $uuid,
             $title,
             $bitrix24PartnerNumber,
             $site,

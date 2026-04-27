@@ -110,6 +110,7 @@ class Bitrix24PartnerBuilder
     public function build(): Bitrix24Partner
     {
         $bitrix24Partner = new Bitrix24Partner(
+            Uuid::v7(),
             $this->title,
             $this->bitrix24PartnerNumber,
             $this->site,
