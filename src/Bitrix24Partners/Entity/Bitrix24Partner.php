@@ -21,7 +21,7 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerCr
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerDeletedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerEmailChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerExternalIdChangedEvent;
-use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerIdChangedEvent;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerLogoUrlChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerOpenLineIdChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerPhoneChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerSiteChangedEvent;
@@ -34,22 +34,25 @@ use Symfony\Component\Uid\Uuid;
 
 class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
 {
-    private readonly Uuid $id;
     private readonly CarbonImmutable $createdAt;
+
     private CarbonImmutable $updatedAt;
+
     private Bitrix24PartnerStatus $status = Bitrix24PartnerStatus::active;
+
     private ?string $comment = null;
 
     public function __construct(
+        private readonly Uuid $id,
         private string $title,
-        private int $bitrix24PartnerId,
+        private readonly int $bitrix24PartnerNumber,
         private ?string $site = null,
         private ?PhoneNumber $phone = null,
         private ?string $email = null,
         private ?string $openLineId = null,
-        private ?string $externalId = null
+        private ?string $externalId = null,
+        private ?string $logoUrl = null,
     ) {
-        $this->id = Uuid::v7();
         $this->createdAt = new CarbonImmutable();
         $this->updatedAt = new CarbonImmutable();
         $this->events[] = new Bitrix24PartnerCreatedEvent(
@@ -88,26 +91,28 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         return $this->title;
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     #[\Override]
-    public function setTitle(string $title): void
+    public function changeTitle(string $title): void
     {
         if ('' === trim($title)) {
             throw new InvalidArgumentException('title cannot be empty');
         }
 
         $oldTitle = $this->title;
+
+        if ($oldTitle === $title) {
+            return;
+        }
+
         $this->title = $title;
         $this->updatedAt = new CarbonImmutable();
 
-        if ($oldTitle !== $title) {
-            $this->events[] = new Bitrix24PartnerTitleChangedEvent(
-                $this->id,
-                new CarbonImmutable()
-            );
-        }
+        $this->events[] = new Bitrix24PartnerTitleChangedEvent(
+            $this->id,
+            new CarbonImmutable(),
+            $oldTitle,
+            $title
+        );
     }
 
     #[\Override]
@@ -116,26 +121,63 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         return $this->site;
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
-    #[\Override]
-    public function setSite(?string $site): void
+    public function getLogoUrl(): ?string
     {
-        if (null !== $site && '' === trim($site)) {
-            throw new InvalidArgumentException('site cannot be empty string');
+        return $this->logoUrl;
+    }
+
+    #[\Override]
+    public function changeLogoUrl(?string $logoUrl): void
+    {
+        if (null !== $logoUrl) {
+            $logoUrl = trim($logoUrl);
+            if ('' === $logoUrl) {
+                $logoUrl = null;
+            }
+        }
+
+        $oldLogoUrl = $this->logoUrl;
+
+        if ($oldLogoUrl === $logoUrl) {
+            return;
+        }
+
+        $this->logoUrl = $logoUrl;
+        $this->updatedAt = new CarbonImmutable();
+
+        $this->events[] = new Bitrix24PartnerLogoUrlChangedEvent(
+            $this->id,
+            new CarbonImmutable(),
+            $oldLogoUrl,
+            $logoUrl
+        );
+    }
+
+    #[\Override]
+    public function changeSite(?string $site): void
+    {
+        if (null !== $site) {
+            $site = trim($site);
+            if ('' === $site) {
+                $site = null;
+            }
         }
 
         $oldSite = $this->site;
+
+        if ($oldSite === $site) {
+            return;
+        }
+
         $this->site = $site;
         $this->updatedAt = new CarbonImmutable();
 
-        if ($oldSite !== $site) {
-            $this->events[] = new Bitrix24PartnerSiteChangedEvent(
-                $this->id,
-                new CarbonImmutable()
-            );
-        }
+        $this->events[] = new Bitrix24PartnerSiteChangedEvent(
+            $this->id,
+            new CarbonImmutable(),
+            $oldSite,
+            $site
+        );
     }
 
     #[\Override]
@@ -144,23 +186,38 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         return $this->phone;
     }
 
+    /**
+     * Changes the contact's mobile phone number.
+     *
+     * Note: This method does not validate the phone number.
+     * Make sure to use it through the appropriate use case,
+     * where validation is performed.
+     *
+     * If you use this method outside a use case,
+     * ensure that you pass a valid mobile phone number.
+     */
     #[\Override]
-    public function setPhone(?PhoneNumber $phone): void
+    public function changePhone(?PhoneNumber $phoneNumber): void
     {
         $oldPhone = $this->phone;
-        $this->phone = $phone;
+
+        if (null === $oldPhone && null === $phoneNumber) {
+            return;
+        }
+
+        if (null !== $oldPhone && null !== $phoneNumber && $oldPhone->equals($phoneNumber)) {
+            return;
+        }
+
+        $this->phone = $phoneNumber;
         $this->updatedAt = new CarbonImmutable();
 
-        // Compare phone numbers - both null, or both equal
-        $isChanged = !($oldPhone === null && $phone === null)
-            && !($oldPhone !== null && $phone !== null && $oldPhone->equals($phone));
-
-        if ($isChanged) {
-            $this->events[] = new Bitrix24PartnerPhoneChangedEvent(
-                $this->id,
-                new CarbonImmutable()
-            );
-        }
+        $this->events[] = new Bitrix24PartnerPhoneChangedEvent(
+            $this->id,
+            new CarbonImmutable(),
+            $oldPhone,
+            $phoneNumber
+        );
     }
 
     #[\Override]
@@ -169,26 +226,31 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         return $this->email;
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     #[\Override]
-    public function setEmail(?string $email): void
+    public function changeEmail(?string $email): void
     {
-        if (null !== $email && '' === trim($email)) {
-            throw new InvalidArgumentException('email cannot be empty string');
+        if (null !== $email) {
+            $email = trim($email);
+            if ('' === $email) {
+                $email = null;
+            }
         }
 
         $oldEmail = $this->email;
+
+        if ($oldEmail === $email) {
+            return;
+        }
+
         $this->email = $email;
         $this->updatedAt = new CarbonImmutable();
 
-        if ($oldEmail !== $email) {
-            $this->events[] = new Bitrix24PartnerEmailChangedEvent(
-                $this->id,
-                new CarbonImmutable()
-            );
-        }
+        $this->events[] = new Bitrix24PartnerEmailChangedEvent(
+            $this->id,
+            new CarbonImmutable(),
+            $oldEmail,
+            $email
+        );
     }
 
     #[\Override]
@@ -198,35 +260,9 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
     }
 
     #[\Override]
-    public function getBitrix24PartnerId(): int
+    public function getBitrix24PartnerNumber(): int
     {
-        return $this->bitrix24PartnerId;
-    }
-
-    /**
-     * @deprecated This method is deprecated and should not be used. Bitrix24PartnerId is immutable.
-     *
-     * @todo Create issue in https://github.com/bitrix24/b24phpsdk to remove this method from interface
-     *
-     * @throws InvalidArgumentException
-     */
-    #[\Override]
-    public function setBitrix24PartnerId(?int $bitrix24PartnerId): void
-    {
-        if (null === $bitrix24PartnerId || $bitrix24PartnerId < 0) {
-            throw new InvalidArgumentException('bitrix24PartnerId cannot be null or negative');
-        }
-
-        $oldId = $this->bitrix24PartnerId;
-        $this->bitrix24PartnerId = $bitrix24PartnerId;
-        $this->updatedAt = new CarbonImmutable();
-
-        if ($oldId !== $bitrix24PartnerId) {
-            $this->events[] = new Bitrix24PartnerIdChangedEvent(
-                $this->id,
-                new CarbonImmutable()
-            );
-        }
+        return $this->bitrix24PartnerNumber;
     }
 
     #[\Override]
@@ -235,26 +271,31 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         return $this->openLineId;
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     #[\Override]
-    public function setOpenLineId(?string $openLineId): void
+    public function changeOpenLineId(?string $openLineId): void
     {
-        if (null !== $openLineId && '' === trim($openLineId)) {
-            throw new InvalidArgumentException('openLineId cannot be empty string');
+        if (null !== $openLineId) {
+            $openLineId = trim($openLineId);
+            if ('' === $openLineId) {
+                $openLineId = null;
+            }
         }
 
         $oldOpenLineId = $this->openLineId;
+
+        if ($oldOpenLineId === $openLineId) {
+            return;
+        }
+
         $this->openLineId = $openLineId;
         $this->updatedAt = new CarbonImmutable();
 
-        if ($oldOpenLineId !== $openLineId) {
-            $this->events[] = new Bitrix24PartnerOpenLineIdChangedEvent(
-                $this->id,
-                new CarbonImmutable()
-            );
-        }
+        $this->events[] = new Bitrix24PartnerOpenLineIdChangedEvent(
+            $this->id,
+            new CarbonImmutable(),
+            $oldOpenLineId,
+            $openLineId
+        );
     }
 
     #[\Override]
@@ -263,26 +304,31 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         return $this->externalId;
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     #[\Override]
-    public function setExternalId(?string $externalId): void
+    public function changeExternalId(?string $externalId): void
     {
-        if (null !== $externalId && '' === trim($externalId)) {
-            throw new InvalidArgumentException('externalId cannot be empty string');
+        if (null !== $externalId) {
+            $externalId = trim($externalId);
+            if ('' === $externalId) {
+                $externalId = null;
+            }
         }
 
         $oldExternalId = $this->externalId;
+
+        if ($oldExternalId === $externalId) {
+            return;
+        }
+
         $this->externalId = $externalId;
         $this->updatedAt = new CarbonImmutable();
 
-        if ($oldExternalId !== $externalId) {
-            $this->events[] = new Bitrix24PartnerExternalIdChangedEvent(
-                $this->id,
-                new CarbonImmutable()
-            );
-        }
+        $this->events[] = new Bitrix24PartnerExternalIdChangedEvent(
+            $this->id,
+            new CarbonImmutable(),
+            $oldExternalId,
+            $externalId
+        );
     }
 
     /**
@@ -306,8 +352,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
 
         $this->events[] = new Bitrix24PartnerUnblockedEvent(
             $this->id,
-            new CarbonImmutable(),
-            $this->comment
+            new CarbonImmutable()
         );
     }
 
@@ -317,8 +362,13 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
     #[\Override]
     public function markAsBlocked(?string $comment): void
     {
-        if (Bitrix24PartnerStatus::deleted === $this->status) {
-            throw new InvalidArgumentException('you cannot block partner in status «deleted»');
+        if (Bitrix24PartnerStatus::active !== $this->status) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'you can blocked partner only in status «active», now partner in status «%s»',
+                    $this->status->name
+                )
+            );
         }
 
         $this->status = Bitrix24PartnerStatus::blocked;
@@ -327,8 +377,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
 
         $this->events[] = new Bitrix24PartnerBlockedEvent(
             $this->id,
-            new CarbonImmutable(),
-            $this->comment
+            new CarbonImmutable()
         );
     }
 
@@ -348,9 +397,32 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
 
         $this->events[] = new Bitrix24PartnerDeletedEvent(
             $this->id,
-            new CarbonImmutable(),
-            $this->comment
+            new CarbonImmutable()
         );
     }
 
+    /**
+     * Returns whether this Bitrix24Partner is equal to another.
+     *
+     * Now we use this method only for testing purposes.
+     *
+     * @param Bitrix24PartnerInterface $other the Bitrix24Partner to compare
+     *
+     * @return bool true if the Bitrix24Partner are equal, false otherwise
+     */
+    public function equals(Bitrix24PartnerInterface $other): bool
+    {
+        return
+            $this->getId()->equals($other->getId())
+            && $this->getTitle() === $other->getTitle()
+            && $this->getBitrix24PartnerNumber() === $other->getBitrix24PartnerNumber()
+            && $this->getSite() === $other->getSite()
+            && (
+                (null === $this->getPhone() && null === $other->getPhone())
+                || (null !== $this->getPhone() && null !== $other->getPhone() && $this->getPhone()->equals($other->getPhone()))
+            )
+            && $this->getEmail() === $other->getEmail()
+            && $this->getOpenLineId() === $other->getOpenLineId()
+            && $this->getExternalId() === $other->getExternalId();
+    }
 }

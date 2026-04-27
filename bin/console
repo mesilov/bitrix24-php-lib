@@ -1,0 +1,24 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Symfony\Component\Console\Application;
+use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommand;
+use Symfony\Component\HttpClient\HttpClient;
+
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+$application = new Application();
+
+$httpClient = HttpClient::create();
+
+// Настройка логирования в файл app.log в корне проекта
+$logger = new Logger('bitrix24-lib');
+$logger->pushHandler(new StreamHandler(__DIR__ . '/../app.log', Logger::DEBUG));
+
+// ... зарегистрируйте команды
+$application->addCommand(new ScrapePartnersCommand($httpClient, $logger));
+
+$application->run();
