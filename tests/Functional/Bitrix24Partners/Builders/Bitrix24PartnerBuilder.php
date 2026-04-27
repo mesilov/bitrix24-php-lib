@@ -41,7 +41,7 @@ class Bitrix24PartnerBuilder
     public function __construct()
     {
         $this->title = 'Test Partner '.Uuid::v4()->toRfc4122();
-        $this->bitrix24PartnerNumber = random_int(1, 1_000_000);
+        $this->bitrix24PartnerNumber = random_int(1, 2_147_483_647);
     }
 
     public function withTitle(string $title): self

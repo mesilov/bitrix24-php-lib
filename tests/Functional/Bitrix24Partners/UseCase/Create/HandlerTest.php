@@ -67,7 +67,6 @@ class HandlerTest extends TestCase
     {
         $expectedPartner = (new Bitrix24PartnerBuilder())
             ->withTitle('Test Partner')
-            ->withBitrix24PartnerNumber(rand(1000, 9999))
             ->withSite('https://example.com')
             ->withPhone(null)
             ->withEmail('test@example.com')

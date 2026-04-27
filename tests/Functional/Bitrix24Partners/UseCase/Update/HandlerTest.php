@@ -79,7 +79,6 @@ class HandlerTest extends TestCase
 
         $partner = (new Bitrix24PartnerBuilder())
             ->withTitle('Original Title')
-            ->withBitrix24PartnerNumber(123)
             ->withSite('https://original.com')
             ->withPhone(PhoneNumberUtil::getInstance()->parse('+79001112233', 'RU'))
             ->withEmail('original@example.com')
@@ -107,8 +106,6 @@ class HandlerTest extends TestCase
 
         $this->handler->handle($command);
 
-        $this->entityManager->clear();
-
         $orphanedEvents = $this->eventDispatcher->getOrphanedEvents();
         foreach ($expectedEvents as $expectedEvent) {
             $this->assertContains(
@@ -117,6 +114,8 @@ class HandlerTest extends TestCase
                 sprintf('not found expected domain event «%s»', $expectedEvent)
             );
         }
+
+        $this->entityManager->clear();
 
         $updatedPartner = $this->repository->getById($id);
         $this->assertEquals($newTitle, $updatedPartner->getTitle());
@@ -146,8 +145,8 @@ class HandlerTest extends TestCase
     ): void {
         $partner = (new Bitrix24PartnerBuilder())
             ->withTitle('Original Title')
-            ->withBitrix24PartnerNumber(123)
             ->build();
+
         $this->repository->save($partner);
         $this->flusher->flush();
         $id = $partner->getId();
