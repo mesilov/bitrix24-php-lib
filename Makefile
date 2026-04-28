@@ -38,15 +38,15 @@ debug-print-env:
 
 init:
 	@echo "remove all containers"
-	docker-compose down --remove-orphans
+	docker compose down --remove-orphans
 	@echo "build containers"
-	docker-compose build
+	docker compose build
 	@echo "install dependencies"
-	docker-compose run --rm php-cli composer install
+	docker compose run --rm php-cli composer install
 	@echo "change owner of var folder for access from container"
     docker-compose run --rm php-cli chown -R www-data:www-data /var/www/html/var/
 	@echo "run application…"
-	docker-compose up -d
+	docker compose up -d
 
 
 clear:
@@ -105,7 +105,7 @@ lint-cs-fixer-fix:
 
 # unit-tests
 test-run-unit:
-	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=unit_tests --display-warnings --testdox
+	docker compose run --rm php-cli php vendor/bin/phpunit --testsuite=unit_tests --display-warnings --testdox
 
 # functional-tests, work with test database
 test-run-functional: debug-print-env
@@ -115,14 +115,14 @@ test-run-functional: debug-print-env
 	docker compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
 
 test-run-partners:
-	docker compose run --rm php-cli php bin/console bitrix24:partners:scrape
+	docker compose run --rm php-cli php bin/console partners:scrape
 
 # Run one functional test with debugger
 run-one-functional-test: debug-print-env
 	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testCreatePartner' tests/Functional/Bitrix24Partners/UseCase/Create/HandlerTest.php
 
 schema-drop:
-	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
+	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
 
 schema-create:
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:create
