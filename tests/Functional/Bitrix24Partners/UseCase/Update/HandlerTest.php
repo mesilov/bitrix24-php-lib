@@ -176,7 +176,17 @@ class HandlerTest extends TestCase
     {
         yield 'empty title' => ['', null, null, null, null, null, null, 'title must be non-empty string'];
         yield 'blank title' => ['  ', null, null, null, null, null, null, 'title must be non-empty string'];
+        yield 'empty site' => ['Valid Title', '', null, null, null, null, null, 'site must be non-empty string'];
+        yield 'blank site' => ['Valid Title', '  ', null, null, null, null, null, 'site must be non-empty string'];
+        yield 'empty email' => ['Valid Title', null, null, '', null, null, null, 'email must be non-empty string'];
+        yield 'blank email' => ['Valid Title', null, null, '  ', null, null, null, 'email must be non-empty string'];
         yield 'invalid email' => ['Valid Title', null, null, 'invalid-email', null, null, null, 'is invalid'];
+        yield 'empty openLineId' => ['Valid Title', null, null, null, '', null, null, 'openLineId must be non-empty string'];
+        yield 'blank openLineId' => ['Valid Title', null, null, null, '  ', null, null, 'openLineId must be non-empty string'];
+        yield 'empty externalId' => ['Valid Title', null, null, null, null, '', null, 'externalId must be non-empty string'];
+        yield 'blank externalId' => ['Valid Title', null, null, null, null, '  ', null, 'externalId must be non-empty string'];
+        yield 'empty logoUrl' => ['Valid Title', null, null, null, null, null, '', 'logoUrl must be non-empty string'];
+        yield 'blank logoUrl' => ['Valid Title', null, null, null, null, null, '  ', 'logoUrl must be non-empty string'];
     }
 
     public static function updateDataProvider(): \Generator

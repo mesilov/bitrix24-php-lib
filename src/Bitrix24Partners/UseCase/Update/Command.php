@@ -32,8 +32,30 @@ readonly class Command
             throw new \InvalidArgumentException('title must be non-empty string');
         }
 
-        if (null !== $this->email && false === filter_var(trim($this->email), FILTER_VALIDATE_EMAIL)) {
-            throw new \InvalidArgumentException(sprintf('email %s is invalid', $this->email));
+        if (null !== $this->site && '' === trim($this->site)) {
+            throw new \InvalidArgumentException('site must be non-empty string');
+        }
+
+        if (null !== $this->email) {
+            if ('' === trim($this->email)) {
+                throw new \InvalidArgumentException('email must be non-empty string');
+            }
+
+            if (false === filter_var(trim($this->email), FILTER_VALIDATE_EMAIL)) {
+                throw new \InvalidArgumentException(sprintf('email %s is invalid', $this->email));
+            }
+        }
+
+        if (null !== $this->openLineId && '' === trim($this->openLineId)) {
+            throw new \InvalidArgumentException('openLineId must be non-empty string');
+        }
+
+        if (null !== $this->externalId && '' === trim($this->externalId)) {
+            throw new \InvalidArgumentException('externalId must be non-empty string');
+        }
+
+        if (null !== $this->logoUrl && '' === trim($this->logoUrl)) {
+            throw new \InvalidArgumentException('logoUrl must be non-empty string');
         }
     }
 }

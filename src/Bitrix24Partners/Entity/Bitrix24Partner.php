@@ -132,7 +132,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         if (null !== $logoUrl) {
             $logoUrl = trim($logoUrl);
             if ('' === $logoUrl) {
-                $logoUrl = null;
+                throw new InvalidArgumentException('logoUrl cannot be empty');
             }
         }
 
@@ -159,7 +159,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         if (null !== $site) {
             $site = trim($site);
             if ('' === $site) {
-                $site = null;
+                throw new InvalidArgumentException('site cannot be empty');
             }
         }
 
@@ -232,7 +232,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         if (null !== $email) {
             $email = trim($email);
             if ('' === $email) {
-                $email = null;
+                throw new InvalidArgumentException('email cannot be empty');
             }
         }
 
@@ -277,7 +277,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         if (null !== $openLineId) {
             $openLineId = trim($openLineId);
             if ('' === $openLineId) {
-                $openLineId = null;
+                throw new InvalidArgumentException('openLineId cannot be empty');
             }
         }
 
@@ -310,7 +310,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         if (null !== $externalId) {
             $externalId = trim($externalId);
             if ('' === $externalId) {
-                $externalId = null;
+                throw new InvalidArgumentException('externalId cannot be empty');
             }
         }
 
