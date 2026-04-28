@@ -31,8 +31,6 @@ class Bitrix24PartnerTest extends Bitrix24PartnerInterfaceTest
     #[\Override]
     protected function createBitrix24PartnerImplementation(
         Uuid                  $uuid,
-        CarbonImmutable       $createdAt,
-        CarbonImmutable       $updatedAt,
         Bitrix24PartnerStatus $bitrix24PartnerStatus,
         string                $title,
         int                  $bitrix24PartnerNumber,

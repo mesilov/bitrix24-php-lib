@@ -18,6 +18,7 @@ use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerReposit
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\Lib\Tests\Functional\FlusherDecorator;
+use Bitrix24\Lib\Tests\Functional\FunctionalTestTrait;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Entity\Bitrix24PartnerInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Entity\Bitrix24PartnerStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Repository\Bitrix24PartnerRepositoryInterface;
@@ -35,11 +36,16 @@ use Symfony\Component\Uid\Uuid;
 #[CoversClass(Bitrix24PartnerRepository::class)]
 class Bitrix24PartnerRepositoryTest extends Bitrix24PartnerRepositoryInterfaceTest
 {
+    use FunctionalTestTrait;
+
+    protected function setUp(): void
+    {
+        $this->truncateBitrix24Partners();
+    }
+
     #[\Override]
     protected function createBitrix24PartnerImplementation(
         Uuid                  $uuid,
-        CarbonImmutable       $createdAt,
-        CarbonImmutable       $updatedAt,
         Bitrix24PartnerStatus $bitrix24PartnerStatus,
         string                $title,
         ?int                  $bitrix24PartnerNumber,

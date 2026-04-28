@@ -27,9 +27,19 @@ class EntityManagerFactory
      */
     private static ?EntityManager $entityManager = null;
 
+    public static function reset(): void
+    {
+        if (self::$entityManager instanceof EntityManager) {
+            if (self::$entityManager->isOpen()) {
+                self::$entityManager->clear();
+            }
+            self::$entityManager = null;
+        }
+    }
+
     public static function get(): EntityManagerInterface
     {
-        if (!self::$entityManager instanceof EntityManager) {
+        if (!self::$entityManager instanceof EntityManager || !self::$entityManager->isOpen()) {
             $paths = [
                 dirname(__DIR__).'/config/xml',
             ];

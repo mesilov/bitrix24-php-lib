@@ -9,6 +9,7 @@ use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerReposit
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\Lib\Tests\Functional\Bitrix24Partners\Builders\Bitrix24PartnerBuilder;
+use Bitrix24\Lib\Tests\Functional\FunctionalTestTrait;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Entity\Bitrix24PartnerStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerUnblockedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Repository\Bitrix24PartnerRepositoryInterface;
@@ -28,6 +29,8 @@ use Symfony\Component\Stopwatch\Stopwatch;
 #[CoversClass(Bitrix24Partners\UseCase\MarkAsActive\Handler::class)]
 class HandlerTest extends TestCase
 {
+    use FunctionalTestTrait;
+
     private Bitrix24Partners\UseCase\MarkAsActive\Handler $handler;
 
     private Flusher $flusher;
@@ -41,6 +44,7 @@ class HandlerTest extends TestCase
     #[\Override]
     protected function setUp(): void
     {
+        $this->truncateBitrix24Partners();
         $this->entityManager = EntityManagerFactory::get();
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $this->repository = new Bitrix24PartnerRepository($this->entityManager);
