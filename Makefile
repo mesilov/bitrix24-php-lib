@@ -115,7 +115,7 @@ test-run-functional: debug-print-env
 	docker compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
 
 test-run-partners:
-	docker compose run --rm php-cli php bin/console partners:scrape
+	docker compose run --rm php-cli php bin/console partners:scrape-v2
 
 # Run one functional test with debugger
 run-one-functional-test: debug-print-env

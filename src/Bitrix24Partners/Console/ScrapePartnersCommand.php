@@ -12,7 +12,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Component\DomCrawler\Crawler;
 
 /*#[AsCommand(
     name: 'bitrix24:partners:scrape',

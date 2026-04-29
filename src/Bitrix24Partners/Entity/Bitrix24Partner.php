@@ -231,9 +231,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
     {
         if (null !== $email) {
             $email = trim($email);
-            if ('' === $email) {
-                throw new InvalidArgumentException('email cannot be empty');
-            }
+            $this->guardValidEmail($email);
         }
 
         $oldEmail = $this->email;
@@ -424,5 +422,18 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
             && $this->getEmail() === $other->getEmail()
             && $this->getOpenLineId() === $other->getOpenLineId()
             && $this->getExternalId() === $other->getExternalId();
+    }
+
+    private function guardValidEmail(string $email): void
+    {
+        $email = trim($email);
+
+        if ('' === $email) {
+            throw new InvalidArgumentException('email cannot be empty');
+        }
+
+        if (false === filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new InvalidArgumentException(sprintf('email %s is invalid', $this->email));
+        }
     }
 }

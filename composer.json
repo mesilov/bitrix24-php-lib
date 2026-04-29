@@ -51,10 +51,17 @@
     "league/csv": "^9.0",
     "moneyphp/money": "^4",
     "nesbot/carbon": "^3",
+    "nyholm/psr7": "^1.8",
     "odolbeau/phone-number-bundle": "^3.0",
+    "php-http/discovery": "^1.20",
+    "php-http/message": "^1.16",
+    "psr/http-client": "^1.0",
+    "psr/http-factory": "^1.1",
     "psr/log": "^3",
     "symfony/cache": "^7",
     "symfony/console": "^7",
+    "symfony/css-selector": "^8.0",
+    "symfony/dom-crawler": "^8.0",
     "symfony/dotenv": "^7",
     "symfony/event-dispatcher": "^7",
     "symfony/http-client": "^7",
@@ -77,6 +84,11 @@
     "symfony/stopwatch": "^7",
     "symfony/var-exporter": "^7",
     "symfony/http-kernel": "^7"
+  },
+  "suggest": {
+    "php-http/guzzle7-adapter": "For Guzzle HTTP client",
+    "symfony/http-client": "For Symfony HTTP client",
+    "php-http/curl-client": "For cURL-based client"
   },
   "autoload": {
     "psr-4": {
