@@ -24,7 +24,7 @@ readonly class PartnerHtmlParser
         $crawler->filter('div.bp-partner-list-item-cnr.js-partners-list-item')->each(
             function (Crawler $node) use (&$partners) {
                 $partnerNumber = (int) $node->attr('data-partner-id');
-                if ($partnerNumber === 0) {
+                if (0 === $partnerNumber) {
                     return;
                 }
 
@@ -86,13 +86,13 @@ readonly class PartnerHtmlParser
                         $fullText = trim($p->text());
                         $label = trim($b->text());
                         $extracted = trim(str_replace($label, '', $fullText));
-                        if ($extracted !== '') {
+                        if ('' !== $extracted) {
                             $phone = $extracted;
                         }
                     }
                 });
 
-                return $phone;
+                return $this->cleanText($phone);
             }
         } catch (\Throwable $e) {
             $this->logger->warning(sprintf('Ошибка парсинга phone: %s', $e->getMessage()));
@@ -114,7 +114,7 @@ readonly class PartnerHtmlParser
                     }
                 });
 
-                return $email;
+                return $this->cleanText($email);
             }
         } catch (\Throwable $e) {
             $this->logger->warning(sprintf('Ошибка парсинга email: %s', $e->getMessage()));
@@ -128,7 +128,7 @@ readonly class PartnerHtmlParser
         try {
             $logoNode = $crawler->filter('img.bx-partner-detail-header-logo-img')->first();
             if ($logoNode->count() > 0) {
-                return $logoNode->attr('src') ?? '';
+                return $this->cleanText($logoNode->attr('src') ?? '');
             }
         } catch (\Throwable $e) {
             $this->logger->warning(sprintf('Ошибка парсинга logo_url: %s', $e->getMessage()));
@@ -142,12 +142,37 @@ readonly class PartnerHtmlParser
         try {
             $siteNode = $crawler->filter('a.bx-partner-detail-header-info-link')->first();
             if ($siteNode->count() > 0) {
-                return $siteNode->attr('href') ?? '';
+                return $this->normalizeUrl($this->cleanText($siteNode->attr('href') ?? ''));
             }
         } catch (\Throwable $e) {
             $this->logger->warning(sprintf('Ошибка парсинга site: %s', $e->getMessage()));
         }
 
         return '';
+    }
+
+    private function cleanText(string $text): string
+    {
+        $text = trim($text);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = str_replace("\xc2\xa0", ' ', $text);
+        $text = preg_replace('/\s+/', ' ', $text);
+
+        return trim($text);
+    }
+
+    private function normalizeUrl(string $url): string
+    {
+        $url = trim($url);
+
+        if ('' === $url) {
+            return '';
+        }
+
+        if (str_starts_with($url, '//')) {
+            return 'https:'.$url;
+        }
+
+        return $url;
     }
 }
