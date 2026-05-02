@@ -20,7 +20,7 @@ $httpClient = HttpClient::create();
 $logger = new Logger('bitrix24-lib');
 $logger->pushHandler(new StreamHandler(__DIR__ . '/../app.log', Logger::DEBUG));
 
-$application->addCommand(new ScrapePartnersCommand($httpClient, $logger));
+//$application->addCommand(new ScrapePartnersCommand($httpClient, $logger));
 $application->addCommand(new ScrapePartnersCommandV2(
     $logger,
     new PartnerPageScraper($logger),

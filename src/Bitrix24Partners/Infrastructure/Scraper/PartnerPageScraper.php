@@ -86,18 +86,18 @@ class PartnerPageScraper
         return $data['html'];
     }
 
-    public function fetchPartnerDetailHtml(string $detailPageUrl, bool $insecure): ?string
+    public function fetchPartnerDetailHtml(string $detailPageUrl, bool $insecure, string $baseDomain = 'https://www.bitrix24.kz'): ?string
     {
         if ($detailPageUrl === '') {
             return null;
         }
 
-        $fullUrl = 'https://www.bitrix24.kz' . $detailPageUrl;
+        $fullUrl = rtrim($baseDomain, '/') . $detailPageUrl;
 
         try {
             $request = $this->getRequestFactory()->createRequest('GET', $fullUrl)
                 ->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
-                ->withHeader('Referer', 'https://www.bitrix24.kz/partners/');
+                ->withHeader('Referer', $baseDomain . '/partners/');
 
             $response = $this->getHttpClient($insecure)->sendRequest($request);
 

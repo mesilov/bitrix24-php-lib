@@ -1,310 +1,505 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Bitrix24\Lib\Bitrix24Partners\Console;
 
-use DOMDocument;
-use DOMElement;
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerHtmlParser;
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
+use League\Csv\Reader;
+use League\Csv\Writer;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 
-/*#[AsCommand(
-    name: 'bitrix24:partners:scrape',
-    description: 'Scrape partners from bitrix24.ru/partners and generate CSV file'
-)]*/
+#[AsCommand(
+    name: 'partners:scrape',
+    description: 'Парсит партнеров Bitrix24 и сохраняет данные в CSV'
+)]
 class ScrapePartnersCommand extends Command
 {
-    // Конфигурация
-    private const BASE_URL = 'https://www.bitrix24.kz/partners/country__22/';
-    private const DELAY_BETWEEN_PAGES = 3; // секунды
-    private const DELAY_BETWEEN_PARTNERS = 3; // секунд
-    private const HTTP_TIMEOUT = 10; // секунд
-    private HttpClientInterface $httpClient;
-    private LoggerInterface $logger;
-    private OutputInterface $output;
+    private const DEFAULT_BASE_URL = 'https://www.bitrix24.kz/partners/country__22/';
+    private const DEFAULT_OUTPUT_FILE = 'partners.csv';
+    private const DEFAULT_PAGE_DELAY = 3;
+    private const DEFAULT_PARTNER_DELAY = 2;
+    private const CSV_HEADERS = [
+        'bitrix24_partner_number',
+        'title',
+        'site',
+        'phone',
+        'email',
+        'logo_url',
+        'detail_page_url',
+        'open_line_id',
+        'external_id',
+        'scraped_at',
+    ];
 
-    public function __construct(HttpClientInterface $httpClient, LoggerInterface $logger)
-    {
+    public function __construct(
+        private readonly LoggerInterface $logger,
+        private readonly PartnerPageScraper $scraper,
+        private readonly PartnerHtmlParser $parser,
+    ) {
         parent::__construct();
-        $this->httpClient = $httpClient;
-        $this->logger = $logger;
     }
 
     protected function configure(): void
     {
         $this
-            ->setName('partners:scrape')
-            ->setDescription('Парсит партнеров Bitrix24 и сохраняет данные в CSV')
-            ->addArgument('output-file', InputArgument::OPTIONAL, 'Путь к выходному CSV файлу', 'partners_data.csv')
+            ->addOption('base-url', null, InputOption::VALUE_REQUIRED, 'URL страницы партнёров', self::DEFAULT_BASE_URL)
+            ->addOption('output-file', null, InputOption::VALUE_REQUIRED, 'Путь к выходному CSV файлу', self::DEFAULT_OUTPUT_FILE)
+            ->addOption('page-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между страницами (сек)', (string) self::DEFAULT_PAGE_DELAY)
+            ->addOption('partner-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между партнёрами (сек)', (string) self::DEFAULT_PARTNER_DELAY)
+            ->addOption('insecure', null, InputOption::VALUE_NONE, 'Отключить проверку SSL (для dev)')
+            ->addOption('resume', null, InputOption::VALUE_NONE, 'Продолжить с места обрыва (из state-файла)')
+            ->addOption('full-refresh', null, InputOption::VALUE_NONE, 'Перечитать всех с сайта → перезаписать CSV')
+            ->addOption('partner-ids', null, InputOption::VALUE_REQUIRED, 'Обновить конкретных партнёров (через запятую)', '')
+            ->addOption('partner-ids-from-file', null, InputOption::VALUE_REQUIRED, 'Файл с номерами партнёров для обновления', '')
         ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $symfonyStyle = new SymfonyStyle($input, $output);
+        $io = new SymfonyStyle($input, $output);
 
-        $this->output = $output;
-        $symfonyStyle->info('Начало парсинга партнеров Bitrix24...');
+        $baseUrl = $input->getOption('base-url');
+        $outputFile = $input->getOption('output-file');
+        $pageDelay = (int) $input->getOption('page-delay');
+        $partnerDelay = (int) $input->getOption('partner-delay');
+        $insecure = (bool) $input->getOption('insecure');
+        $resume = (bool) $input->getOption('resume');
+        $fullRefresh = (bool) $input->getOption('full-refresh');
+        $partnerIds = $input->getOption('partner-ids');
+        $partnerIdsFromFile = $input->getOption('partner-ids-from-file');
+
+        $io->info('Начало парсинга партнеров Bitrix24...');
+        $io->writeln(sprintf('Base URL: %s', $baseUrl));
+        $io->writeln(sprintf('Output file: %s', $outputFile));
 
         try {
-            $allPartnerData = $this->fetchAllPartnerPages();
-            $parsedData = $this->parseAndFetchPartnerDetail($allPartnerData);
-            $this->saveToCsv($parsedData, 'partners_data.csv');
-            $output->writeln('Парсинг завершен успешно!');
+            if ('' !== $partnerIds) {
+                return $this->executePartnerUpdate(
+                    explode(',', $partnerIds),
+                    $outputFile,
+                    $partnerDelay,
+                    $insecure,
+                    $io
+                );
+            }
 
-            return Command::SUCCESS;
-        } catch (\Exception $e) {
-            $this->logger->error('Ошибка при парсинге: '.$e->getMessage());
-            $output->writeln('Ошибка: '.$e->getMessage());
+            if ('' !== $partnerIdsFromFile) {
+                return $this->executePartnerUpdateFromFile(
+                    $partnerIdsFromFile,
+                    $outputFile,
+                    $partnerDelay,
+                    $insecure,
+                    $io
+                );
+            }
+
+            return $this->executeFullScrape(
+                $baseUrl,
+                $outputFile,
+                $pageDelay,
+                $partnerDelay,
+                $insecure,
+                $resume,
+                $fullRefresh,
+                $output,
+                $io
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error('Ошибка: '.$e->getMessage());
+            $io->error('Ошибка: '.$e->getMessage());
 
             return Command::FAILURE;
         }
     }
 
-    private function fetchAllPartnerPages(): array
-    {
-        $allPages = [];
-        $currentPage = 17;
+    private function executeFullScrape(
+        string $baseUrl,
+        string $outputFile,
+        int $pageDelay,
+        int $partnerDelay,
+        bool $insecure,
+        bool $resume,
+        bool $fullRefresh,
+        OutputInterface $output,
+        SymfonyStyle $io,
+    ): int {
+        if (!$resume && !$fullRefresh && file_exists($outputFile)) {
+            $io->error(sprintf('Файл %s уже существует. Используйте --full-refresh для перезаписи.', $outputFile));
 
-        while (true) {
-            $this->output->writeln(sprintf('Получение страницы %d: %s', $currentPage, self::BASE_URL));
+            return Command::FAILURE;
+        }
+
+        $startPage = 1;
+        $lastPage = 0;
+        $processedNumbers = [];
+        $partnersPerPage = 12;
+
+        if ($resume) {
+            $state = $this->readStateFile($outputFile);
+            if (null === $state) {
+                $io->error('State-файл не найден. Запустите без --resume.');
+
+                return Command::FAILURE;
+            }
+
+            $lastPage = $state['total_pages'];
+            $startPage = $state['last_completed_page'] + 1;
+            $processedNumbers = $this->loadProcessedPartnerNumbers($outputFile);
+
+            $io->note(sprintf(
+                'Resume: продолжаем со страницы %d из %d (уже обработано: %d)',
+                $startPage,
+                $lastPage,
+                count($processedNumbers)
+            ));
+        } else {
+            $io->section('Определение количества страниц...');
+            $lastPage = $this->scraper->findLastPage($baseUrl, $insecure, $io);
+
+            $firstPageHtml = $this->scraper->fetchPageHtml(1, $baseUrl, $insecure);
+            if (null !== $firstPageHtml) {
+                $firstPagePartners = $this->parser->parsePartnerListPage($firstPageHtml);
+                if (count($firstPagePartners) > 0) {
+                    $partnersPerPage = count($firstPagePartners);
+                }
+            }
+
+            $io->success(sprintf('Найдено страниц: %d | Партнёров на странице: %d (≈%d партнёров)', $lastPage, $partnersPerPage, $lastPage * $partnersPerPage));
+        }
+
+        $estimatedPartners = $lastPage * $partnersPerPage;
+
+        $io->section('Парсинг партнёров...');
+        $progressBar = new ProgressBar($output, $estimatedPartners);
+        $progressBar->setFormat('%current%/%max% [%bar%] %percent:3s%% | Страница: %page% | Партнёр: %partner%');
+        $progressBar->setMessage('', 'page');
+        $progressBar->setMessage('', 'partner');
+        $progressBar->advance(count($processedNumbers));
+
+        if ($resume) {
+            $csvWriter = $this->createCsvWriterForResume($outputFile);
+        } else {
+            $csvWriter = $this->createCsvWriter($outputFile);
+        }
+
+        $totalProcessed = count($processedNumbers);
+        $state = [
+            'mode' => 'full_scrape',
+            'base_url' => $baseUrl,
+            'total_pages' => $lastPage,
+            'last_completed_page' => 0,
+            'output_file' => $outputFile,
+            'started_at' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+            'updated_at' => '',
+        ];
+
+        for ($page = $startPage; $page <= $lastPage; ++$page) {
+            $progressBar->setMessage((string) $page, 'page');
 
             try {
-                $response = $this->fetchPartnerList($currentPage);
+                $html = $this->scraper->fetchPageHtml($page, $baseUrl, $insecure);
+                if (null === $html) {
+                    $this->logger->warning(sprintf('Страница %d пустая, пропускаем', $page));
 
-                if (empty($response['html'])) {
-                    break;
+                    continue;
                 }
 
-                $allPages[] = $response;
-                ++$currentPage;
-                sleep(self::DELAY_BETWEEN_PAGES);
-            } catch (\Exception $e) {
-                $this->logger->error(sprintf('Ошибка при получении страницы %d: %s', $currentPage, $e->getMessage()));
+                $partners = $this->parser->parsePartnerListPage($html);
+            } catch (\Throwable $e) {
+                $this->logger->error(sprintf('Ошибка при обработке страницы %d: %s', $page, $e->getMessage()));
 
-                throw $e;
+                continue;
             }
-        }
-
-        return $allPages;
-    }
-
-    private function fetchPartnerList(int $page): array
-    {
-        $response = $this->httpClient->request('POST', self::BASE_URL, [
-            'headers' => [
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'X-Requested-With' => 'XMLHttpRequest',
-                'Content-Type' => 'application/x-www-form-urlencoded',
-                'Referer' => 'https://www.bitrix24.kz/partners/', // или конкретная страна
-            ],
-            'max_redirects' => 5,
-            'verify_peer' => false,
-            'verify_host' => false,
-            'timeout' => self::HTTP_TIMEOUT,
-            'body' => http_build_query([
-                'ajax' => 'Y',
-                'page_n' => $page,
-            ]),
-        ]);
-
-        $content = $response->getContent();
-
-        return json_decode($content, true);
-    }
-
-    private function parseAndFetchPartnerDetail(array $allPages): array
-    {
-        $allPartnerData = [];
-        foreach ($allPages as $pageData) {
-            $partners = $this->parsePartnerHtml($pageData['html']);
 
             foreach ($partners as $partner) {
-                $partnerUrl = $this->extractPartnerUrl($partner);
-                $partnerPageData = $this->fetchPartnerDetail($partnerUrl);
-                $partnerDetail = $this->parsePartnerHtmlDetail($partnerPageData);
+                $partnerNumber = $partner['partner_number'];
+                $progressBar->setMessage((string) $partnerNumber, 'partner');
 
-                $partnerData = [
-                    'title' => $this->extractPartnerName($partner),
-                    'site' => $this->extractPartnerSite($partnerDetail),
-                    'phone' => $this->extractPartnerPhoneNumber($partner),
-                    'email' => $this->extractPartnerEmail($partnerDetail),
-                    'bitrix24_partner_number' => $this->extractPartnerNumber($partner),
-                    'open_line_id' => '',
-                    'external_id' => '',
-                    'logo_url' => $this->extractPartnerLogoUrl($partnerDetail),
-                ];
+                if (isset($processedNumbers[$partnerNumber])) {
+                    $progressBar->advance();
 
-                $allPartnerData[] = $partnerData;
-                sleep(self::DELAY_BETWEEN_PARTNERS);
-            }
-        }
-
-        return $allPartnerData;
-    }
-
-    private function parsePartnerHtml(string $html): array
-    {
-        // Используем DOMDocument для парсинга HTML
-        $dom = new \DOMDocument();
-        @$dom->loadHTML($html);
-
-        $partners = [];
-        $items = $dom->getElementsByTagName('div');
-
-        foreach ($items as $item) {
-            if ('bp-partner-list-item-cnr js-partners-list-item' === $item->getAttribute('class')) {
-                $partners[] = $item;
-            }
-        }
-
-        return $partners;
-    }
-
-    private function parsePartnerHtmlDetail(string $partnerDetail): ?DOMElement
-    {
-        $dom = new DOMDocument();
-        @$dom->loadHTML($partnerDetail);
-
-        $items = $dom->getElementsByTagName('div');
-
-        foreach ($items as $item) {
-            if ('bx-pdl-main' === $item->getAttribute('class')) {
-                return $item;
-            }
-        }
-
-        return null;
-    }
-
-    private function extractPartnerLogoUrl(\DOMElement $partner): string
-    {
-        $items = $partner->getElementsByTagName('img');
-
-        $logoUrl = null;
-
-        if ($items->count() > 0) {
-            foreach ($items as $item) {
-                if ('bx-partner-detail-header-logo-img' === $item->getAttribute('class')) {
-                    $logoUrl = $item->getAttribute('src');
+                    continue;
                 }
-            }
-        }
 
-        return $logoUrl;
-    }
+                try {
+                    $detailHtml = $this->scraper->fetchPartnerDetailHtml($partner['detail_page_url'], $insecure);
 
-    private function extractPartnerUrl(\DOMElement $partner): string
-    {
-        $link = $partner->getElementsByTagName('a')->item(0);
+                    $detailData = [
+                        'phone' => '',
+                        'email' => '',
+                        'logo_url' => '',
+                        'site' => '',
+                    ];
+                    if (null !== $detailHtml) {
+                        $detailData = $this->parser->parsePartnerDetailPage($detailHtml);
+                    }
 
-        return $link ? $link->getAttribute('href') : '';
-    }
+                    $this->writePartnerToCsv($csvWriter, array_merge($partner, $detailData));
 
-    private function extractPartnerName(\DOMElement $partner): string
-    {
-        $link = $partner->getElementsByTagName('a')->item(0);
-
-        return $link ? $link->textContent : '';
-    }
-
-    private function extractPartnerSite(\DOMElement $partner): string
-    {
-        $site = null;
-
-        $items = $partner->getElementsByTagName('a');
-        foreach ($items as $item) {
-            if ('bx-partner-detail-header-info-link' == $item->getAttribute('class')) {
-                $site = $item->getAttribute('href');
-                break;
-            }
-        }
-
-        return $site;
-    }
-
-    private function extractPartnerEmail(\DOMElement $partner): string
-    {
-        $email = null;
-
-        $items = $partner->getElementsByTagName('div');
-        foreach ($items as $item) {
-            if ('bx-partner-detail-description-contacts-content js-contancts-content' == $item->getAttribute('class')) {
-                $itemsLink = $item->getElementsByTagName('a');
-                foreach ($itemsLink as $itemLink) {
-                    $email = trim($itemLink->textContent);
+                    $processedNumbers[$partnerNumber] = true;
+                    ++$totalProcessed;
+                } catch (\Throwable $e) {
+                    $this->logger->warning(sprintf(
+                        'Ошибка при обработке партнёра #%d: %s',
+                        $partnerNumber,
+                        $e->getMessage()
+                    ));
                 }
-                break;
+
+                $progressBar->advance();
+                $state['last_completed_page'] = $page;
+                $this->writeStateFile($outputFile, $state);
+                sleep($partnerDelay);
+            }
+
+            $state['last_completed_page'] = $page;
+            $this->writeStateFile($outputFile, $state);
+            sleep($pageDelay);
+        }
+
+        $this->deleteStateFile($outputFile);
+        $progressBar->finish();
+        $io->newLine(2);
+        $io->success(sprintf('Парсинг завершён. Обработано партнёров: %d', $totalProcessed));
+
+        return Command::SUCCESS;
+    }
+
+    /**
+     * @param array<int, string> $partnerIdList
+     */
+    private function executePartnerUpdate(
+        array $partnerIdList,
+        string $outputFile,
+        int $partnerDelay,
+        bool $insecure,
+        SymfonyStyle $io,
+    ): int {
+        if (!file_exists($outputFile)) {
+            $io->error(sprintf('CSV файл %s не найден. Сначала выполните полную выгрузку.', $outputFile));
+
+            return Command::FAILURE;
+        }
+
+        $partnerIds = array_map('intval', array_filter(array_map('trim', $partnerIdList)));
+        if (0 === count($partnerIds)) {
+            $io->error('Список ID партнёров пуст.');
+
+            return Command::FAILURE;
+        }
+
+        $io->text(sprintf('Обновление %d партнёров...', count($partnerIds)));
+
+        $reader = Reader::from($outputFile);
+        $reader->setHeaderOffset(0);
+
+        $records = [];
+        foreach ($reader->getRecords() as $record) {
+            $number = (int) ($record['bitrix24_partner_number'] ?? 0);
+            if ($number > 0) {
+                $records[$number] = $record;
             }
         }
 
-        return $email;
+        $updated = 0;
+        $errors = 0;
+
+        foreach ($partnerIds as $partnerId) {
+            if (!isset($records[$partnerId])) {
+                $io->warning(sprintf('Партнёр #%d не найден в CSV, пропускаем', $partnerId));
+                ++$errors;
+
+                continue;
+            }
+
+            $detailPageUrl = $records[$partnerId]['detail_page_url'] ?? '';
+            if ('' === $detailPageUrl) {
+                $io->warning(sprintf('Партнёр #%d: нет detail_page_url, пропускаем', $partnerId));
+                ++$errors;
+
+                continue;
+            }
+
+            $io->text(sprintf('Обновление партнёра #%d...', $partnerId));
+
+            try {
+                $detailHtml = $this->scraper->fetchPartnerDetailHtml($detailPageUrl, $insecure);
+                if (null === $detailHtml) {
+                    $io->warning(sprintf('Партнёр #%d: не удалось загрузить детальную страницу', $partnerId));
+                    ++$errors;
+
+                    continue;
+                }
+
+                $detailData = $this->parser->parsePartnerDetailPage($detailHtml);
+
+                $records[$partnerId]['phone'] = $detailData['phone'];
+                $records[$partnerId]['email'] = $detailData['email'];
+                $records[$partnerId]['logo_url'] = $detailData['logo_url'];
+                $records[$partnerId]['site'] = $detailData['site'];
+                $records[$partnerId]['scraped_at'] = (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM);
+
+                ++$updated;
+            } catch (\Throwable $e) {
+                $this->logger->warning(sprintf('Ошибка обновления партнёра #%d: %s', $partnerId, $e->getMessage()));
+                ++$errors;
+            }
+
+            sleep($partnerDelay);
+        }
+
+        $writer = Writer::from($outputFile, 'w+');
+        $writer->insertOne(self::CSV_HEADERS);
+        foreach ($records as $record) {
+            $writer->insertOne(array_values($record));
+        }
+
+        $io->newLine();
+        $io->success(sprintf('Обновлено: %d, ошибок: %d', $updated, $errors));
+
+        return Command::SUCCESS;
     }
 
-    private function extractPartnerNumber(\DOMElement $partner): ?int
-    {
-        $number = (int)$partner->getAttribute('data-partner-id');
-        return $number ?: null;
-    }
+    private function executePartnerUpdateFromFile(
+        string $idsFilePath,
+        string $outputFile,
+        int $partnerDelay,
+        bool $insecure,
+        SymfonyStyle $io,
+    ): int {
+        if (!file_exists($idsFilePath)) {
+            $io->error(sprintf('Файл с ID партнёров не найден: %s', $idsFilePath));
 
-    private function extractPartnerPhoneNumber(\DOMElement $partnerDetail): ?string
-    {
-        $phoneNumber = null;
+            return Command::FAILURE;
+        }
 
-        $items = $partnerDetail->getElementsByTagName('div');
-        foreach ($items as $item) {
-            if ('bp-partner-request-phone' == $item->getAttribute('class')) {
-                $phoneNumber = $item->textContent;
-                break;
+        $reader = Reader::from($idsFilePath);
+        $partnerIds = [];
+        foreach ($reader->getRecords() as $record) {
+            $id = (int) trim(array_values($record)[0]);
+            if ($id > 0) {
+                $partnerIds[] = (string) $id;
             }
         }
 
-        return $phoneNumber;
+        if (0 === count($partnerIds)) {
+            $io->error('Файл не содержит ID партнёров.');
+
+            return Command::FAILURE;
+        }
+
+        return $this->executePartnerUpdate($partnerIds, $outputFile, $partnerDelay, $insecure, $io);
     }
 
-    private function fetchPartnerDetail(string $partnerUrl): ?string
+    private function createCsvWriter(string $outputFile): Writer
     {
-        if (empty($partnerUrl)) {
+        $writer = Writer::from($outputFile, 'w+');
+        $writer->insertOne(self::CSV_HEADERS);
+
+        return $writer;
+    }
+
+    private function createCsvWriterForResume(string $outputFile): Writer
+    {
+        return Writer::from($outputFile, 'a+');
+    }
+
+    /**
+     * @param array{partner_number: int, title: string, detail_page_url: string, phone: string, email: string, logo_url: string, site: string} $partner
+     */
+    private function writePartnerToCsv(Writer $writer, array $partner): void
+    {
+        $writer->insertOne([
+            $partner['partner_number'],
+            $partner['title'],
+            $partner['site'],
+            $partner['phone'],
+            $partner['email'],
+            $partner['logo_url'],
+            $partner['detail_page_url'],
+            '',
+            '',
+            (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+        ]);
+    }
+
+    private function getStateFilePath(string $outputFile): string
+    {
+        return $outputFile.'.state.json';
+    }
+
+    /**
+     * @return null|array{mode: string, base_url: string, total_pages: int, last_completed_page: int, output_file: string, started_at: string, updated_at: string}
+     */
+    private function readStateFile(string $outputFile): ?array
+    {
+        $statePath = $this->getStateFilePath($outputFile);
+        if (!file_exists($statePath)) {
             return null;
         }
 
-        try {
-            $fullUrl = 'https://www.bitrix24.kz'.$partnerUrl;
-            $response = $this->httpClient->request('GET', $fullUrl, [
-                'headers' => [
-                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'X-Requested-With' => 'XMLHttpRequest',
-                    'Content-Type' => 'application/x-www-form-urlencoded',
-                    'Referer' => 'https://www.bitrix24.kz/partners/', // или конкретная страна
-                ],
-                'max_redirects' => 5,
-                'verify_peer' => false,
-                'verify_host' => false,
-                'timeout' => self::HTTP_TIMEOUT,
-            ]);
-
-            return $response->getContent();
-
-        } catch (\Exception $e) {
-            $this->logger->error(sprintf('Ошибка при получении логотипа: %s', $e->getMessage()));
+        $content = file_get_contents($statePath);
+        if (false === $content) {
             return null;
+        }
+
+        $data = json_decode($content, true);
+        if (!is_array($data)) {
+            return null;
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param array{mode: string, base_url: string, total_pages: int, last_completed_page: int, output_file: string, started_at: string, updated_at: string} $state
+     */
+    private function writeStateFile(string $outputFile, array $state): void
+    {
+        $state['updated_at'] = (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM);
+        file_put_contents(
+            $this->getStateFilePath($outputFile),
+            json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
+    }
+
+    private function deleteStateFile(string $outputFile): void
+    {
+        $statePath = $this->getStateFilePath($outputFile);
+        if (file_exists($statePath)) {
+            unlink($statePath);
         }
     }
 
-    private function saveToCsv(array $data, string $filename): void
+    /**
+     * @return array<int, true>
+     */
+    private function loadProcessedPartnerNumbers(string $outputFile): array
     {
-        $handle = fopen($filename, 'w');
-        fputcsv($handle, ['title', 'site', 'phone', 'email', 'bitrix24_partner_number', 'open_line_id','external_id','logo_url']);
-
-        foreach ($data as $row) {
-            fputcsv($handle, $row);
+        if (!file_exists($outputFile)) {
+            return [];
         }
 
-        fclose($handle);
+        $reader = Reader::from($outputFile);
+        $reader->setHeaderOffset(0);
+
+        $numbers = [];
+        foreach ($reader->getRecords() as $record) {
+            $number = (int) ($record['bitrix24_partner_number'] ?? 0);
+            if ($number > 0) {
+                $numbers[$number] = true;
+            }
+        }
+
+        return $numbers;
     }
 }

@@ -231,7 +231,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
     {
         if (null !== $email) {
             $email = trim($email);
-            $this->guardValidEmail($email);
+            $this->guardEmail($email);
         }
 
         $oldEmail = $this->email;
@@ -424,7 +424,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
             && $this->getExternalId() === $other->getExternalId();
     }
 
-    private function guardValidEmail(string $email): void
+    private function guardEmail(string $email): void
     {
         $email = trim($email);
 
