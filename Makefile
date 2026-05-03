@@ -115,7 +115,13 @@ test-run-functional: debug-print-env
 	docker compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
 
 test-run-partners:
-	docker compose run --rm php-cli php bin/console partners:scrape-v2
+	docker compose run --rm php-cli php bin/console partners:scrape-v2 --base-url=https://www.bitrix24.ru/partners/country__19/  --output-file=partners_ru.csv --partner-delay=0 --page-delay=0
+
+test-run-partners2:
+	docker compose run --rm php-cli php bin/console partners:scrape-v2 --base-url=https://www.bitrix24.ru/partners/country__19/  --output-file=partners_ru.csv --partner-ids=6486671
+
+test-run-partners-import:
+	docker compose run --rm php-cli php bin/console bitrix24:partners:import partners_ru.csv --skip-errors
 
 # Run one functional test with debugger
 run-one-functional-test: debug-print-env

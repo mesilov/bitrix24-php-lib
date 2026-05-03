@@ -15,7 +15,8 @@ readonly class Command
         public ?PhoneNumber $phone = null,
         public ?string $email = null,
         public ?string $openLineId = null,
-        public ?string $externalId = null
+        public ?string $externalId = null,
+        public ?string $logoUrl = null,
     ) {
         $this->validate();
     }
@@ -50,6 +51,10 @@ readonly class Command
 
         if (null !== $this->externalId && '' === trim($this->externalId)) {
             throw new \InvalidArgumentException('externalId must be null or non-empty string');
+        }
+
+        if (null !== $this->logoUrl && '' === trim($this->logoUrl)) {
+            throw new \InvalidArgumentException('logoUrl must be null or non-empty string');
         }
     }
 }

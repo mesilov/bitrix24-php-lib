@@ -23,7 +23,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ScrapePartnersCommandV2 extends Command
 {
-    private const DEFAULT_BASE_URL = 'https://www.bitrix24.kz/partners/country__22/';
+    private const DEFAULT_BASE_URL = 'https://www.bitrix24.ru/partners/country__19/';
     private const DEFAULT_OUTPUT_FILE = 'partners.csv';
     private const DEFAULT_PAGE_DELAY = 2;
     private const DEFAULT_PARTNER_DELAY = 2;
@@ -213,60 +213,46 @@ class ScrapePartnersCommandV2 extends Command
         for ($page = $startPage; $page <= $lastPage; ++$page) {
             $progressBar->setMessage((string) $page, 'page');
 
+            $html = null;
+            $partners = [];
+
             try {
                 $html = $this->scraper->fetchPageHtml($page, $baseUrl, $insecure);
-                if (null === $html) {
+                if (null !== $html) {
+                    $partners = $this->parser->parsePartnerListPage($html);
+                } else {
                     $this->logger->warning(sprintf('Страница %d пустая, пропускаем', $page));
-                    ++$consecutiveEmptyPages;
-                    ++$totalEmptyPages;
-                    ++$totalPagesProcessed;
-
-                    if ($consecutiveEmptyPages >= 10) {
-                        $banDetected = true;
-                        $this->logger->error(sprintf(
-                            'Обнаружена блокировка: %d страниц подряд возвращают пустой ответ (страница %d). Рекомендуется увеличить задержки.',
-                            $consecutiveEmptyPages,
-                            $page
-                        ));
-                        $io->error(sprintf(
-                            'Обнаружена блокировка: %d страниц подряд возвращают пустой ответ. Скорее всего, доступ заблокирован. Попробуйте увеличить --partner-delay и --page-delay до 2-3 секунд.',
-                            $consecutiveEmptyPages
-                        ));
-
-                        break;
-                    }
-
-                    continue;
                 }
-
-                $partners = $this->parser->parsePartnerListPage($html);
             } catch (\Throwable $e) {
                 $this->logger->error(sprintf('Ошибка при обработке страницы %d: %s', $page, $e->getMessage()));
-
-                continue;
             }
 
             ++$totalPagesProcessed;
-            if (count($partners) > 0) {
-                $consecutiveEmptyPages = 0;
-            } else {
+
+            if (null === $html || count($partners) === 0) {
                 ++$consecutiveEmptyPages;
                 ++$totalEmptyPages;
+            } else {
+                $consecutiveEmptyPages = 0;
+            }
 
-                if ($consecutiveEmptyPages >= 10) {
-                    $banDetected = true;
-                    $this->logger->error(sprintf(
-                        'Обнаружена блокировка: %d страниц подряд без партнёров (страница %d).',
-                        $consecutiveEmptyPages,
-                        $page
-                    ));
-                    $io->error(sprintf(
-                        'Обнаружена блокировка: %d страниц подряд без партнёров. Скорее всего, доступ заблокирован. Попробуйте увеличить --partner-delay и --page-delay до 2-3 секунд.',
-                        $consecutiveEmptyPages
-                    ));
+            if ($consecutiveEmptyPages >= 10) {
+                $banDetected = true;
+                $this->logger->error(sprintf(
+                    'Обнаружена блокировка: %d страниц подряд без данных (страница %d). Рекомендуется увеличить задержки.',
+                    $consecutiveEmptyPages,
+                    $page
+                ));
+                $io->error(sprintf(
+                    'Обнаружена блокировка: %d страниц подряд без данных. Скорее всего, доступ заблокирован. Попробуйте увеличить --partner-delay и --page-delay до 2-3 секунд.',
+                    $consecutiveEmptyPages
+                ));
 
-                    break;
-                }
+                break;
+            }
+
+            if (null === $html) {
+                continue;
             }
 
             foreach ($partners as $partner) {
@@ -578,7 +564,7 @@ class ScrapePartnersCommandV2 extends Command
     {
         $parsed = parse_url($url);
         $scheme = $parsed['scheme'] ?? 'https';
-        $host = $parsed['host'] ?? 'www.bitrix24.kz';
+        $host = $parsed['host'];
 
         return $scheme . '://' . $host;
     }

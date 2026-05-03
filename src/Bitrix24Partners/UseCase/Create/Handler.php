@@ -54,7 +54,8 @@ readonly class Handler
                 $command->phone,
                 $command->email,
                 $command->openLineId,
-                $command->externalId
+                $command->externalId,
+                $command->logoUrl
             );
 
             $this->bitrix24PartnerRepository->save($bitrix24Partner);
@@ -87,12 +88,12 @@ readonly class Handler
             throw new InvalidArgumentException('Invalid mobile phone number.');
         }
 
-        if (PhoneNumberType::MOBILE !== $this->phoneNumberUtil->getNumberType($phoneNumber)) {
+/*        if (PhoneNumberType::MOBILE !== $this->phoneNumberUtil->getNumberType($phoneNumber)) {
             $this->logger->warning('ContactPerson.Create.MobilePhoneNumberMustBeMobile', [
                 'mobilePhoneNumber' => (string)$phoneNumber,
             ]);
 
             throw new InvalidArgumentException('Phone number must be mobile.');
-        }
+        }*/
     }
 }

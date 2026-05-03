@@ -81,36 +81,45 @@ class ImportPartnersCsvCommand extends Command
 
     private function importFromCsv(string $file, bool $skipErrors, SymfonyStyle $io, OutputInterface $output): int
     {
-        $csv = Reader::createFromPath($file, 'r');
+        $csv = Reader::from($file, 'r');
         $csv->setHeaderOffset(0);
 
         $phoneUtil = PhoneNumberUtil::getInstance();
         $imported = 0;
         $skipped = 0;
 
-        // Validate header
-        $expectedHeaders = ['title', 'site', 'phone', 'email', 'bitrix24_partner_number', 'open_line_id', 'external_id'];
+        // Validate header — check required columns exist
+        $requiredHeaders = ['title', 'bitrix24_partner_number'];
         $actualHeaders = $csv->getHeader();
-        if ($actualHeaders !== $expectedHeaders) {
-            $io->warning(sprintf(
-                'CSV header mismatch. Expected: %s, Got: %s',
-                implode(', ', $expectedHeaders),
+        $missingHeaders = array_diff($requiredHeaders, $actualHeaders);
+        if ([] !== $missingHeaders) {
+            throw new \RuntimeException(sprintf(
+                'CSV is missing required columns: %s. Available columns: %s',
+                implode(', ', $missingHeaders),
                 implode(', ', $actualHeaders)
             ));
         }
 
-        // Get records
-        $records = Statement::create()->process($csv);
-        $totalRecords = iterator_count($records);
+        $optionalHeaders = ['site', 'phone', 'email', 'open_line_id', 'external_id', 'logo_url'];
+        $missingOptional = array_diff($optionalHeaders, $actualHeaders);
+        if ([] !== $missingOptional) {
+            $io->note(sprintf(
+                'Optional columns not found in CSV: %s',
+                implode(', ', $missingOptional)
+            ));
+        }
 
-        if (0 === $totalRecords) {
+        // Get records
+        $records = (new Statement())->process($csv);
+        $allRecords = [...$records];
+
+        if ([] === $allRecords) {
             $io->warning('No records found in CSV file');
 
             return 0;
         }
 
-        // Reset iterator
-        $records = Statement::create()->process($csv);
+        $totalRecords = count($allRecords);
 
         // Create progress bar
         $progressBar = new ProgressBar($output, $totalRecords);
@@ -119,7 +128,7 @@ class ImportPartnersCsvCommand extends Command
 
         $lineNumber = 1; // Header is line 1
 
-        foreach ($records as $record) {
+        foreach ($allRecords as $record) {
             ++$lineNumber;
             $progressBar->advance();
 
@@ -143,6 +152,8 @@ class ImportPartnersCsvCommand extends Command
                 $openLineId = '' !== $openLineIdRaw ? $openLineIdRaw : null;
                 $externalIdRaw = isset($record['external_id']) ? trim((string) $record['external_id']) : '';
                 $externalId = '' !== $externalIdRaw ? $externalIdRaw : null;
+                $logoUrlRaw = isset($record['logo_url']) ? trim((string) $record['logo_url']) : '';
+                $logoUrl = '' !== $logoUrlRaw ? $logoUrlRaw : null;
 
                 // Validate required fields
                 if ('' === $title) {
@@ -156,8 +167,9 @@ class ImportPartnersCsvCommand extends Command
                 // Parse phone number
                 $phone = null;
                 if (null !== $phoneString) {
+                    $phoneString = explode(',', $phoneString)[0];
                     try {
-                        $phone = $phoneUtil->parse($phoneString, 'RU');
+                        $phone = $phoneUtil->parse(trim($phoneString), 'RU');
                     } catch (NumberParseException $e) {
                         if (!$skipErrors) {
                             throw new \InvalidArgumentException(
@@ -179,7 +191,8 @@ class ImportPartnersCsvCommand extends Command
                     $phone,
                     $email,
                     $openLineId,
-                    $externalId
+                    $externalId,
+                    $logoUrl
                 );
 
                 $this->createHandler->handle($command);
