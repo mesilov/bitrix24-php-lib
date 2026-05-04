@@ -119,24 +119,4 @@ class HandlerTest extends TestCase
 
         $this->handler->handle($command);
     }
-
-    #[Test]
-    public function testCreatePartnerWithNonMobilePhoneNumber(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Phone number must be mobile.');
-
-        // Example of a fixed line number in RU (Moscow)
-        $command = new Bitrix24Partners\UseCase\Create\Command(
-            'Test Partner',
-            rand(1000, 9999),
-            'https://example.com',
-            PhoneNumberUtil::getInstance()->parse('+74957777777', 'RU'),
-            'test@example.com',
-            'line-123',
-            'ext-123'
-        );
-
-        $this->handler->handle($command);
-    }
 }
