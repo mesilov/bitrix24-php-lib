@@ -3,7 +3,7 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-(new Symfony\Component\Dotenv\Dotenv())->load(__DIR__ . '/../.env.local');
+(new Symfony\Component\Dotenv\Dotenv())->bootEnv(__DIR__ . '/../.env');
 
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerRepository;
 use Bitrix24\Lib\Services\Flusher;
@@ -11,7 +11,6 @@ use Bitrix24\Lib\Tests\EntityManagerFactory;
 use libphonenumber\PhoneNumberUtil;
 use Psr\Log\NullLogger;
 use Symfony\Component\Console\Application;
-use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommand;
 use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommandV2;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerHtmlParser;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
@@ -32,7 +31,6 @@ $httpClient = HttpClient::create();
 $logger = new Logger('bitrix24-lib');
 $logger->pushHandler(new StreamHandler(__DIR__ . '/../app.log', Logger::DEBUG));
 
-//$application->addCommand(new ScrapePartnersCommand($httpClient, $logger));
 $application->addCommand(new ScrapePartnersCommandV2(
     $logger,
     new PartnerPageScraper($logger),
@@ -50,7 +48,7 @@ $handler = new Handler(
         new NullLogger()
 );
 
-$application->addCommand(new ImportPartnersCsvCommand($handler));
+$application->addCommand(new ImportPartnersCsvCommand($handler, PhoneNumberUtil::getInstance()));
 
 
 $application->run();

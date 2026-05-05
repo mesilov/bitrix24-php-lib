@@ -26,7 +26,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class ImportPartnersCsvCommand extends Command
 {
     public function __construct(
-        private readonly CreateHandler $createHandler
+        private readonly CreateHandler $createHandler,
+        private readonly PhoneNumberUtil $phoneUtil
     ) {
         parent::__construct();
     }
@@ -84,7 +85,6 @@ class ImportPartnersCsvCommand extends Command
         $csv = Reader::from($file, 'r');
         $csv->setHeaderOffset(0);
 
-        $phoneUtil = PhoneNumberUtil::getInstance();
         $imported = 0;
         $skipped = 0;
 
@@ -169,7 +169,7 @@ class ImportPartnersCsvCommand extends Command
                 if (null !== $phoneString) {
                     $phoneString = explode(',', $phoneString)[0];
                     try {
-                        $phone = $phoneUtil->parse(trim($phoneString), 'RU');
+                        $phone = $this->phoneUtil->parse(trim($phoneString), 'RU');
                     } catch (NumberParseException $e) {
                         if (!$skipErrors) {
                             throw new \InvalidArgumentException(
