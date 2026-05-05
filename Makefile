@@ -121,7 +121,7 @@ test-run-partners2:
 	docker compose run --rm php-cli php bin/console partners:scrape-v2 --base-url=https://www.bitrix24.ru/partners/country__19/  --output-file=partners_ru.csv --partner-ids=6486671
 
 test-run-partners-import:
-	docker compose run --rm php-cli php bin/console bitrix24:partners:import partners_ru.csv --skip-errors
+	docker compose run --rm php-cli php bin/console bitrix24:partners:import partners.csv --skip-errors
 
 # Run one functional test with debugger
 run-one-functional-test: debug-print-env

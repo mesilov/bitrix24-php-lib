@@ -11,44 +11,48 @@ use Bitrix24\Lib\Tests\EntityManagerFactory;
 use libphonenumber\PhoneNumberUtil;
 use Psr\Log\NullLogger;
 use Symfony\Component\Console\Application;
+use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommand;
 use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommandV2;
+use Bitrix24\Lib\Bitrix24Partners\Console\UpdatePartnersCommand;
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerCsvStorage;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerHtmlParser;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeStateManager;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\Stopwatch\Stopwatch;
+
 use Bitrix24\Lib\Bitrix24Partners\Console\ImportPartnersCsvCommand;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Create\Handler;
 
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
-use Symfony\Component\Stopwatch\Stopwatch;
 
 $application = new Application();
-
-$httpClient = HttpClient::create();
 
 $logger = new Logger('bitrix24-lib');
 $logger->pushHandler(new StreamHandler(__DIR__ . '/../app.log', Logger::DEBUG));
 
-$application->addCommand(new ScrapePartnersCommandV2(
-    $logger,
-    new PartnerPageScraper($logger),
-    new PartnerHtmlParser($logger),
-));
+$scraper = new PartnerPageScraper($logger);
+$parser = new PartnerHtmlParser($logger);
+$csvStorage = new PartnerCsvStorage();
+$stateManager = new ScrapeStateManager($csvStorage);
+
+$application->addCommand(new ScrapePartnersCommand($logger, $scraper, $parser, $csvStorage, $stateManager));
+$application->addCommand(new ScrapePartnersCommandV2($logger, $scraper, $parser));
+$application->addCommand(new UpdatePartnersCommand($logger, $scraper, $parser, $csvStorage));
 
 $entityManager = EntityManagerFactory::get();
 $eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
 $repository = new Bitrix24PartnerRepository($entityManager);
 $flusher = new Flusher($entityManager, $eventDispatcher);
 $handler = new Handler(
-        $repository,
-        $flusher,
-        PhoneNumberUtil::getInstance(),
-        new NullLogger()
+    $repository,
+    $flusher,
+    PhoneNumberUtil::getInstance(),
+    new NullLogger()
 );
 
 $application->addCommand(new ImportPartnersCsvCommand($handler, PhoneNumberUtil::getInstance()));
-
 
 $application->run();
