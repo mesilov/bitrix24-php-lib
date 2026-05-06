@@ -12,7 +12,6 @@ use libphonenumber\PhoneNumberUtil;
 use Psr\Log\NullLogger;
 use Symfony\Component\Console\Application;
 use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommand;
-use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommandV2;
 use Bitrix24\Lib\Bitrix24Partners\Console\UpdatePartnersCommand;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerCsvStorage;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerHtmlParser;
@@ -39,7 +38,6 @@ $csvStorage = new PartnerCsvStorage();
 $stateManager = new ScrapeStateManager($csvStorage);
 
 $application->addCommand(new ScrapePartnersCommand($logger, $scraper, $parser, $csvStorage, $stateManager));
-$application->addCommand(new ScrapePartnersCommandV2($logger, $scraper, $parser));
 $application->addCommand(new UpdatePartnersCommand($logger, $scraper, $parser, $csvStorage));
 
 $entityManager = EntityManagerFactory::get();

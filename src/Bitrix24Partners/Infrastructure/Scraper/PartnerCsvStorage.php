@@ -17,6 +17,7 @@ class PartnerCsvStorage
         'email',
         'logo_url',
         'detail_page_url',
+        'base_domain',
         'scraped_at',
     ];
 
@@ -53,7 +54,7 @@ class PartnerCsvStorage
     }
 
     /**
-     * @param array{partner_number: int, title: string, site: string, phone: string, email: string, logo_url: string, detail_page_url: string} $partner
+     * @param array{partner_number: int, title: string, site: string, phone: string, email: string, logo_url: string, detail_page_url: string, base_domain: string} $partner
      */
     public function writePartner(Writer $writer, array $partner): void
     {
@@ -65,6 +66,7 @@ class PartnerCsvStorage
             $partner['email'],
             $partner['logo_url'],
             $partner['detail_page_url'],
+            $partner['base_domain'],
             (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
         ]);
     }

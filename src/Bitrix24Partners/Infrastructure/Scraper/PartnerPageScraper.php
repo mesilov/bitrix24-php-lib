@@ -64,11 +64,12 @@ class PartnerPageScraper
 
     public function fetchPageHtml(int $pageNumber, string $baseUrl, bool $insecure): ?string
     {
+        $baseDomain = $this->extractBaseDomain($baseUrl);
         $request = $this->getRequestFactory()->createRequest('POST', $baseUrl)
             ->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
             ->withHeader('X-Requested-With', 'XMLHttpRequest')
             ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
-            ->withHeader('Referer', 'https://www.bitrix24.kz/partners/');
+            ->withHeader('Referer', $baseDomain.'/partners/');
 
         $body = $this->getStreamFactory()->createStream(
             http_build_query(['ajax' => 'Y', 'page_n' => $pageNumber])
@@ -86,7 +87,7 @@ class PartnerPageScraper
         return $data['html'];
     }
 
-    public function fetchPartnerDetailHtml(string $detailPageUrl, bool $insecure, string $baseDomain = 'https://www.bitrix24.kz'): ?string
+    public function fetchPartnerDetailHtml(string $detailPageUrl, bool $insecure, string $baseDomain): ?string
     {
         if ($detailPageUrl === '') {
             return null;
@@ -157,5 +158,14 @@ class PartnerPageScraper
         }
 
         return $this->streamFactory;
+    }
+
+    private function extractBaseDomain(string $url): string
+    {
+        $parsed = parse_url($url);
+        $scheme = $parsed['scheme'] ?? 'https';
+        $host = $parsed['host'];
+
+        return $scheme.'://'.$host;
     }
 }

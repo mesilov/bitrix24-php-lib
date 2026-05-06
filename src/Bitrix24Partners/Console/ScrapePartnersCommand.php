@@ -151,7 +151,7 @@ class ScrapePartnersCommand extends Command
 
         $io->section('Парсинг партнёров...');
         $progressBar = new ProgressBar($output, $estimatedPartners);
-        $progressBar->setFormat('%current%/%max% [%bar%] %percent:3s%% | Страница: %page% | Партнёр: %partner%');
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | Стр: %page% | ID: %partner%');
         $progressBar->setMessage('', 'page');
         $progressBar->setMessage('', 'partner');
         $progressBar->advance(count($processedNumbers));
@@ -246,7 +246,7 @@ class ScrapePartnersCommand extends Command
                         $detailData = $this->parser->parsePartnerDetailPage($detailHtml);
                     }
 
-                    $this->csvStorage->writePartner($csvWriter, array_merge($partner, $detailData));
+                    $this->csvStorage->writePartner($csvWriter, array_merge($partner, $detailData, ['base_domain' => $baseDomain]));
 
                     $processedNumbers[$partnerNumber] = true;
                     ++$totalProcessed;

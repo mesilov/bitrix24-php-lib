@@ -11,6 +11,7 @@ use League\Csv\Reader;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -59,7 +60,8 @@ class UpdatePartnersCommand extends Command
                     $outputFile,
                     $partnerDelay,
                     $insecure,
-                    $io
+                    $io,
+                    $output
                 );
             }
 
@@ -69,7 +71,8 @@ class UpdatePartnersCommand extends Command
                     $outputFile,
                     $partnerDelay,
                     $insecure,
-                    $io
+                    $io,
+                    $output
                 );
             }
 
@@ -93,6 +96,7 @@ class UpdatePartnersCommand extends Command
         int $partnerDelay,
         bool $insecure,
         SymfonyStyle $io,
+        OutputInterface $output,
     ): int {
         if (!file_exists($outputFile)) {
             $io->error(sprintf('CSV файл %s не найден. Сначала выполните полную выгрузку.', $outputFile));
@@ -111,14 +115,21 @@ class UpdatePartnersCommand extends Command
 
         $records = $this->csvStorage->readAsPartnerMap($outputFile);
 
-        $baseDomain = $this->extractBaseDomainFromRecords($records);
+        $progressBar = new ProgressBar($output, count($partnerIds));
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | Партнёр: %partner% | %message%');
+        $progressBar->setMessage('', 'partner');
+        $progressBar->setMessage('');
+        $progressBar->start();
 
         $updated = 0;
         $errors = 0;
 
         foreach ($partnerIds as $partnerId) {
+            $progressBar->setMessage((string) $partnerId, 'partner');
+            $progressBar->advance();
+
             if (!isset($records[$partnerId])) {
-                $io->warning(sprintf('Партнёр #%d не найден в CSV, пропускаем', $partnerId));
+                $this->logger->warning(sprintf('Партнёр #%d не найден в CSV, пропускаем', $partnerId));
                 ++$errors;
 
                 continue;
@@ -126,18 +137,18 @@ class UpdatePartnersCommand extends Command
 
             $detailPageUrl = $records[$partnerId]['detail_page_url'] ?? '';
             if ('' === $detailPageUrl) {
-                $io->warning(sprintf('Партнёр #%d: нет detail_page_url, пропускаем', $partnerId));
+                $this->logger->warning(sprintf('Партнёр #%d: нет detail_page_url, пропускаем', $partnerId));
                 ++$errors;
 
                 continue;
             }
 
-            $io->text(sprintf('Обновление партнёра #%d...', $partnerId));
+            $baseDomain = $records[$partnerId]['base_domain'] ?? '';
 
             try {
                 $detailHtml = $this->scraper->fetchPartnerDetailHtml($detailPageUrl, $insecure, $baseDomain);
                 if (null === $detailHtml) {
-                    $io->warning(sprintf('Партнёр #%d: не удалось загрузить детальную страницу', $partnerId));
+                    $this->logger->warning(sprintf('Партнёр #%d: не удалось загрузить детальную страницу', $partnerId));
                     ++$errors;
 
                     continue;
@@ -152,17 +163,21 @@ class UpdatePartnersCommand extends Command
                 $records[$partnerId]['scraped_at'] = (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM);
 
                 ++$updated;
+                $progressBar->setMessage('OK');
             } catch (\Throwable $e) {
                 $this->logger->warning(sprintf('Ошибка обновления партнёра #%d: %s', $partnerId, $e->getMessage()));
+                $progressBar->setMessage('Ошибка');
                 ++$errors;
             }
 
             sleep($partnerDelay);
         }
 
+        $progressBar->finish();
+        $io->newLine(2);
+
         $this->csvStorage->writeAll($outputFile, $records);
 
-        $io->newLine();
         $io->success(sprintf('Обновлено: %d, ошибок: %d', $updated, $errors));
 
         return Command::SUCCESS;
@@ -174,6 +189,7 @@ class UpdatePartnersCommand extends Command
         int $partnerDelay,
         bool $insecure,
         SymfonyStyle $io,
+        OutputInterface $output,
     ): int {
         if (!file_exists($idsFilePath)) {
             $io->error(sprintf('Файл с ID партнёров не найден: %s', $idsFilePath));
@@ -196,26 +212,6 @@ class UpdatePartnersCommand extends Command
             return Command::FAILURE;
         }
 
-        return $this->executePartnerUpdate($partnerIds, $outputFile, $partnerDelay, $insecure, $io);
-    }
-
-    /**
-     * @param array<int, array<string, string>> $records
-     */
-    private function extractBaseDomainFromRecords(array $records): string
-    {
-        foreach ($records as $record) {
-            $url = $record['detail_page_url'] ?? '';
-            if ('' !== $url) {
-                $parsed = parse_url($url);
-                if (isset($parsed['host'])) {
-                    $scheme = $parsed['scheme'] ?? 'https';
-
-                    return $scheme.'://'.$parsed['host'];
-                }
-            }
-        }
-
-        return 'https://www.bitrix24.ru';
+        return $this->executePartnerUpdate($partnerIds, $outputFile, $partnerDelay, $insecure, $io, $output);
     }
 }
