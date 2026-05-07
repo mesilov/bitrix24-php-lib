@@ -129,6 +129,7 @@ class HandlerTest extends TestCase
         } else {
             $this->assertTrue($newPhone->equals($updatedPartner->getPhone()));
         }
+
         $this->assertEquals($newEmail, $updatedPartner->getEmail());
         $this->assertEquals($newOpenLineId, $updatedPartner->getOpenLineId());
         $this->assertEquals($newExternalId, $updatedPartner->getExternalId());

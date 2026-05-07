@@ -109,7 +109,7 @@ class HandlerTest extends TestCase
 
         $command = new Bitrix24Partners\UseCase\Create\Command(
             'Test Partner',
-            rand(1000, 9999),
+            random_int(1000, 9999),
             'https://example.com',
             PhoneNumberUtil::getInstance()->parse('+70000000000', 'RU'),
             'test@example.com',

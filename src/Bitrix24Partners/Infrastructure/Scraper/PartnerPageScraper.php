@@ -10,16 +10,21 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\HttpClient\Psr18Client;
 
 class PartnerPageScraper
 {
-    private const HTTP_TIMEOUT = 10;
-    private const BINARY_SEARCH_STEP = 100;
+    private const int HTTP_TIMEOUT = 10;
+
+    private const int BINARY_SEARCH_STEP = 100;
 
     private ?ClientInterface $httpClient = null;
+
     private ?RequestFactoryInterface $requestFactory = null;
+
     private ?StreamFactoryInterface $streamFactory = null;
 
     public function __construct(
@@ -32,6 +37,7 @@ class PartnerPageScraper
         if (!$this->hasPartnersOnPage(1, $baseUrl, $insecure)) {
             throw new \RuntimeException('Страница 1 не существует или не содержит партнёров. Проверьте URL и доступность сайта.');
         }
+
         $io->text('Страница 1 существует');
 
         $low = 1;
@@ -56,6 +62,7 @@ class PartnerPageScraper
                 $io->text(sprintf('Страница %d не существует', $mid));
                 $high = $mid;
             }
+
             sleep(1);
         }
 
@@ -69,7 +76,8 @@ class PartnerPageScraper
             ->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
             ->withHeader('X-Requested-With', 'XMLHttpRequest')
             ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
-            ->withHeader('Referer', $baseDomain.'/partners/');
+            ->withHeader('Referer', $baseDomain.'/partners/')
+        ;
 
         $body = $this->getStreamFactory()->createStream(
             http_build_query(['ajax' => 'Y', 'page_n' => $pageNumber])
@@ -89,22 +97,23 @@ class PartnerPageScraper
 
     public function fetchPartnerDetailHtml(string $detailPageUrl, bool $insecure, string $baseDomain): ?string
     {
-        if ($detailPageUrl === '') {
+        if ('' === $detailPageUrl) {
             return null;
         }
 
-        $fullUrl = rtrim($baseDomain, '/') . $detailPageUrl;
+        $fullUrl = rtrim($baseDomain, '/').$detailPageUrl;
 
         try {
             $request = $this->getRequestFactory()->createRequest('GET', $fullUrl)
                 ->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
-                ->withHeader('Referer', $baseDomain . '/partners/');
+                ->withHeader('Referer', $baseDomain.'/partners/')
+            ;
 
             $response = $this->getHttpClient($insecure)->sendRequest($request);
 
             return $response->getBody()->getContents();
-        } catch (\Throwable $e) {
-            $this->logger->warning(sprintf('Ошибка при загрузке детальной страницы %s: %s', $fullUrl, $e->getMessage()));
+        } catch (\Throwable $throwable) {
+            $this->logger->warning(sprintf('Ошибка при загрузке детальной страницы %s: %s', $fullUrl, $throwable->getMessage()));
 
             return null;
         }
@@ -113,7 +122,7 @@ class PartnerPageScraper
     private function hasPartnersOnPage(int $pageNumber, string $baseUrl, bool $insecure): bool
     {
         $html = $this->fetchPageHtml($pageNumber, $baseUrl, $insecure);
-        if ($html === null) {
+        if (null === $html) {
             return false;
         }
 
@@ -124,18 +133,18 @@ class PartnerPageScraper
 
     private function getHttpClient(bool $insecure = false): ClientInterface
     {
-        if ($insecure && $this->httpClient === null) {
-            $symfonyClient = \Symfony\Component\HttpClient\HttpClient::create([
+        if ($insecure && null === $this->httpClient) {
+            $symfonyClient = HttpClient::create([
                 'verify_peer' => false,
                 'verify_host' => false,
                 'timeout' => self::HTTP_TIMEOUT,
             ]);
-            $this->httpClient = new \Symfony\Component\HttpClient\Psr18Client($symfonyClient);
+            $this->httpClient = new Psr18Client($symfonyClient);
 
             return $this->httpClient;
         }
 
-        if ($this->httpClient === null) {
+        if (null === $this->httpClient) {
             $this->httpClient = Psr18ClientDiscovery::find();
         }
 
@@ -144,7 +153,7 @@ class PartnerPageScraper
 
     private function getRequestFactory(): RequestFactoryInterface
     {
-        if ($this->requestFactory === null) {
+        if (null === $this->requestFactory) {
             $this->requestFactory = Psr17FactoryDiscovery::findRequestFactory();
         }
 
@@ -153,7 +162,7 @@ class PartnerPageScraper
 
     private function getStreamFactory(): StreamFactoryInterface
     {
-        if ($this->streamFactory === null) {
+        if (null === $this->streamFactory) {
             $this->streamFactory = Psr17FactoryDiscovery::findStreamFactory();
         }
 

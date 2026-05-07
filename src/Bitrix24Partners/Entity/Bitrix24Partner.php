@@ -121,6 +121,7 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
         return $this->site;
     }
 
+    #[\Override]
     public function getLogoUrl(): ?string
     {
         return $this->logoUrl;

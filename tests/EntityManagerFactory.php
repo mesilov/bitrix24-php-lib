@@ -33,6 +33,7 @@ class EntityManagerFactory
             if (self::$entityManager->isOpen()) {
                 self::$entityManager->clear();
             }
+
             self::$entityManager = null;
         }
     }

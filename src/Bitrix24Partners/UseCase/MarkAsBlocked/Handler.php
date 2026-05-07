@@ -32,14 +32,13 @@ readonly class Handler
 
             $this->bitrix24PartnerRepository->save($partner);
             $this->flusher->flush($partner);
-
-        } catch (Bitrix24PartnerNotFoundException $exception) {
+        } catch (Bitrix24PartnerNotFoundException $bitrix24PartnerNotFoundException) {
             $this->logger->warning('Bitrix24Partners.MarkAsBlocked.partnerNotFound', [
                 'id' => $command->id->toRfc4122(),
-                'message' => $exception->getMessage(),
+                'message' => $bitrix24PartnerNotFoundException->getMessage(),
             ]);
 
-            throw $exception;
+            throw $bitrix24PartnerNotFoundException;
         } finally {
             $this->logger->info('Bitrix24Partners.MarkAsBlocked.finish', [
                 'partner_id' => $command->id->toRfc4122(),

@@ -128,31 +128,31 @@ class ImportPartnersCsvCommand extends Command
 
         $lineNumber = 1; // Header is line 1
 
-        foreach ($allRecords as $record) {
+        foreach ($allRecords as $allRecord) {
             ++$lineNumber;
             $progressBar->advance();
 
             try {
                 // Skip empty rows
-                if ([] === array_filter($record)) {
+                if ([] === array_filter($allRecord)) {
                     continue;
                 }
 
                 // Parse row data
-                $title = isset($record['title']) ? trim((string) $record['title']) : '';
-                $siteRaw = isset($record['site']) ? trim((string) $record['site']) : '';
+                $title = isset($allRecord['title']) ? trim((string) $allRecord['title']) : '';
+                $siteRaw = isset($allRecord['site']) ? trim((string) $allRecord['site']) : '';
                 $site = '' !== $siteRaw ? $siteRaw : null;
-                $phoneStringRaw = isset($record['phone']) ? trim((string) $record['phone']) : '';
+                $phoneStringRaw = isset($allRecord['phone']) ? trim((string) $allRecord['phone']) : '';
                 $phoneString = '' !== $phoneStringRaw ? $phoneStringRaw : null;
-                $emailRaw = isset($record['email']) ? trim((string) $record['email']) : '';
+                $emailRaw = isset($allRecord['email']) ? trim((string) $allRecord['email']) : '';
                 $email = '' !== $emailRaw ? $emailRaw : null;
-                $bitrix24PartnerNumberRaw = isset($record['bitrix24_partner_number']) ? trim((string) $record['bitrix24_partner_number']) : '';
+                $bitrix24PartnerNumberRaw = isset($allRecord['bitrix24_partner_number']) ? trim((string) $allRecord['bitrix24_partner_number']) : '';
                 $bitrix24PartnerNumber = '' !== $bitrix24PartnerNumberRaw ? (int) $bitrix24PartnerNumberRaw : null;
-                $openLineIdRaw = isset($record['open_line_id']) ? trim((string) $record['open_line_id']) : '';
+                $openLineIdRaw = isset($allRecord['open_line_id']) ? trim((string) $allRecord['open_line_id']) : '';
                 $openLineId = '' !== $openLineIdRaw ? $openLineIdRaw : null;
-                $externalIdRaw = isset($record['external_id']) ? trim((string) $record['external_id']) : '';
+                $externalIdRaw = isset($allRecord['external_id']) ? trim((string) $allRecord['external_id']) : '';
                 $externalId = '' !== $externalIdRaw ? $externalIdRaw : null;
-                $logoUrlRaw = isset($record['logo_url']) ? trim((string) $record['logo_url']) : '';
+                $logoUrlRaw = isset($allRecord['logo_url']) ? trim((string) $allRecord['logo_url']) : '';
                 $logoUrl = '' !== $logoUrlRaw ? $logoUrlRaw : null;
 
                 // Validate required fields
@@ -168,6 +168,7 @@ class ImportPartnersCsvCommand extends Command
                 $phone = null;
                 if (null !== $phoneString) {
                     $phoneString = explode(',', $phoneString)[0];
+
                     try {
                         $phone = $this->phoneUtil->parse(trim($phoneString), 'RU');
                     } catch (NumberParseException $e) {

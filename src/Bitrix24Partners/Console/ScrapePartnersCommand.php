@@ -8,7 +8,6 @@ use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerCsvStorage;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerHtmlParser;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeStateManager;
-use League\Csv\Writer;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -24,10 +23,13 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ScrapePartnersCommand extends Command
 {
-    private const DEFAULT_BASE_URL = 'https://www.bitrix24.ru/partners/country__19/';
-    private const DEFAULT_OUTPUT_FILE = 'partners.csv';
-    private const DEFAULT_PAGE_DELAY = 2;
-    private const DEFAULT_PARTNER_DELAY = 2;
+    private const string DEFAULT_BASE_URL = 'https://www.bitrix24.ru/partners/country__19/';
+
+    private const string DEFAULT_OUTPUT_FILE = 'partners.csv';
+
+    private const int DEFAULT_PAGE_DELAY = 2;
+
+    private const int DEFAULT_PARTNER_DELAY = 2;
 
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -39,6 +41,7 @@ class ScrapePartnersCommand extends Command
         parent::__construct();
     }
 
+    #[\Override]
     protected function configure(): void
     {
         $this
@@ -52,6 +55,7 @@ class ScrapePartnersCommand extends Command
         ;
     }
 
+    #[\Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
@@ -83,9 +87,9 @@ class ScrapePartnersCommand extends Command
                 $io,
                 $baseDomain
             );
-        } catch (\Throwable $e) {
-            $this->logger->error('Ошибка: '.$e->getMessage());
-            $io->error('Ошибка: '.$e->getMessage());
+        } catch (\Throwable $throwable) {
+            $this->logger->error('Ошибка: '.$throwable->getMessage());
+            $io->error('Ошибка: '.$throwable->getMessage());
 
             return Command::FAILURE;
         }
@@ -139,7 +143,7 @@ class ScrapePartnersCommand extends Command
             $firstPageHtml = $this->scraper->fetchPageHtml(1, $baseUrl, $insecure);
             if (null !== $firstPageHtml) {
                 $firstPagePartners = $this->parser->parsePartnerListPage($firstPageHtml);
-                if (count($firstPagePartners) > 0) {
+                if ([] !== $firstPagePartners) {
                     $partnersPerPage = count($firstPagePartners);
                 }
             }
@@ -197,7 +201,7 @@ class ScrapePartnersCommand extends Command
 
             ++$totalPagesProcessed;
 
-            if (null === $html || 0 === count($partners)) {
+            if (null === $html || [] === $partners) {
                 ++$consecutiveEmptyPages;
                 ++$totalEmptyPages;
             } else {

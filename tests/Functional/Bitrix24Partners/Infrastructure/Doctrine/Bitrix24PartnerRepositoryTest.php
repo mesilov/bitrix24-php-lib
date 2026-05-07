@@ -38,6 +38,7 @@ class Bitrix24PartnerRepositoryTest extends Bitrix24PartnerRepositoryInterfaceTe
 {
     use FunctionalTestTrait;
 
+    #[\Override]
     protected function setUp(): void
     {
         $this->truncateBitrix24Partners();

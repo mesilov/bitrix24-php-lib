@@ -9,11 +9,12 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Entity\Bitrix24PartnerIn
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Exceptions\Bitrix24PartnerNotFoundException;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Repository\Bitrix24PartnerRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
-use Psr\Log\LoggerInterface;
-use libphonenumber\PhoneNumberType;
-use libphonenumber\PhoneNumberUtil;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use libphonenumber\PhoneNumber;
+use libphonenumber\PhoneNumberType;
+use libphonenumber\PhoneNumberUtil;
+use Psr\Log\LoggerInterface;
+
 readonly class Handler
 {
     public function __construct(
@@ -84,13 +85,13 @@ readonly class Handler
                     'logoUrl' => $command->logoUrl,
                 ],
             ]);
-        } catch (Bitrix24PartnerNotFoundException $exception) {
+        } catch (Bitrix24PartnerNotFoundException $bitrix24PartnerNotFoundException) {
             $this->logger->warning('Bitrix24Partners.Update.partnerNotFound', [
                 'id' => $command->id->toRfc4122(),
-                'message' => $exception->getMessage(),
+                'message' => $bitrix24PartnerNotFoundException->getMessage(),
             ]);
 
-            throw $exception;
+            throw $bitrix24PartnerNotFoundException;
         } finally {
             $this->logger->info('Bitrix24Partners.Update.finish', [
                 'id' => $command->id->toRfc4122(),

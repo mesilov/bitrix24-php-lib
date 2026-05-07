@@ -22,7 +22,7 @@ readonly class PartnerHtmlParser
         $partners = [];
 
         $crawler->filter('div.bp-partner-list-item-cnr.js-partners-list-item')->each(
-            function (Crawler $node) use (&$partners) {
+            function (Crawler $node) use (&$partners): void {
                 $partnerNumber = (int) $node->attr('data-partner-id');
                 if (0 === $partnerNumber) {
                     return;
@@ -80,7 +80,7 @@ readonly class PartnerHtmlParser
             $contactsNode = $crawler->filter('div.bx-partner-detail-description-contacts-content')->first();
             if ($contactsNode->count() > 0) {
                 $phone = '';
-                $contactsNode->filter('p')->each(function (Crawler $p) use (&$phone) {
+                $contactsNode->filter('p')->each(function (Crawler $p) use (&$phone): void {
                     $b = $p->filter('b');
                     if ($b->count() > 0 && str_contains(trim($b->text()), 'Телефон')) {
                         $fullText = trim($p->text());
@@ -94,8 +94,8 @@ readonly class PartnerHtmlParser
 
                 return $this->cleanText($phone);
             }
-        } catch (\Throwable $e) {
-            $this->logger->warning(sprintf('Ошибка парсинга phone: %s', $e->getMessage()));
+        } catch (\Throwable $throwable) {
+            $this->logger->warning(sprintf('Ошибка парсинга phone: %s', $throwable->getMessage()));
         }
 
         return '';
@@ -107,7 +107,7 @@ readonly class PartnerHtmlParser
             $contactsNode = $crawler->filter('div.bx-partner-detail-description-contacts-content')->first();
             if ($contactsNode->count() > 0) {
                 $email = '';
-                $contactsNode->filter('a')->each(function (Crawler $a) use (&$email) {
+                $contactsNode->filter('a')->each(function (Crawler $a) use (&$email): void {
                     $text = trim($a->text());
                     if (str_contains($text, '@')) {
                         $email = $text;
@@ -116,8 +116,8 @@ readonly class PartnerHtmlParser
 
                 return $this->cleanText($email);
             }
-        } catch (\Throwable $e) {
-            $this->logger->warning(sprintf('Ошибка парсинга email: %s', $e->getMessage()));
+        } catch (\Throwable $throwable) {
+            $this->logger->warning(sprintf('Ошибка парсинга email: %s', $throwable->getMessage()));
         }
 
         return '';
@@ -130,8 +130,8 @@ readonly class PartnerHtmlParser
             if ($logoNode->count() > 0) {
                 return $this->cleanText($logoNode->attr('src') ?? '');
             }
-        } catch (\Throwable $e) {
-            $this->logger->warning(sprintf('Ошибка парсинга logo_url: %s', $e->getMessage()));
+        } catch (\Throwable $throwable) {
+            $this->logger->warning(sprintf('Ошибка парсинга logo_url: %s', $throwable->getMessage()));
         }
 
         return '';
@@ -144,8 +144,8 @@ readonly class PartnerHtmlParser
             if ($siteNode->count() > 0) {
                 return $this->normalizeUrl($this->cleanText($siteNode->attr('href') ?? ''));
             }
-        } catch (\Throwable $e) {
-            $this->logger->warning(sprintf('Ошибка парсинга site: %s', $e->getMessage()));
+        } catch (\Throwable $throwable) {
+            $this->logger->warning(sprintf('Ошибка парсинга site: %s', $throwable->getMessage()));
         }
 
         return '';
@@ -158,7 +158,7 @@ readonly class PartnerHtmlParser
         $text = str_replace("\xc2\xa0", ' ', $text);
         $text = preg_replace('/\s+/', ' ', $text);
 
-        return trim($text);
+        return trim((string) $text);
     }
 
     private function normalizeUrl(string $url): string

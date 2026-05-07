@@ -14,6 +14,7 @@ trait FunctionalTestTrait
         $entityManager = EntityManagerFactory::get();
         $connection = $entityManager->getConnection();
         $connection->executeStatement('TRUNCATE TABLE b24lib_bitrix24_partners RESTART IDENTITY CASCADE');
+
         $entityManager->clear();
     }
 }

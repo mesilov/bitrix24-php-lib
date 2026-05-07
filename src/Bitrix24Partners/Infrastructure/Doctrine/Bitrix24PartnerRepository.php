@@ -62,7 +62,6 @@ class Bitrix24PartnerRepository implements Bitrix24PartnerRepositoryInterface
      * @throws Bitrix24PartnerNotFoundException
      */
     #[\Override]
-    //TODO поставить issue и вырезать этот метод вообще из контракта
     public function delete(Uuid $uuid): void
     {
         $bitrix24Partner = $this->repository->find($uuid);

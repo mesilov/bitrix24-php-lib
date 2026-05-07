@@ -18,6 +18,7 @@ use Rector\Naming\Rector\Class_\RenamePropertyToMatchTypeRector;
 use Rector\Naming\Rector\ClassMethod\RenameParamToMatchTypeRector;
 use Rector\PHPUnit\Set\PHPUnitSetList;
 use Rector\Set\ValueObject\DowngradeLevelSetList;
+use Rector\Naming\Rector\ClassMethod\RenameVariableToMatchNewTypeRector;
 
 return RectorConfig::configure()
     ->withPaths([
@@ -54,5 +55,6 @@ return RectorConfig::configure()
         RenamePropertyToMatchTypeRector::class,
         RenameParamToMatchTypeRector::class,
         FlipTypeControlToUseExclusiveTypeRector::class,
-        RenameVariableToMatchMethodCallReturnTypeRector::class
+        RenameVariableToMatchMethodCallReturnTypeRector::class,
+        RenameVariableToMatchNewTypeRector::class
     ]);

@@ -93,15 +93,15 @@ lint-allowed-licenses:
 	vendor/bin/composer-license-checker
 # linters
 lint-phpstan:
-	docker-compose run --rm php-cli php vendor/bin/phpstan analyse --memory-limit 2G
+	docker compose run --rm php-cli php vendor/bin/phpstan analyse --memory-limit 2G
 lint-rector:
-	docker-compose run --rm php-cli php vendor/bin/rector process --dry-run
+	docker compose run --rm php-cli php vendor/bin/rector process --dry-run
 lint-rector-fix:
-	docker-compose run --rm php-cli php vendor/bin/rector process
+	docker compose run --rm php-cli php vendor/bin/rector process
 lint-cs-fixer:
-	docker-compose run --rm php-cli php vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
+	docker compose run --rm php-cli php vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
 lint-cs-fixer-fix:
-	docker-compose run --rm php-cli php vendor/bin/php-cs-fixer fix --diff --verbose
+	docker compose run --rm php-cli php vendor/bin/php-cs-fixer fix --diff --verbose
 
 # unit-tests
 test-run-unit:
@@ -115,10 +115,10 @@ test-run-functional: debug-print-env
 	docker compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
 
 test-run-partners:
-	docker compose run --rm php-cli php bin/console partners:scrape-v2 --base-url=https://www.bitrix24.ru/partners/country__19/  --output-file=partners_ru.csv --partner-delay=0 --page-delay=0
+	docker compose run --rm php-cli php bin/console partners:scrape --full-refresh --base-url=https://www.bitrix24.kz/partners/country__22/ --output-file=partners_kz.csv --partner-delay=1
 
-test-run-partners2:
-	docker compose run --rm php-cli php bin/console partners:scrape-v2 --base-url=https://www.bitrix24.ru/partners/country__19/  --output-file=partners_ru.csv --partner-ids=6486671
+test-run-update-partners:
+	docker compose run --rm php-cli php bin/console partners:update --partner-ids=1351003,2901401  --partner-delay=1
 
 test-run-partners-import:
 	docker compose run --rm php-cli php bin/console bitrix24:partners:import partners.csv --skip-errors

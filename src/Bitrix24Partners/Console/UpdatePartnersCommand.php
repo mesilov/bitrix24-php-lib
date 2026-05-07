@@ -32,6 +32,7 @@ class UpdatePartnersCommand extends Command
         parent::__construct();
     }
 
+    #[\Override]
     protected function configure(): void
     {
         $this
@@ -43,6 +44,7 @@ class UpdatePartnersCommand extends Command
         ;
     }
 
+    #[\Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
@@ -56,7 +58,7 @@ class UpdatePartnersCommand extends Command
         try {
             if ('' !== $partnerIds) {
                 return $this->executePartnerUpdate(
-                    explode(',', $partnerIds),
+                    explode(',', (string) $partnerIds),
                     $outputFile,
                     $partnerDelay,
                     $insecure,
@@ -79,9 +81,9 @@ class UpdatePartnersCommand extends Command
             $io->error('Укажите --partner-ids или --partner-ids-from-file');
 
             return Command::FAILURE;
-        } catch (\Throwable $e) {
-            $this->logger->error('Ошибка: '.$e->getMessage());
-            $io->error('Ошибка: '.$e->getMessage());
+        } catch (\Throwable $throwable) {
+            $this->logger->error('Ошибка: '.$throwable->getMessage());
+            $io->error('Ошибка: '.$throwable->getMessage());
 
             return Command::FAILURE;
         }
@@ -105,7 +107,7 @@ class UpdatePartnersCommand extends Command
         }
 
         $partnerIds = array_map('intval', array_filter(array_map('trim', $partnerIdList)));
-        if (0 === count($partnerIds)) {
+        if ([] === $partnerIds) {
             $io->error('Список ID партнёров пуст.');
 
             return Command::FAILURE;
@@ -200,13 +202,13 @@ class UpdatePartnersCommand extends Command
         $reader = Reader::from($idsFilePath);
         $partnerIds = [];
         foreach ($reader->getRecords() as $record) {
-            $id = (int) trim(array_values($record)[0]);
+            $id = (int) trim((string) array_values($record)[0]);
             if ($id > 0) {
                 $partnerIds[] = (string) $id;
             }
         }
 
-        if (0 === count($partnerIds)) {
+        if ([] === $partnerIds) {
             $io->error('Файл не содержит ID партнёров.');
 
             return Command::FAILURE;
