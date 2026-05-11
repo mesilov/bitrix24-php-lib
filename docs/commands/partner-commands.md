@@ -66,49 +66,59 @@ php bin/console partners:scrape --insecure
 
 ---
 
-### `partners:update` — Обновление конкретных партнёров
+### `partners:update` — Скрейпинг конкретных партнёров по ID
 
-Обновляет данные (телефон, email, сайт, логотип) для указанных партнёров, перечитывая их детальные страницы с сайта. Работает с существующим CSV-файлом.
+Скрейпит детальные страницы указанных партнёров с сайта Bitrix24 и сохраняет результат в отдельный CSV-файл. Работает автономно — не требует предварительно существующего CSV. Выходной файл имеет тот же формат, что и при полной выгрузке (`partners:scrape`), и далее подаётся на вход команде `bitrix24:partners:import`.
+
+**Константы:**
+
+| Константа | Значение | Описание |
+|-----------|----------|----------|
+| `DEFAULT_BASE_DOMAIN` | `https://www.bitrix24.ru` | Домен Bitrix24 по умолчанию |
+| `DEFAULT_INSECURE` | `false` | Проверка SSL по умолчанию |
 
 **Опции:**
 
 | Опция | Описание | По умолчанию |
 |-------|----------|--------------|
-| `--partner-ids` | ID партнёров через запятую | — |
-| `--partner-ids-from-file` | Файл с ID партнёров для обновления | — |
-| `--output-file` | Путь к CSV файлу | `partners.csv` |
+| `--partner-ids` | ID партнёров через запятую (обязательная) | — |
+| `--base-domain` | Домен Bitrix24 для загрузки детальных страниц | `https://www.bitrix24.ru` |
+| `--output-file` | Путь к выходному CSV файлу | `partners_update.csv` |
 | `--partner-delay` | Задержка между партнёрами (сек) | `2` |
 | `--insecure` | Отключить проверку SSL | `false` |
 
-> **Важно:** Одна из опций `--partner-ids` или `--partner-ids-from-file` обязательна.
+> **Важно:** Опция `--partner-ids` обязательна.
+
+**Как определяется URL детальной страницы:** URL конструируется из `--base-domain` и ID партнёра: `{base-domain}/partners/partner/{id}/`. Например: `https://www.bitrix24.ru/partners/partner/3240/`.
 
 **Примеры:**
 
 ```bash
-# Обновить двух партнёров
+# Скрейпить двух партнёров (Россия, дефолт)
 php bin/console partners:update --partner-ids=3240,5859557
 
-# Обновить одного партнёра без задержки
+# Скрейпить одного партнёра без задержки
 php bin/console partners:update --partner-ids=3240 --partner-delay=0
 
-# Обновить из файла с ID
-php bin/console partners:update --partner-ids-from-file=partner_ids.csv
+# Скрейпить партнёров Казахстана
+php bin/console partners:update --partner-ids=3240 --base-domain=https://www.bitrix24.kz
 
-# С кастомным CSV-файлом
-php bin/console partners:update --partner-ids-from-file=ids.csv --output-file=partners_kz.csv
+# Кастомный выходной файл
+php bin/console partners:update --partner-ids=3240,5859557 --output-file=partners_kz_update.csv
 
-# С отключенной SSL-проверкой
+# Для dev-окружения (без SSL-проверки)
 php bin/console partners:update --partner-ids=3240 --insecure
 ```
 
-**Формат файла с ID:** Обычный CSV, где первая колонка содержит числовой ID партнёра:
-```
-3240
-5859557
-15549800
-```
+**Workflow обновления партнёров:**
 
-**Как определяется домен:** Домен для загрузки детальной страницы берётся из колонки `base_domain` в CSV. Поэтому каждый партнёр всегда обновляется с правильного домена ( Россия, Казахстан и т.д.).
+```bash
+# Шаг 1: Скрейпить указанных партнёров с сайта
+php bin/console partners:update --partner-ids=3240,5859557 --output-file=partners_update.csv
+
+# Шаг 2: Импортировать результат в БД
+php bin/console bitrix24:partners:import partners_update.csv --strategy-update=replace
+```
 
 ---
 
