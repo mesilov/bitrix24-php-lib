@@ -2,7 +2,11 @@
 
 ## Контекст
 
-Команда `bitrix24:partners:import` сейчас только создаёт новых партнёров. Если партнёр с таким `bitrix24_partner_number` уже есть — CreateHandler выбрасывает исключение. Нужно доработать импорт чтобы поддерживать 4 сценария: пропуск, обновление, создание, мягкое удаление.
+Команда `bitrix24:partners:import` сейчас только создаёт новых партнёров. Если партнёр с таким `bitrix24_partner_number` уже есть — CreateHandler выбрасывает исключение. Нужно доработать импорт чтобы поддерживать 4 сценария: создание, обновление, пропуск, мягкое удаление.
+
+Два режима работы:
+- **full** (дефолт) — CSV = полная выгрузка, отсутствующие в CSV партнёры помечаются как удалённые
+- **partial** — CSV = патч, обновить/создать только то что в файле, остальное не трогается
 
 Подробная спецификация: `docs/dev/partner-import-scenarios.md`
 Краткая презентация: `docs/commands/partner-import-scenarios.md`
@@ -29,6 +33,8 @@
 - `PhoneNumberUtil`
 - `LoggerInterface`
 
+**Важно:** Handler возвращает `void`. Команда сама определяет create/update/skip по своей DB map до вызова handler'а. Handler не занимается подсчётом статистики.
+
 **Логика:**
 ```
 1. Лог: Bitrix24Partners.Upsert.start
@@ -36,7 +42,7 @@
 3. Если партнёр найден:
    a. Сравнить поля: title, site, phone, email, openLineId, externalId, logoUrl
    b. Если есть отличия — вызвать методы change*() на сущности
-   c. Если отличий нет — skip, лог "no changes"
+   c. Если отличий нет — лог "no changes", return
    d. save + flush
    e. Лог: Bitrix24Partners.Upsert.updated
 4. Если партнёр НЕ найден:
@@ -46,8 +52,6 @@
    d. Лог: Bitrix24Partners.Upsert.created
 5. finally: Лог Bitrix24Partners.Upsert.finish
 ```
-
-**Важно:** Метод handler'а должен возвращать результат (enum или string) — `created`, `updated`, `skipped` — чтобы команда могла формировать отчёт.
 
 ---
 
@@ -65,8 +69,7 @@
 
 | Опция | Значения | По умолчанию |
 |---|---|---|
-| `--strategy-update` | `skip`, `replace` | `skip` |
-| `--strategy-delete` | `skip`, `soft-delete` | `skip` |
+| `--sync-mode` | `full`, `partial` | `full` |
 | `--dry-run` | — | `false` |
 | `--skip-errors` / `-s` | — | `false` |
 
@@ -77,21 +80,19 @@
 3. Инициализировать счётчики: created, updated, skipped, softDeleted, errors
 4. Для каждого партнёра в CSV:
    a. Найти в DB map по bitrix24_partner_number
-   b. Если найден:
+   b. Если не найден → Upsert\Handler (создание) → created++
+   c. Если найден:
       - Сравнить данные (title, site, phone, email, openLineId, externalId, logoUrl)
-      - Если данные совпадают → skipped++, лог "unchanged"
-      - Если данные отличаются:
-        - strategy-update=skip → skipped++, лог "data differs, skip update"
-        - strategy-update=replace → вызвать Upsert\Handler → updated++
-   c. Если не найден → вызвать Upsert\Handler → created++
+      - Если данные совпадают → skipped++
+      - Если данные отличаются → Upsert\Handler (обновление) → updated++
    d. В режиме dry-run — не вызывать handler'ы, только считать
-5. Для каждого партнёра в БД, которого нет в CSV:
-   a. strategy-delete=skip → skipped++
-   b. strategy-delete=soft-delete:
-      - dry-run: softDeleted++ с деталями
-      - обычный режим: вызвать Delete\Handler → softDeleted++
-6. Вывести отчёт
-7. В режиме dry-run: сводка + детали по create/update/delete (без unchanged)
+5. Если sync-mode=full:
+   Для каждого партнёра в БД, которого нет в CSV:
+   a. dry-run: softDeleted++ с деталями
+   b. обычный режим: вызвать Delete\Handler → softDeleted++
+6. Если sync-mode=partial — не трогаем отсутствующих в CSV
+7. Вывести отчёт
+8. В режиме dry-run: сводка + детали по create/update/delete (без unchanged)
 ```
 
 **Отчёт (обычный режим):**
@@ -134,10 +135,12 @@ Planned actions:
 
 ---
 
-## Задача 5: Обновить документацию
+## ~~Задача 5: Обновить документацию~~ — ВЫПОЛНЕНО
 
-- `docs/commands/partner-commands.md` — обновить секцию `bitrix24:partners:import` (новые опции, новые примеры)
-- `docs/commands/partner-import-scenarios.md` — без изменений (уже актуальна)
+Обновлены файлы:
+- `docs/commands/partner-import-scenarios.md` — новые сценарии, sync-mode
+- `docs/dev/partner-import-scenarios.md` — переработана техспека
+- `docs/commands/partner-commands.md` — обновлена секция импорта
 
 ---
 
@@ -148,9 +151,8 @@ Planned actions:
   - Обновление существующего (найден, данные отличаются)
   - Пропуск (найден, данные совпадают)
 - Обновить/дописать тесты `ImportPartnersCsvCommand`:
-  - Базовый импорт (только создание)
-  - Импорт с --strategy-update=replace
-  - Импорт с --strategy-delete=soft-delete
+  - Полная синхронизация (--sync-mode=full)
+  - Частичное обновление (--sync-mode=partial)
   - Dry-run режим
   - Пропуск ошибок (--skip-errors)
 
@@ -173,5 +175,4 @@ Planned actions:
 3. Задача 4 (findAllActive в репозитории)
 4. Задача 3 (ImportPartnersCsvCommand)
 5. Задача 6 (тесты)
-6. Задача 5 (документация)
-7. `make lint-phpstan && make test-run-unit`
+6. `make lint-phpstan && make test-run-unit`

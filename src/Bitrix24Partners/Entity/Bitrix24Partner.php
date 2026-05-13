@@ -401,19 +401,19 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
     }
 
     /**
-     * Returns whether this Bitrix24Partner is equal to another.
+     * Returns whether this Bitrix24Partner has the same business data as another.
      *
-     * Now we use this method only for testing purposes.
+     * Compares all business fields: title, bitrix24PartnerNumber, site, phone,
+     * email, openLineId, externalId, logoUrl. Does NOT compare IDs.
      *
      * @param Bitrix24PartnerInterface $other the Bitrix24Partner to compare
      *
-     * @return bool true if the Bitrix24Partner are equal, false otherwise
+     * @return bool true if the business data is equal, false otherwise
      */
     public function equals(Bitrix24PartnerInterface $other): bool
     {
         return
-            $this->getId()->equals($other->getId())
-            && $this->getTitle() === $other->getTitle()
+            $this->getTitle() === $other->getTitle()
             && $this->getBitrix24PartnerNumber() === $other->getBitrix24PartnerNumber()
             && $this->getSite() === $other->getSite()
             && (
@@ -422,7 +422,8 @@ class Bitrix24Partner extends AggregateRoot implements Bitrix24PartnerInterface
             )
             && $this->getEmail() === $other->getEmail()
             && $this->getOpenLineId() === $other->getOpenLineId()
-            && $this->getExternalId() === $other->getExternalId();
+            && $this->getExternalId() === $other->getExternalId()
+            && $this->getLogoUrl() === $other->getLogoUrl();
     }
 
     private function guardEmail(string $email): void

@@ -116,15 +116,15 @@ php bin/console partners:update --partner-ids=3240 --insecure
 # Шаг 1: Скрейпить указанных партнёров с сайта
 php bin/console partners:update --partner-ids=3240,5859557 --output-file=partners_update.csv
 
-# Шаг 2: Импортировать результат в БД
-php bin/console bitrix24:partners:import partners_update.csv --strategy-update=replace
+# Шаг 2: Импортировать результат в БД (partial — не трогает остальных партнёров)
+php bin/console bitrix24:partners:import partners_update.csv --sync-mode=partial
 ```
 
 ---
 
 ### `bitrix24:partners:import` — Импорт из CSV в БД
 
-Импортирует партнёров из CSV-файла в базу данных через Doctrine ORM.
+Импортирует партнёров из CSV-файла в базу данных через Doctrine ORM. CSV — источник истины. Команда создаёт новых партнёров, обновляет существующих с изменившимися данными, а при полной синхронизации — помечает как удалённые отсутствующих в CSV.
 
 **Аргументы:**
 
@@ -136,13 +136,21 @@ php bin/console bitrix24:partners:import partners_update.csv --strategy-update=r
 
 | Опция | Описание | По умолчанию |
 |-------|----------|--------------|
+| `--sync-mode` | `full` — полная синхронизация с soft-delete, `partial` — обновить только из файла | `full` |
+| `--dry-run` | Показать что произойдёт без реальных изменений | `false` |
 | `--skip-errors` `-s` | Пропускать строки с ошибками | `false` |
 
 **Примеры:**
 
 ```bash
-# Импорт с остановкой на первой ошибке
+# Полная синхронизация (дефолт) — создать, обновить, удалить отсутствующих
 php bin/console bitrix24:partners:import partners.csv
+
+# Частичное обновление — только создать/обновить из файла, остальное не трогать
+php bin/console bitrix24:partners:import partners_update.csv --sync-mode=partial
+
+# Проверка без изменений
+php bin/console bitrix24:partners:import partners.csv --dry-run
 
 # Импорт с пропуском ошибочных строк
 php bin/console bitrix24:partners:import partners.csv --skip-errors
