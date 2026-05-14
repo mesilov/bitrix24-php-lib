@@ -10,7 +10,7 @@
 
 ---
 
-## Задача 1: PartnerHtmlParser → внутрь PartnerPageScraper
+## Задача 1: PartnerPageScraper + PartnerHtmlParser как зависимость
 
 ### 1.1 Создать DTO для данных партнёра
 
@@ -33,11 +33,11 @@ readonly class PartnerData
 }
 ```
 
-### 1.2 Перенести логику парсинга в PartnerPageScraper
+### 1.2 PartnerPageScraper получает PartnerHtmlParser как зависимость
 
 **Файл:** `src/Bitrix24Partners/Infrastructure/Scraper/PartnerPageScraper.php`
 
-- Перенести методы парсинга HTML из `PartnerHtmlParser` в приватные методы `PartnerPageScraper`
+- Добавить `PartnerHtmlParser` в конструктор
 - Новый публичный метод:
 
 ```php
@@ -46,17 +46,15 @@ public function fetchPartnerData(int $partnerId, string $baseDomain, bool $insec
 
 Логика метода:
 1. Конструировать URL: `{baseDomain}/partners/partner/{partnerId}/`
-2. HTTP-запрос → HTML
-3. Парсинг HTML (бывший PartnerHtmlParser) → данные
-4. Вернуть `PartnerData` или `null` если не удалось загрузить
+2. HTTP-запрос через `fetchPartnerDetailHtml()` → HTML
+3. `$this->parser->parsePartnerDetailPage($html)` → данные
+4. Собрать и вернуть `PartnerData` или `null` если не удалось загрузить
 
-Старый метод `fetchPartnerDetailHtml()` — удалить или сделать приватным, если используется где-то ещё.
+Старый метод `fetchPartnerDetailHtml()` — сделать приватным.
 
-### 1.3 Удалить PartnerHtmlParser
+### 1.3 PartnerHtmlParser — без изменений
 
-**Файл:** `src/Bitrix24Partners/Infrastructure/Scraper/PartnerHtmlParser.php`
-
-Удалить после переноса логики в PartnerPageScraper.
+Файл остаётся как есть. Единственная ответственность — парсинг HTML.
 
 ### 1.4 Обновить потребителей
 
@@ -66,7 +64,7 @@ public function fetchPartnerData(int $partnerId, string $baseDomain, bool $insec
 
 В обоих:
 - Убрать `PartnerHtmlParser` из зависимостей (`__construct`)
-- Использовать новый метод `PartnerPageScraper::fetchPartnerData()` вместо связки `fetchPartnerDetailHtml()` + `parsePartnerDetailPage()`
+- Использовать `PartnerPageScraper::fetchPartnerData()` вместо связки `fetchPartnerDetailHtml()` + `parsePartnerDetailPage()`
 - Обновить DI-конфигурацию
 
 ---
@@ -130,9 +128,9 @@ $io->error('...');
 
 ## Что НЕ меняется
 
+- `PartnerHtmlParser` — остаётся как отдельный сервис (парсинг HTML)
 - `PartnerCsvStorage` — остаётся как отдельный сервис
 - `ScrapeStateManager` — остаётся как отдельный сервис
-- `PartnerPageScraper` — меняется API, но не суть (HTTP-запросы)
 - CSV-формат — без изменений
 - Сущности и UseCase'ы — без изменений
 
@@ -142,7 +140,8 @@ $io->error('...');
 
 ```
 Infrastructure/Scraper/
-├── PartnerPageScraper.php     # HTTP-запросы + парсинг HTML (PartnerHtmlParser внутри)
+├── PartnerPageScraper.php     # HTTP-запросы + делегирует парсинг в PartnerHtmlParser
+├── PartnerHtmlParser.php      # Только парсинг HTML (без изменений)
 ├── PartnerData.php            # DTO — результат скрейпинга
 ├── PartnerCsvStorage.php      # Чтение/запись CSV (без изменений)
 ├── ScrapeStateManager.php     # State-файлы resume (без изменений)
@@ -160,9 +159,9 @@ Console/
 ## Порядок выполнения
 
 1. Задача 1.1 — Создать PartnerData DTO
-2. Задача 1.2 — Перенести парсинг в PartnerPageScraper
-3. Задача 1.3 — Удалить PartnerHtmlParser
-4. Задача 1.4 — Обновить потребителей
+2. Задача 1.2 — PartnerPageScraper получает PartnerHtmlParser как зависимость, новый метод fetchPartnerData()
+3. Задача 1.3 — PartnerHtmlParser без изменений (пропускаем)
+4. Задача 1.4 — Обновить потребителей (убрать PartnerHtmlParser из команд)
 5. Задача 2.1 — Изоляция вывода ScrapePartnersCommand
 6. Задача 2.2 — Изоляция вывода UpdatePartnersCommand
 7. `make lint-phpstan`

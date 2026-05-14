@@ -12,6 +12,7 @@ use Bitrix24\Lib\Tests\Functional\Bitrix24Partners\Builders\Bitrix24PartnerBuild
 use Bitrix24\Lib\Tests\Functional\FunctionalTestTrait;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Repository\Bitrix24PartnerRepositoryInterface;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Doctrine\ORM\EntityManagerInterface;
 use libphonenumber\PhoneNumberUtil;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -59,15 +60,21 @@ class HandlerTest extends TestCase
     #[Test]
     public function testCreatePartnerWhenNotExists(): void
     {
+        $title = 'New Partner';
+        $partnerNumber = 99999;
+        $site = 'https://new.com';
+        $email = 'new@example.com';
+        $logoUrl = 'https://new.com/logo.png';
+
         $command = new Bitrix24Partners\UseCase\Upsert\Command(
-            'New Partner',
-            99999,
-            'https://new.com',
+            $title,
+            $partnerNumber,
+            $site,
             null,
-            'new@example.com',
+            $email,
             null,
             null,
-            'https://new.com/logo.png'
+            $logoUrl
         );
 
         $this->handler->handle($command);
@@ -79,39 +86,45 @@ class HandlerTest extends TestCase
             $this->eventDispatcher->getOrphanedEvents()
         );
 
-        $created = $this->repository->findByBitrix24PartnerNumber(99999);
+        $created = $this->repository->findByBitrix24PartnerNumber($partnerNumber);
         $this->assertNotNull($created);
-        $this->assertEquals('New Partner', $created->getTitle());
-        $this->assertEquals('https://new.com', $created->getSite());
-        $this->assertEquals('new@example.com', $created->getEmail());
-        $this->assertEquals('https://new.com/logo.png', $created->getLogoUrl());
+        $this->assertEquals($title, $created->getTitle());
+        $this->assertEquals($site, $created->getSite());
+        $this->assertEquals($email, $created->getEmail());
+        $this->assertEquals($logoUrl, $created->getLogoUrl());
     }
 
     #[Test]
     public function testSkipPartnerWhenDataIdentical(): void
     {
+        $title = 'Hoster.KZ';
         $partnerNumber = 3240;
+        $site = 'https://b24.kz';
+        $email = 'info@b24.kz';
+        $logoUrl = 'https://b24.kz/logo.png';
+
         $existing = (new Bitrix24PartnerBuilder())
-            ->withTitle('Hoster.KZ')
+            ->withTitle($title)
             ->withBitrix24PartnerNumber($partnerNumber)
-            ->withSite('https://b24.kz')
-            ->withEmail('info@b24.kz')
-            ->withLogoUrl('https://b24.kz/logo.png')
-            ->build();
+            ->withSite($site)
+            ->withEmail($email)
+            ->withLogoUrl($logoUrl)
+            ->build()
+        ;
 
         $this->repository->save($existing);
         $this->flusher->flush($existing);
         $this->entityManager->clear();
 
         $command = new Bitrix24Partners\UseCase\Upsert\Command(
-            'Hoster.KZ',
+            $title,
             $partnerNumber,
-            'https://b24.kz',
+            $site,
             null,
-            'info@b24.kz',
+            $email,
             null,
             null,
-            'https://b24.kz/logo.png'
+            $logoUrl
         );
 
         $this->handler->handle($command);
@@ -120,7 +133,7 @@ class HandlerTest extends TestCase
 
         $partner = $this->repository->findByBitrix24PartnerNumber($partnerNumber);
         $this->assertNotNull($partner);
-        $this->assertEquals('Hoster.KZ', $partner->getTitle());
+        $this->assertEquals($title, $partner->getTitle());
         $this->assertEquals(
             $existing->getUpdatedAt()->toIso8601String(),
             $partner->getUpdatedAt()->toIso8601String()
@@ -131,27 +144,37 @@ class HandlerTest extends TestCase
     public function testUpdatePartnerWhenDataDiffers(): void
     {
         $partnerNumber = 3240;
+        $title = 'Hoster.KZ';
+        $site = 'https://b24.kz';
+        $email = 'info@b24.kz';
+        $logoUrl = 'https://b24.kz/old-logo.png';
+
+        $newTitle = 'Hoster.KZ NEW';
+        $newEmail = 'new@b24.kz';
+        $newLogoUrl = 'https://b24.kz/new-logo.png';
+
         $existing = (new Bitrix24PartnerBuilder())
-            ->withTitle('Hoster.KZ')
+            ->withTitle($title)
             ->withBitrix24PartnerNumber($partnerNumber)
-            ->withSite('https://b24.kz')
-            ->withEmail('info@b24.kz')
-            ->withLogoUrl('https://b24.kz/old-logo.png')
-            ->build();
+            ->withSite($site)
+            ->withEmail($email)
+            ->withLogoUrl($logoUrl)
+            ->build()
+        ;
 
         $this->repository->save($existing);
         $this->flusher->flush($existing);
         $this->entityManager->clear();
 
         $command = new Bitrix24Partners\UseCase\Upsert\Command(
-            'Hoster.KZ NEW',
+            $newTitle,
             $partnerNumber,
-            'https://b24.kz',
+            $site,
             null,
-            'new@b24.kz',
+            $newEmail,
             null,
             null,
-            'https://b24.kz/new-logo.png'
+            $newLogoUrl
         );
 
         $this->handler->handle($command);
@@ -160,16 +183,16 @@ class HandlerTest extends TestCase
 
         $partner = $this->repository->findByBitrix24PartnerNumber($partnerNumber);
         $this->assertNotNull($partner);
-        $this->assertEquals('Hoster.KZ NEW', $partner->getTitle());
-        $this->assertEquals('new@b24.kz', $partner->getEmail());
-        $this->assertEquals('https://b24.kz/new-logo.png', $partner->getLogoUrl());
-        $this->assertEquals('https://b24.kz', $partner->getSite());
+        $this->assertEquals($newTitle, $partner->getTitle());
+        $this->assertEquals($newEmail, $partner->getEmail());
+        $this->assertEquals($newLogoUrl, $partner->getLogoUrl());
+        $this->assertEquals($site, $partner->getSite());
     }
 
     #[Test]
     public function testCreatePartnerWithInvalidPhone(): void
     {
-        $this->expectException(\Bitrix24\SDK\Core\Exceptions\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid mobile phone number.');
 
         $command = new Bitrix24Partners\UseCase\Upsert\Command(

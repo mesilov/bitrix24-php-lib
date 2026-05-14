@@ -31,7 +31,7 @@ readonly class Handler
         ]);
 
         try {
-            /** @var (AggregateRootEventsEmitterInterface&Bitrix24PartnerInterface)|null $existingPartner */
+            /** @var AggregateRootEventsEmitterInterface|Bitrix24PartnerInterface $existingPartner */
             $existingPartner = $this->bitrix24PartnerRepository->findByBitrix24PartnerNumber($command->bitrix24PartnerNumber);
 
             if (null !== $command->phone) {

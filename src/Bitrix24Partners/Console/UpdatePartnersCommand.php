@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Bitrix24Partners\Console;
 
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerCsvStorage;
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerHtmlParser;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
 use League\Csv\Reader;
 use Psr\Log\LoggerInterface;
@@ -26,7 +25,6 @@ class UpdatePartnersCommand extends Command
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly PartnerPageScraper $scraper,
-        private readonly PartnerHtmlParser $parser,
         private readonly PartnerCsvStorage $csvStorage,
     ) {
         parent::__construct();
@@ -137,32 +135,22 @@ class UpdatePartnersCommand extends Command
                 continue;
             }
 
-            $detailPageUrl = $records[$partnerId]['detail_page_url'] ?? '';
-            if ('' === $detailPageUrl) {
-                $this->logger->warning(sprintf('Партнёр #%d: нет detail_page_url, пропускаем', $partnerId));
-                ++$errors;
-
-                continue;
-            }
-
             $baseDomain = $records[$partnerId]['base_domain'] ?? '';
 
             try {
-                $detailHtml = $this->scraper->fetchPartnerDetailHtml($detailPageUrl, $insecure, $baseDomain);
-                if (null === $detailHtml) {
-                    $this->logger->warning(sprintf('Партнёр #%d: не удалось загрузить детальную страницу', $partnerId));
+                $partnerData = $this->scraper->fetchPartnerData($partnerId, $baseDomain, $insecure);
+                if (null === $partnerData) {
+                    $this->logger->warning(sprintf('Партнёр #%d: не удалось загрузить данные', $partnerId));
                     ++$errors;
 
                     continue;
                 }
 
-                $detailData = $this->parser->parsePartnerDetailPage($detailHtml);
-
-                $records[$partnerId]['phone'] = $detailData['phone'];
-                $records[$partnerId]['email'] = $detailData['email'];
-                $records[$partnerId]['logo_url'] = $detailData['logo_url'];
-                $records[$partnerId]['site'] = $detailData['site'];
-                $records[$partnerId]['scraped_at'] = (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM);
+                $records[$partnerId]['phone'] = $partnerData->phone ?? '';
+                $records[$partnerId]['email'] = $partnerData->email ?? '';
+                $records[$partnerId]['logo_url'] = $partnerData->logoUrl ?? '';
+                $records[$partnerId]['site'] = $partnerData->site ?? '';
+                $records[$partnerId]['scraped_at'] = $partnerData->scrapedAt->format(\DateTimeInterface::ATOM);
 
                 ++$updated;
                 $progressBar->setMessage('OK');

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper;
 
+use Carbon\CarbonImmutable;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
 use Psr\Http\Client\ClientInterface;
@@ -29,6 +30,7 @@ class PartnerPageScraper
 
     public function __construct(
         private readonly LoggerInterface $logger,
+        private readonly PartnerHtmlParser $parser,
     ) {}
 
     public function findLastPage(string $baseUrl, bool $insecure, SymfonyStyle $io): int
@@ -95,7 +97,45 @@ class PartnerPageScraper
         return $data['html'];
     }
 
-    public function fetchPartnerDetailHtml(string $detailPageUrl, bool $insecure, string $baseDomain): ?string
+    /**
+     * @return array<int, array{partner_number: int, title: string, detail_page_url: string, phone: string}>
+     */
+    public function fetchPartnerList(int $pageNumber, string $baseUrl, bool $insecure): array
+    {
+        $html = $this->fetchPageHtml($pageNumber, $baseUrl, $insecure);
+        if (null === $html) {
+            return [];
+        }
+
+        return $this->parser->parsePartnerListPage($html);
+    }
+
+    public function fetchPartnerData(int $partnerId, string $baseDomain, bool $insecure = false): ?PartnerData
+    {
+        $detailPageUrl = '/partners/partner/'.$partnerId.'/';
+
+        $html = $this->fetchPartnerDetailHtml($detailPageUrl, $insecure, $baseDomain);
+        if (null === $html) {
+            return null;
+        }
+
+        $detail = $this->parser->parsePartnerDetailPage($html);
+        $title = $this->extractTitleFromHtml($html);
+
+        return new PartnerData(
+            bitrix24PartnerNumber: $partnerId,
+            title: $title,
+            site: '' !== $detail['site'] ? $detail['site'] : null,
+            phone: '' !== $detail['phone'] ? $detail['phone'] : null,
+            email: '' !== $detail['email'] ? $detail['email'] : null,
+            logoUrl: '' !== $detail['logo_url'] ? $detail['logo_url'] : null,
+            detailPageUrl: $detailPageUrl,
+            baseDomain: $baseDomain,
+            scrapedAt: CarbonImmutable::now(),
+        );
+    }
+
+    private function fetchPartnerDetailHtml(string $detailPageUrl, bool $insecure, string $baseDomain): ?string
     {
         if ('' === $detailPageUrl) {
             return null;
@@ -176,5 +216,20 @@ class PartnerPageScraper
         $host = $parsed['host'];
 
         return $scheme.'://'.$host;
+    }
+
+    private function extractTitleFromHtml(string $html): string
+    {
+        try {
+            $crawler = new Crawler($html);
+            $titleNode = $crawler->filter('h1.bx-partner-detail-header-title')->first();
+            if ($titleNode->count() > 0) {
+                return trim($titleNode->text());
+            }
+        } catch (\Throwable $throwable) {
+            $this->logger->warning(sprintf('Ошибка парсинга title: %s', $throwable->getMessage()));
+        }
+
+        return '';
     }
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Bitrix24Partners\Console;
 
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerCsvStorage;
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerHtmlParser;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeStateManager;
 use Psr\Log\LoggerInterface;
@@ -34,7 +33,6 @@ class ScrapePartnersCommand extends Command
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly PartnerPageScraper $scraper,
-        private readonly PartnerHtmlParser $parser,
         private readonly PartnerCsvStorage $csvStorage,
         private readonly ScrapeStateManager $stateManager,
     ) {
@@ -68,9 +66,10 @@ class ScrapePartnersCommand extends Command
         $resume = (bool) $input->getOption('resume');
         $fullRefresh = (bool) $input->getOption('full-refresh');
 
-        $io->info('Начало парсинга партнеров Bitrix24...');
-        $io->writeln(sprintf('Base URL: %s', $baseUrl));
-        $io->writeln(sprintf('Output file: %s', $outputFile));
+        if ($io->isVerbose()) {
+            $io->text(sprintf('Base URL: %s', $baseUrl));
+            $io->text(sprintf('Output file: %s', $outputFile));
+        }
 
         $baseDomain = $this->extractBaseDomain($baseUrl);
 
@@ -130,35 +129,44 @@ class ScrapePartnersCommand extends Command
             $startPage = $state['last_completed_page'] + 1;
             $processedNumbers = $this->stateManager->loadProcessedPartnerNumbers($outputFile);
 
-            $io->note(sprintf(
-                'Resume: продолжаем со страницы %d из %d (уже обработано: %d)',
-                $startPage,
-                $lastPage,
-                count($processedNumbers)
-            ));
+            if ($io->isVerbose()) {
+                $io->note(sprintf(
+                    'Resume: продолжаем со страницы %d из %d (уже обработано: %d)',
+                    $startPage,
+                    $lastPage,
+                    count($processedNumbers)
+                ));
+            }
         } else {
-            $io->section('Определение количества страниц...');
+            if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+                $io->section('Определение количества страниц...');
+            }
             $lastPage = $this->scraper->findLastPage($baseUrl, $insecure, $io);
 
-            $firstPageHtml = $this->scraper->fetchPageHtml(1, $baseUrl, $insecure);
-            if (null !== $firstPageHtml) {
-                $firstPagePartners = $this->parser->parsePartnerListPage($firstPageHtml);
-                if ([] !== $firstPagePartners) {
-                    $partnersPerPage = count($firstPagePartners);
-                }
+            $firstPagePartners = $this->scraper->fetchPartnerList(1, $baseUrl, $insecure);
+            if ([] !== $firstPagePartners) {
+                $partnersPerPage = count($firstPagePartners);
             }
 
-            $io->success(sprintf('Найдено страниц: %d | Партнёров на странице: %d (≈%d партнёров)', $lastPage, $partnersPerPage, $lastPage * $partnersPerPage));
+            if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+                $io->success(sprintf('Найдено страниц: %d | Партнёров на странице: %d (≈%d партнёров)', $lastPage, $partnersPerPage, $lastPage * $partnersPerPage));
+            }
         }
 
         $estimatedPartners = $lastPage * $partnersPerPage;
 
-        $io->section('Парсинг партнёров...');
-        $progressBar = new ProgressBar($output, $estimatedPartners);
-        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | Стр: %page% | ID: %partner%');
-        $progressBar->setMessage('', 'page');
-        $progressBar->setMessage('', 'partner');
-        $progressBar->advance(count($processedNumbers));
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $io->section('Парсинг партнёров...');
+        }
+
+        $progressBar = null;
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $progressBar = new ProgressBar($output, $estimatedPartners);
+            $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | Стр: %page% | ID: %partner%');
+            $progressBar->setMessage('', 'page');
+            $progressBar->setMessage('', 'partner');
+            $progressBar->advance(count($processedNumbers));
+        }
 
         if ($resume) {
             $csvWriter = $this->csvStorage->createWriterForResume($outputFile);
@@ -183,16 +191,13 @@ class ScrapePartnersCommand extends Command
         $banDetected = false;
 
         for ($page = $startPage; $page <= $lastPage; ++$page) {
-            $progressBar->setMessage((string) $page, 'page');
+            $progressBar?->setMessage((string) $page, 'page');
 
-            $html = null;
             $partners = [];
 
             try {
-                $html = $this->scraper->fetchPageHtml($page, $baseUrl, $insecure);
-                if (null !== $html) {
-                    $partners = $this->parser->parsePartnerListPage($html);
-                } else {
+                $partners = $this->scraper->fetchPartnerList($page, $baseUrl, $insecure);
+                if ([] === $partners) {
                     $this->logger->warning(sprintf('Страница %d пустая, пропускаем', $page));
                 }
             } catch (\Throwable $e) {
@@ -201,7 +206,7 @@ class ScrapePartnersCommand extends Command
 
             ++$totalPagesProcessed;
 
-            if (null === $html || [] === $partners) {
+            if ([] === $partners) {
                 ++$consecutiveEmptyPages;
                 ++$totalEmptyPages;
             } else {
@@ -223,34 +228,46 @@ class ScrapePartnersCommand extends Command
                 break;
             }
 
-            if (null === $html) {
-                continue;
-            }
-
             foreach ($partners as $partner) {
                 $partnerNumber = $partner['partner_number'];
-                $progressBar->setMessage((string) $partnerNumber, 'partner');
+                $progressBar?->setMessage((string) $partnerNumber, 'partner');
 
                 if (isset($processedNumbers[$partnerNumber])) {
-                    $progressBar->advance();
+                    $progressBar?->advance();
 
                     continue;
                 }
 
                 try {
-                    $detailHtml = $this->scraper->fetchPartnerDetailHtml($partner['detail_page_url'], $insecure, $baseDomain);
+                    $partnerData = $this->scraper->fetchPartnerData($partnerNumber, $baseDomain, $insecure);
 
-                    $detailData = [
-                        'phone' => '',
-                        'email' => '',
-                        'logo_url' => '',
-                        'site' => '',
-                    ];
-                    if (null !== $detailHtml) {
-                        $detailData = $this->parser->parsePartnerDetailPage($detailHtml);
+                    if (null !== $partnerData) {
+                        $this->csvStorage->writePartner($csvWriter, [
+                            'partner_number' => $partnerData->bitrix24PartnerNumber,
+                            'title' => '' !== $partnerData->title ? $partnerData->title : $partner['title'],
+                            'site' => $partnerData->site ?? '',
+                            'phone' => $partnerData->phone ?? '',
+                            'email' => $partnerData->email ?? '',
+                            'logo_url' => $partnerData->logoUrl ?? '',
+                            'detail_page_url' => $partnerData->detailPageUrl,
+                            'base_domain' => $partnerData->baseDomain,
+                        ]);
+
+                        if ($io->isVeryVerbose()) {
+                            $io->text(sprintf('Партнёр #%d: OK', $partnerNumber));
+                        }
+                    } else {
+                        $this->csvStorage->writePartner($csvWriter, array_merge($partner, [
+                            'email' => '',
+                            'logo_url' => '',
+                            'site' => '',
+                            'base_domain' => $baseDomain,
+                        ]));
+
+                        if ($io->isVeryVerbose()) {
+                            $io->text(sprintf('Партнёр #%d: данные не загружены, записаны базовые данные', $partnerNumber));
+                        }
                     }
-
-                    $this->csvStorage->writePartner($csvWriter, array_merge($partner, $detailData, ['base_domain' => $baseDomain]));
 
                     $processedNumbers[$partnerNumber] = true;
                     ++$totalProcessed;
@@ -260,9 +277,13 @@ class ScrapePartnersCommand extends Command
                         $partnerNumber,
                         $e->getMessage()
                     ));
+
+                    if ($io->isVeryVerbose()) {
+                        $io->text(sprintf('Партнёр #%d: ошибка — %s', $partnerNumber, $e->getMessage()));
+                    }
                 }
 
-                $progressBar->advance();
+                $progressBar?->advance();
                 $state['last_completed_page'] = $page;
                 $this->stateManager->write($outputFile, $state);
                 sleep($partnerDelay);
@@ -283,8 +304,10 @@ class ScrapePartnersCommand extends Command
             ));
         }
 
-        $progressBar->finish();
-        $io->newLine(2);
+        $progressBar?->finish();
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $io->newLine(2);
+        }
 
         if ($banDetected) {
             $io->warning(sprintf(
@@ -298,7 +321,10 @@ class ScrapePartnersCommand extends Command
         }
 
         $this->stateManager->delete($outputFile);
-        $io->success(sprintf('Парсинг завершён. Обработано партнёров: %d', $totalProcessed));
+
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $io->success(sprintf('Парсинг завершён. Обработано партнёров: %d', $totalProcessed));
+        }
 
         return Command::SUCCESS;
     }
