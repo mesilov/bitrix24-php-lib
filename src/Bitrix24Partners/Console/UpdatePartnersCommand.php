@@ -111,26 +111,35 @@ class UpdatePartnersCommand extends Command
             return Command::FAILURE;
         }
 
-        $io->text(sprintf('Обновление %d партнёров...', count($partnerIds)));
+        if ($io->isVerbose()) {
+            $io->text(sprintf('Обновление %d партнёров...', count($partnerIds)));
+        }
 
         $records = $this->csvStorage->readAsPartnerMap($outputFile);
 
-        $progressBar = new ProgressBar($output, count($partnerIds));
-        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | Партнёр: %partner% | %message%');
-        $progressBar->setMessage('', 'partner');
-        $progressBar->setMessage('');
-        $progressBar->start();
+        $progressBar = null;
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $progressBar = new ProgressBar($output, count($partnerIds));
+            $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | Партнёр: %partner% | %message%');
+            $progressBar->setMessage('', 'partner');
+            $progressBar->setMessage('');
+            $progressBar->start();
+        }
 
         $updated = 0;
         $errors = 0;
 
         foreach ($partnerIds as $partnerId) {
-            $progressBar->setMessage((string) $partnerId, 'partner');
-            $progressBar->advance();
+            $progressBar?->setMessage((string) $partnerId, 'partner');
+            $progressBar?->advance();
 
             if (!isset($records[$partnerId])) {
                 $this->logger->warning(sprintf('Партнёр #%d не найден в CSV, пропускаем', $partnerId));
                 ++$errors;
+
+                if ($io->isVeryVerbose()) {
+                    $io->text(sprintf('Партнёр #%d: не найден в CSV', $partnerId));
+                }
 
                 continue;
             }
@@ -143,6 +152,10 @@ class UpdatePartnersCommand extends Command
                     $this->logger->warning(sprintf('Партнёр #%d: не удалось загрузить данные', $partnerId));
                     ++$errors;
 
+                    if ($io->isVeryVerbose()) {
+                        $io->text(sprintf('Партнёр #%d: не удалось загрузить данные', $partnerId));
+                    }
+
                     continue;
                 }
 
@@ -153,22 +166,34 @@ class UpdatePartnersCommand extends Command
                 $records[$partnerId]['scraped_at'] = $partnerData->scrapedAt->format(\DateTimeInterface::ATOM);
 
                 ++$updated;
-                $progressBar->setMessage('OK');
+                $progressBar?->setMessage('OK');
+
+                if ($io->isVeryVerbose()) {
+                    $io->text(sprintf('Партнёр #%d: OK', $partnerId));
+                }
             } catch (\Throwable $e) {
                 $this->logger->warning(sprintf('Ошибка обновления партнёра #%d: %s', $partnerId, $e->getMessage()));
-                $progressBar->setMessage('Ошибка');
+                $progressBar?->setMessage('Ошибка');
                 ++$errors;
+
+                if ($io->isVeryVerbose()) {
+                    $io->text(sprintf('Партнёр #%d: ошибка — %s', $partnerId, $e->getMessage()));
+                }
             }
 
             sleep($partnerDelay);
         }
 
-        $progressBar->finish();
-        $io->newLine(2);
+        $progressBar?->finish();
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $io->newLine(2);
+        }
 
         $this->csvStorage->writeAll($outputFile, $records);
 
-        $io->success(sprintf('Обновлено: %d, ошибок: %d', $updated, $errors));
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $io->success(sprintf('Обновлено: %d, ошибок: %d', $updated, $errors));
+        }
 
         return Command::SUCCESS;
     }

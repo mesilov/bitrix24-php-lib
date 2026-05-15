@@ -53,21 +53,18 @@ class PartnerCsvStorage
         return $records;
     }
 
-    /**
-     * @param array{partner_number: int, title: string, site: string, phone: string, email: string, logo_url: string, detail_page_url: string, base_domain: string} $partner
-     */
-    public function writePartner(Writer $writer, array $partner): void
+    public function writePartner(Writer $writer, PartnerData $partner): void
     {
         $writer->insertOne([
-            $partner['partner_number'],
-            $partner['title'],
-            $partner['site'],
-            $partner['phone'],
-            $partner['email'],
-            $partner['logo_url'],
-            $partner['detail_page_url'],
-            $partner['base_domain'],
-            (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+            $partner->bitrix24PartnerNumber,
+            $partner->title,
+            $partner->site ?? '',
+            $partner->phone ?? '',
+            $partner->email ?? '',
+            $partner->logoUrl ?? '',
+            $partner->detailPageUrl,
+            $partner->baseDomain,
+            $partner->scrapedAt->format(\DateTimeInterface::ATOM),
         ]);
     }
 

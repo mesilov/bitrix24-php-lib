@@ -11,7 +11,6 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpClient\Psr18Client;
@@ -33,42 +32,22 @@ class PartnerPageScraper
         private readonly PartnerHtmlParser $parser,
     ) {}
 
-    public function findLastPage(string $baseUrl, bool $insecure, SymfonyStyle $io): int
+    /**
+     * @param null|\Closure(string): void $onProgress
+     *
+     * @return array{lastPage: int, partnersPerPage: int}
+     */
+    public function getPageRange(string $baseUrl, bool $insecure, ?\Closure $onProgress = null): array
     {
-        $io->text('Проверяем страницу 1...');
-        if (!$this->hasPartnersOnPage(1, $baseUrl, $insecure)) {
-            throw new \RuntimeException('Страница 1 не существует или не содержит партнёров. Проверьте URL и доступность сайта.');
+        $lastPage = $this->findLastPage($baseUrl, $insecure, $onProgress);
+
+        $partnersPerPage = 12;
+        $firstPagePartners = $this->fetchPartnerList(1, $baseUrl, $insecure);
+        if ([] !== $firstPagePartners) {
+            $partnersPerPage = count($firstPagePartners);
         }
 
-        $io->text('Страница 1 существует');
-
-        $low = 1;
-        $high = self::BINARY_SEARCH_STEP;
-
-        while ($this->hasPartnersOnPage($high, $baseUrl, $insecure)) {
-            $io->text(sprintf('Страница %d существует, проверяем %d...', $high, $high + self::BINARY_SEARCH_STEP));
-            $low = $high;
-            $high += self::BINARY_SEARCH_STEP;
-            sleep(1);
-        }
-
-        $io->text(sprintf('Страница %d не существует, бинарный поиск между %d и %d...', $high, $low, $high));
-
-        while ($low < $high - 1) {
-            $mid = (int) ceil(($low + $high) / 2);
-
-            if ($this->hasPartnersOnPage($mid, $baseUrl, $insecure)) {
-                $io->text(sprintf('Страница %d существует', $mid));
-                $low = $mid;
-            } else {
-                $io->text(sprintf('Страница %d не существует', $mid));
-                $high = $mid;
-            }
-
-            sleep(1);
-        }
-
-        return $low;
+        return ['lastPage' => $lastPage, 'partnersPerPage' => $partnersPerPage];
     }
 
     public function fetchPageHtml(int $pageNumber, string $baseUrl, bool $insecure): ?string
@@ -110,7 +89,7 @@ class PartnerPageScraper
         return $this->parser->parsePartnerListPage($html);
     }
 
-    public function fetchPartnerData(int $partnerId, string $baseDomain, bool $insecure = false): ?PartnerData
+    public function fetchPartnerData(int $partnerId, string $baseDomain, bool $insecure = false, string $title = ''): ?PartnerData
     {
         $detailPageUrl = '/partners/partner/'.$partnerId.'/';
 
@@ -120,7 +99,6 @@ class PartnerPageScraper
         }
 
         $detail = $this->parser->parsePartnerDetailPage($html);
-        $title = $this->extractTitleFromHtml($html);
 
         return new PartnerData(
             bitrix24PartnerNumber: $partnerId,
@@ -133,6 +111,49 @@ class PartnerPageScraper
             baseDomain: $baseDomain,
             scrapedAt: CarbonImmutable::now(),
         );
+    }
+
+    /**
+     * @param null|\Closure(string): void $onProgress
+     */
+    private function findLastPage(string $baseUrl, bool $insecure, ?\Closure $onProgress = null): int
+    {
+        $onProgress?->__invoke('Проверяем страницу 1...');
+        if (!$this->hasPartnersOnPage(1, $baseUrl, $insecure)) {
+            throw new \RuntimeException('Страница 1 не существует или не содержит партнёров. Проверьте URL и доступность сайта.');
+        }
+
+        $onProgress?->__invoke('Страница 1 существует');
+
+        $low = 1;
+        $high = self::BINARY_SEARCH_STEP;
+
+        while ($this->hasPartnersOnPage($high, $baseUrl, $insecure)) {
+            $onProgress?->__invoke(sprintf('Страница %d существует, проверяем %d...', $high, $high + self::BINARY_SEARCH_STEP));
+            $this->logger->info(sprintf('Страница %d существует, проверяем %d...', $high, $high + self::BINARY_SEARCH_STEP));
+            $low = $high;
+            $high += self::BINARY_SEARCH_STEP;
+            sleep(1);
+        }
+
+        $onProgress?->__invoke(sprintf('Страница %d не существует, бинарный поиск между %d и %d...', $high, $low, $high));
+        $this->logger->info(sprintf('Страница %d не существует, бинарный поиск между %d и %d...', $high, $low, $high));
+
+        while ($low < $high - 1) {
+            $mid = (int) ceil(($low + $high) / 2);
+
+            if ($this->hasPartnersOnPage($mid, $baseUrl, $insecure)) {
+                $onProgress?->__invoke(sprintf('Страница %d существует', $mid));
+                $low = $mid;
+            } else {
+                $onProgress?->__invoke(sprintf('Страница %d не существует', $mid));
+                $high = $mid;
+            }
+
+            sleep(1);
+        }
+
+        return $low;
     }
 
     private function fetchPartnerDetailHtml(string $detailPageUrl, bool $insecure, string $baseDomain): ?string
@@ -216,20 +237,5 @@ class PartnerPageScraper
         $host = $parsed['host'];
 
         return $scheme.'://'.$host;
-    }
-
-    private function extractTitleFromHtml(string $html): string
-    {
-        try {
-            $crawler = new Crawler($html);
-            $titleNode = $crawler->filter('h1.bx-partner-detail-header-title')->first();
-            if ($titleNode->count() > 0) {
-                return trim($titleNode->text());
-            }
-        } catch (\Throwable $throwable) {
-            $this->logger->warning(sprintf('Ошибка парсинга title: %s', $throwable->getMessage()));
-        }
-
-        return '';
     }
 }

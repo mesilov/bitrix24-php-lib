@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\Console;
 
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerCsvStorage;
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeStateManager;
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeResult;
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeWorkflow;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -30,11 +29,13 @@ class ScrapePartnersCommand extends Command
 
     private const int DEFAULT_PARTNER_DELAY = 2;
 
+    private SymfonyStyle $io;
+
+    private OutputInterface $output;
+
     public function __construct(
         private readonly LoggerInterface $logger,
-        private readonly PartnerPageScraper $scraper,
-        private readonly PartnerCsvStorage $csvStorage,
-        private readonly ScrapeStateManager $stateManager,
+        private readonly ScrapeWorkflow $workflow,
     ) {
         parent::__construct();
     }
@@ -56,7 +57,8 @@ class ScrapePartnersCommand extends Command
     #[\Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $this->io = new SymfonyStyle($input, $output);
+        $this->output = $output;
 
         $baseUrl = $input->getOption('base-url');
         $outputFile = $input->getOption('output-file');
@@ -66,29 +68,18 @@ class ScrapePartnersCommand extends Command
         $resume = (bool) $input->getOption('resume');
         $fullRefresh = (bool) $input->getOption('full-refresh');
 
-        if ($io->isVerbose()) {
-            $io->text(sprintf('Base URL: %s', $baseUrl));
-            $io->text(sprintf('Output file: %s', $outputFile));
+        if ($this->io->isVerbose()) {
+            $this->io->text(sprintf('Base URL: %s', $baseUrl));
+            $this->io->text(sprintf('Output file: %s', $outputFile));
         }
 
         $baseDomain = $this->extractBaseDomain($baseUrl);
 
         try {
-            return $this->executeFullScrape(
-                $baseUrl,
-                $outputFile,
-                $pageDelay,
-                $partnerDelay,
-                $insecure,
-                $resume,
-                $fullRefresh,
-                $output,
-                $io,
-                $baseDomain
-            );
+            return $this->executeFullScrape($baseUrl, $outputFile, $pageDelay, $partnerDelay, $insecure, $resume, $fullRefresh, $baseDomain);
         } catch (\Throwable $throwable) {
             $this->logger->error('Ошибка: '.$throwable->getMessage());
-            $io->error('Ошибка: '.$throwable->getMessage());
+            $this->io->error('Ошибка: '.$throwable->getMessage());
 
             return Command::FAILURE;
         }
@@ -102,35 +93,33 @@ class ScrapePartnersCommand extends Command
         bool $insecure,
         bool $resume,
         bool $fullRefresh,
-        OutputInterface $output,
-        SymfonyStyle $io,
         string $baseDomain,
     ): int {
         if (!$resume && !$fullRefresh && file_exists($outputFile)) {
-            $io->error(sprintf('Файл %s уже существует. Используйте --full-refresh для перезаписи.', $outputFile));
+            $this->io->error(sprintf('Файл %s уже существует. Используйте --full-refresh для перезаписи.', $outputFile));
 
             return Command::FAILURE;
         }
 
-        $startPage = 1;
-        $lastPage = 0;
-        $processedNumbers = [];
-        $partnersPerPage = 12;
+        $onProgress = $this->io->isVerbose()
+            ? fn (string $message) => $this->io->text($message)
+            : null;
+
+        $context = $this->workflow->resolveStartContext($baseUrl, $outputFile, $insecure, $resume, $onProgress);
+        if (null === $context) {
+            $this->io->error('State-файл не найден. Запустите без --resume.');
+
+            return Command::FAILURE;
+        }
+
+        $startPage = $context['startPage'];
+        $lastPage = $context['lastPage'];
+        $processedNumbers = $context['processedNumbers'];
+        $partnersPerPage = $context['partnersPerPage'];
 
         if ($resume) {
-            $state = $this->stateManager->read($outputFile);
-            if (null === $state) {
-                $io->error('State-файл не найден. Запустите без --resume.');
-
-                return Command::FAILURE;
-            }
-
-            $lastPage = $state['total_pages'];
-            $startPage = $state['last_completed_page'] + 1;
-            $processedNumbers = $this->stateManager->loadProcessedPartnerNumbers($outputFile);
-
-            if ($io->isVerbose()) {
-                $io->note(sprintf(
+            if ($this->io->isVerbose()) {
+                $this->io->note(sprintf(
                     'Resume: продолжаем со страницы %d из %d (уже обработано: %d)',
                     $startPage,
                     $lastPage,
@@ -138,192 +127,76 @@ class ScrapePartnersCommand extends Command
                 ));
             }
         } else {
-            if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
-                $io->section('Определение количества страниц...');
-            }
-            $lastPage = $this->scraper->findLastPage($baseUrl, $insecure, $io);
-
-            $firstPagePartners = $this->scraper->fetchPartnerList(1, $baseUrl, $insecure);
-            if ([] !== $firstPagePartners) {
-                $partnersPerPage = count($firstPagePartners);
-            }
-
-            if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
-                $io->success(sprintf('Найдено страниц: %d | Партнёров на странице: %d (≈%d партнёров)', $lastPage, $partnersPerPage, $lastPage * $partnersPerPage));
-            }
-        }
-
-        $estimatedPartners = $lastPage * $partnersPerPage;
-
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
-            $io->section('Парсинг партнёров...');
-        }
-
-        $progressBar = null;
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
-            $progressBar = new ProgressBar($output, $estimatedPartners);
-            $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | Стр: %page% | ID: %partner%');
-            $progressBar->setMessage('', 'page');
-            $progressBar->setMessage('', 'partner');
-            $progressBar->advance(count($processedNumbers));
-        }
-
-        if ($resume) {
-            $csvWriter = $this->csvStorage->createWriterForResume($outputFile);
-        } else {
-            $csvWriter = $this->csvStorage->createWriter($outputFile);
-        }
-
-        $totalProcessed = count($processedNumbers);
-        $state = [
-            'mode' => 'full_scrape',
-            'base_url' => $baseUrl,
-            'total_pages' => $lastPage,
-            'last_completed_page' => 0,
-            'output_file' => $outputFile,
-            'started_at' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
-            'updated_at' => '',
-        ];
-
-        $consecutiveEmptyPages = 0;
-        $totalEmptyPages = 0;
-        $totalPagesProcessed = 0;
-        $banDetected = false;
-
-        for ($page = $startPage; $page <= $lastPage; ++$page) {
-            $progressBar?->setMessage((string) $page, 'page');
-
-            $partners = [];
-
-            try {
-                $partners = $this->scraper->fetchPartnerList($page, $baseUrl, $insecure);
-                if ([] === $partners) {
-                    $this->logger->warning(sprintf('Страница %d пустая, пропускаем', $page));
-                }
-            } catch (\Throwable $e) {
-                $this->logger->error(sprintf('Ошибка при обработке страницы %d: %s', $page, $e->getMessage()));
-            }
-
-            ++$totalPagesProcessed;
-
-            if ([] === $partners) {
-                ++$consecutiveEmptyPages;
-                ++$totalEmptyPages;
-            } else {
-                $consecutiveEmptyPages = 0;
-            }
-
-            if ($consecutiveEmptyPages >= 10) {
-                $banDetected = true;
-                $this->logger->error(sprintf(
-                    'Обнаружена блокировка: %d страниц подряд без данных (страница %d). Рекомендуется увеличить задержки.',
-                    $consecutiveEmptyPages,
-                    $page
+            if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+                $this->io->section('Определение количества страниц...');
+                $this->io->success(sprintf(
+                    'Найдено страниц: %d | Партнёров на странице: %d (≈%d партнёров)',
+                    $lastPage,
+                    $partnersPerPage,
+                    $lastPage * $partnersPerPage
                 ));
-                $io->error(sprintf(
-                    'Обнаружена блокировка: %d страниц подряд без данных. Скорее всего, доступ заблокирован. Попробуйте увеличить --partner-delay и --page-delay до 2-3 секунд.',
-                    $consecutiveEmptyPages
-                ));
-
-                break;
+                $this->io->section('Парсинг партнёров...');
             }
-
-            foreach ($partners as $partner) {
-                $partnerNumber = $partner['partner_number'];
-                $progressBar?->setMessage((string) $partnerNumber, 'partner');
-
-                if (isset($processedNumbers[$partnerNumber])) {
-                    $progressBar?->advance();
-
-                    continue;
-                }
-
-                try {
-                    $partnerData = $this->scraper->fetchPartnerData($partnerNumber, $baseDomain, $insecure);
-
-                    if (null !== $partnerData) {
-                        $this->csvStorage->writePartner($csvWriter, [
-                            'partner_number' => $partnerData->bitrix24PartnerNumber,
-                            'title' => '' !== $partnerData->title ? $partnerData->title : $partner['title'],
-                            'site' => $partnerData->site ?? '',
-                            'phone' => $partnerData->phone ?? '',
-                            'email' => $partnerData->email ?? '',
-                            'logo_url' => $partnerData->logoUrl ?? '',
-                            'detail_page_url' => $partnerData->detailPageUrl,
-                            'base_domain' => $partnerData->baseDomain,
-                        ]);
-
-                        if ($io->isVeryVerbose()) {
-                            $io->text(sprintf('Партнёр #%d: OK', $partnerNumber));
-                        }
-                    } else {
-                        $this->csvStorage->writePartner($csvWriter, array_merge($partner, [
-                            'email' => '',
-                            'logo_url' => '',
-                            'site' => '',
-                            'base_domain' => $baseDomain,
-                        ]));
-
-                        if ($io->isVeryVerbose()) {
-                            $io->text(sprintf('Партнёр #%d: данные не загружены, записаны базовые данные', $partnerNumber));
-                        }
-                    }
-
-                    $processedNumbers[$partnerNumber] = true;
-                    ++$totalProcessed;
-                } catch (\Throwable $e) {
-                    $this->logger->warning(sprintf(
-                        'Ошибка при обработке партнёра #%d: %s',
-                        $partnerNumber,
-                        $e->getMessage()
-                    ));
-
-                    if ($io->isVeryVerbose()) {
-                        $io->text(sprintf('Партнёр #%d: ошибка — %s', $partnerNumber, $e->getMessage()));
-                    }
-                }
-
-                $progressBar?->advance();
-                $state['last_completed_page'] = $page;
-                $this->stateManager->write($outputFile, $state);
-                sleep($partnerDelay);
-            }
-
-            $state['last_completed_page'] = $page;
-            $this->stateManager->write($outputFile, $state);
-            sleep($pageDelay);
         }
 
-        if (!$banDetected && $totalPagesProcessed > 0 && $totalEmptyPages / $totalPagesProcessed > 0.5) {
-            $banDetected = true;
-            $this->logger->error(sprintf(
-                'Подозрение на блокировку: %d из %d страниц пустые (%.0f%%).',
-                $totalEmptyPages,
-                $totalPagesProcessed,
-                $totalEmptyPages / $totalPagesProcessed * 100
-            ));
+        $progressBar = $this->createProgressBar($lastPage * $partnersPerPage, count($processedNumbers));
+
+        $result = $this->workflow->run(
+            $startPage,
+            $lastPage,
+            $baseUrl,
+            $baseDomain,
+            $insecure,
+            $pageDelay,
+            $partnerDelay,
+            $outputFile,
+            $resume,
+            $processedNumbers,
+            onPageStart: fn (int $page) => $progressBar?->setMessage((string) $page, 'page'),
+            onPartnerStart: fn (int $partnerNumber) => $progressBar?->setMessage((string) $partnerNumber, 'partner'),
+            onPartnerAdvance: fn () => $progressBar?->advance(),
+        );
+
+        return $this->finishScrape($outputFile, $progressBar, $result);
+    }
+
+    private function createProgressBar(int $total, int $alreadyProcessed): ?ProgressBar
+    {
+        if ($this->output->getVerbosity() < OutputInterface::VERBOSITY_NORMAL) {
+            return null;
         }
 
+        $progressBar = new ProgressBar($this->output, $total);
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | Стр: %page% | ID: %partner%');
+        $progressBar->setMessage('', 'page');
+        $progressBar->setMessage('', 'partner');
+        $progressBar->advance($alreadyProcessed);
+
+        return $progressBar;
+    }
+
+    private function finishScrape(string $outputFile, ?ProgressBar $progressBar, ScrapeResult $result): int
+    {
         $progressBar?->finish();
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
-            $io->newLine(2);
+        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $this->io->newLine(2);
         }
 
-        if ($banDetected) {
-            $io->warning(sprintf(
+        if ($result->banDetected) {
+            $this->io->warning(sprintf(
                 'Парсинг прерван. Обработано партнёров: %d | Пустых страниц: %d из %d. Возможно, доступ заблокирован — увеличьте задержки (--partner-delay, --page-delay) и попробуйте позже.',
-                $totalProcessed,
-                $totalEmptyPages,
-                $totalPagesProcessed
+                $result->totalProcessed,
+                $result->totalEmptyPages,
+                $result->totalPagesProcessed
             ));
 
             return Command::FAILURE;
         }
 
-        $this->stateManager->delete($outputFile);
+        $this->workflow->complete($outputFile);
 
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
-            $io->success(sprintf('Парсинг завершён. Обработано партнёров: %d', $totalProcessed));
+        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $this->io->success(sprintf('Парсинг завершён. Обработано партнёров: %d', $result->totalProcessed));
         }
 
         return Command::SUCCESS;

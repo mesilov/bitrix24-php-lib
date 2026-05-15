@@ -17,6 +17,7 @@ use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerCsvStorage;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerHtmlParser;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeStateManager;
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeWorkflow;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
@@ -32,13 +33,14 @@ $application = new Application();
 $logger = new Logger('bitrix24-lib');
 $logger->pushHandler(new StreamHandler(__DIR__ . '/../app.log', Logger::DEBUG));
 
-$scraper = new PartnerPageScraper($logger);
 $parser = new PartnerHtmlParser($logger);
+$scraper = new PartnerPageScraper($logger, $parser);
 $csvStorage = new PartnerCsvStorage();
 $stateManager = new ScrapeStateManager($csvStorage);
+$workflow = new ScrapeWorkflow($scraper, $csvStorage, $stateManager, $logger);
 
-$application->addCommand(new ScrapePartnersCommand($logger, $scraper, $parser, $csvStorage, $stateManager));
-$application->addCommand(new UpdatePartnersCommand($logger, $scraper, $parser, $csvStorage));
+$application->addCommand(new ScrapePartnersCommand($logger, $workflow));
+$application->addCommand(new UpdatePartnersCommand($logger, $scraper, $csvStorage));
 
 $entityManager = EntityManagerFactory::get();
 $eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());

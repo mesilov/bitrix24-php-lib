@@ -6,19 +6,67 @@ namespace Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper;
 
 class ScrapeStateManager
 {
+    private ?array $state = null;
+
     public function __construct(
         private readonly PartnerCsvStorage $csvStorage,
     ) {}
 
-    public function getStateFilePath(string $outputFile): string
+    public function resume(string $outputFile): ?ScrapeResumeState
+    {
+        $state = $this->readStateFile($outputFile);
+        if (null === $state) {
+            return null;
+        }
+
+        $processedNumbers = $this->loadProcessedPartnerNumbers($outputFile);
+
+        return new ScrapeResumeState(
+            lastPage: $state['total_pages'],
+            startPage: $state['last_completed_page'] + 1,
+            processedNumbers: $processedNumbers,
+        );
+    }
+
+    public function initState(string $outputFile, string $baseUrl, int $lastPage): void
+    {
+        $this->state = [
+            'mode' => 'full_scrape',
+            'base_url' => $baseUrl,
+            'total_pages' => $lastPage,
+            'last_completed_page' => 0,
+            'output_file' => $outputFile,
+            'started_at' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+            'updated_at' => '',
+        ];
+        $this->writeState($outputFile);
+    }
+
+    public function updateProgress(string $outputFile, int $completedPage): void
+    {
+        if (null === $this->state) {
+            return;
+        }
+
+        $this->state['last_completed_page'] = $completedPage;
+        $this->writeState($outputFile);
+    }
+
+    public function complete(string $outputFile): void
+    {
+        $statePath = $this->getStateFilePath($outputFile);
+        if (file_exists($statePath)) {
+            unlink($statePath);
+        }
+        $this->state = null;
+    }
+
+    private function getStateFilePath(string $outputFile): string
     {
         return $outputFile.'.state.json';
     }
 
-    /**
-     * @return null|array{mode: string, base_url: string, total_pages: int, last_completed_page: int, output_file: string, started_at: string, updated_at: string}
-     */
-    public function read(string $outputFile): ?array
+    private function readStateFile(string $outputFile): ?array
     {
         $statePath = $this->getStateFilePath($outputFile);
         if (!file_exists($statePath)) {
@@ -38,30 +86,19 @@ class ScrapeStateManager
         return $data;
     }
 
-    /**
-     * @param array{mode: string, base_url: string, total_pages: int, last_completed_page: int, output_file: string, started_at: string, updated_at: string} $state
-     */
-    public function write(string $outputFile, array $state): void
+    private function writeState(string $outputFile): void
     {
-        $state['updated_at'] = (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM);
+        $this->state['updated_at'] = (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM);
         file_put_contents(
             $this->getStateFilePath($outputFile),
-            json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+            json_encode($this->state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         );
-    }
-
-    public function delete(string $outputFile): void
-    {
-        $statePath = $this->getStateFilePath($outputFile);
-        if (file_exists($statePath)) {
-            unlink($statePath);
-        }
     }
 
     /**
      * @return array<int, true>
      */
-    public function loadProcessedPartnerNumbers(string $outputFile): array
+    private function loadProcessedPartnerNumbers(string $outputFile): array
     {
         if (!file_exists($outputFile)) {
             return [];
