@@ -115,10 +115,10 @@ test-run-functional: debug-print-env
 	docker compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
 
 test-run-partners:
-	docker compose run --rm php-cli php bin/console partners:scrape --full-refresh --base-url=https://www.bitrix24.ru/partners/country__19/ --output-file=partners_ru.csv --page-delay=0 --partner-delay=1
+	docker compose run --rm php-cli php bin/console partners:scrape -v --full-refresh --base-url=https://www.bitrix24.kz/partners/country__22/ --output-file=partners_kz.csv --page-delay=0 --partner-delay=1
 
 test-run-update-partners:
-	docker compose run --rm php-cli php bin/console partners:update --partner-ids=1351003,2901401  --partner-delay=1
+	docker compose run --rm php-cli php bin/console partners:update -v --partner-ids=15549800,1351003 --base-domain=https://www.bitrix24.kz  --partner-delay=1
 
 test-run-partners-import:
 	docker compose run --rm php-cli php bin/console bitrix24:partners:import partners_ru.csv --skip-errors

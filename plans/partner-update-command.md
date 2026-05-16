@@ -2,88 +2,82 @@
 
 ## Контекст
 
-Команда `partners:update` сейчас требует предварительно существующий CSV-файл и читает из него `detail_page_url` и `base_domain`. Нужно переделать чтобы команда работала автономно — получает ID партнёров, конструирует URL, скрейпит, пишет результат в отдельный CSV. Результат подаётся на вход команде `bitrix24:partners:import`.
+Команда `partners:update` раньше требовала предварительно существующий CSV-файл и читала из него `detail_page_url` и `base_domain`. Теперь работает автономно — получает ID партнёров, конструирует URL, скрейпит, пишет результат в отдельный CSV. Результат подаётся на вход команде `bitrix24:partners:import`.
 
-Документация: `docs/commands/partner-commands.md`
+Архитектурные паттерны: `UpdateConfig` DTO, 1 коллбек `onProgress` (по аналогии с `ScrapePartnersCommand`).
 
 ---
 
-## Задача 1: Добавить константы
+## Задача 1: Создать UpdateConfig ✅
 
-**Файл:** `src/Bitrix24Partners/Console/UpdatePartnersCommand.php`
+**Файл:** `src/Bitrix24Partners/UseCase/Scrape/UpdateConfig.php`
 
-Добавить в класс:
 ```php
-private const DEFAULT_BASE_DOMAIN = 'https://www.bitrix24.ru';
-private const DEFAULT_INSECURE = false;
+readonly class UpdateConfig
+{
+    public readonly string $baseDomain;
+
+    public function __construct(
+        public array $partnerIds,
+        public string $outputFile,
+        string $baseDomain = 'https://www.bitrix24.ru',
+        public int $delay = 2,
+        public bool $insecure = false,
+    ) {
+        $this->baseDomain = rtrim($baseDomain, '/');
+    }
+}
 ```
 
 ---
 
-## Задача 2: Убрать --partner-ids-from-file
+## Задача 2: Убрать --partner-ids-from-file ✅
 
 **Файл:** `src/Bitrix24Partners/Console/UpdatePartnersCommand.php`
 
-- Удалить опцию `--partner-ids-from-file` из `configure()`
-- Удалить метод `executePartnerUpdateFromFile()`
-- Убрать ветку `if ('' !== $partnerIdsFromFile)` из `execute()`
-- Обновить сообщение об ошибке: только `--partner-ids` обязательна
+- Удалена опция `--partner-ids-from-file` из `configure()`
+- Удалён метод `executePartnerUpdateFromFile()`
+- Убрана ветка `if ('' !== $partnerIdsFromFile)` из `execute()`
+- Сообщение об ошибке: только `--partner-ids`
 
 ---
 
-## Задача 3: Добавить --base-domain
+## Задача 3: Обновить configure() ✅
 
 **Файл:** `src/Bitrix24Partners/Console/UpdatePartnersCommand.php`
 
-Добавить опцию:
-```php
-->addOption('base-domain', null, InputOption::VALUE_REQUIRED, 'Домен Bitrix24', self::DEFAULT_BASE_DOMAIN)
-```
+- Добавлена опция `--base-domain` (дефолт `https://www.bitrix24.ru`)
+- Дефолт `--output-file` изменён с `partners.csv` на `partners_update.csv`
 
 ---
 
-## Задача 4: Обновить --insecure на дефолт из константы
+## Задача 4: Переписать execute() ✅
 
 **Файл:** `src/Bitrix24Partners/Console/UpdatePartnersCommand.php`
-
-Опция `--insecure` получает дефолт из константы `DEFAULT_INSECURE`. Через флаг переопределяется.
-
----
-
-## Задача 5: Переписать логику executePartnerUpdate
-
-**Файл:** `src/Bitrix24Partners/Console/UpdatePartnersCommand.php`
-
-**Текущая логика:**
-1. Читает существующий CSV → map по partner_id
-2. Ищет партнёра в CSV по ID
-3. Берёт detail_page_url и base_domain из CSV
-4. Скрейпит детальную страницу
-5. Обновляет запись в map
-6. Перезаписывает весь CSV
 
 **Новая логика:**
-1. Получить partner_ids из `--partner-ids`
-2. Получить base_domain из `--base-domain` (дефолт из константы)
-3. Для каждого partner_id:
-   a. Конструировать URL: `{base_domain}/partners/partner/{partner_id}/`
-   b. Скрейпить детальную страницу через `PartnerPageScraper`
-   c. Парсить HTML через `PartnerHtmlParser`
-   d. Собрать запись для CSV: bitrix24_partner_number, title, site, phone, email, logo_url, detail_page_url, base_domain, scraped_at
-4. Записать все записи в выходной CSV через `PartnerCsvStorage`
-5. Вывести отчёт: сколько скрейпнуто, сколько ошибок
+1. Парсит CLI-опции → создаёт `UpdateConfig`
+2. Создаёт 1 коллбек `onProgress(string $event, int $value)` с `match`:
+   - `'partner_start'` → показать ID партнёра в ProgressBar
+   - `'partner_advance'` → advance ProgressBar
+3. Для каждого partner_id из `UpdateConfig`:
+   a. Скрейпить детальную страницу через `PartnerPageScraper` (URL конструирует скрапер)
+   b. Получить `PartnerData`
+   c. Записать в CSV через `PartnerCsvStorage`
+4. Вывести отчёт: сколько скрейпнуто, сколько ошибок
 
-**Ключевые отличия:**
+**Ключевые отличия от старой версии:**
 - Не читает существующий CSV
-- Конструирует URL из base_domain + ID
-- Пишет результат в **отдельный** файл (дефолт `partners_update.csv`)
+- URL конструируется из `baseDomain` + ID (внутри `PartnerPageScraper`)
+- Пишет результат в отдельный файл (дефолт `partners_update.csv`)
 - Формат CSV идентичен формату полной выгрузки (partners:scrape)
+- Прогресс через 1 коллбек, не инлайн
 
 ---
 
-## Задача 6: Обновить дефолт --output-file
+## Задача 5: Обновить bin/console ✅
 
-Изменить дефолт с `partners.csv` на `partners_update.csv` чтобы не перезаписать случайно файл полной выгрузки.
+Без изменений — конструктор `UpdatePartnersCommand` не поменялся.
 
 ---
 
@@ -91,18 +85,6 @@ private const DEFAULT_INSECURE = false;
 
 - `PartnerPageScraper` — без изменений
 - `PartnerHtmlParser` — без изменений
-- `PartnerCsvStorage` — без изменений (используется для записи)
+- `PartnerCsvStorage` — без изменений
 - `ScrapePartnersCommand` — без изменений
-- `ImportPartnersCsvCommand` — без изменений (пока, доработка в отдельном плане)
-
----
-
-## Порядок выполнения
-
-1. Задача 1 (константы)
-2. Задача 2 (убрать --partner-ids-from-file)
-3. Задача 3 (добавить --base-domain)
-4. Задача 4 (обновить --insecure)
-5. Задача 6 (дефолт output-file)
-6. Задача 5 (переписать логику)
-7. `make lint-phpstan`
+- `ImportPartnersCsvCommand` — без изменений

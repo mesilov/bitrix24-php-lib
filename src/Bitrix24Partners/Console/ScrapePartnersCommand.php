@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\Console;
 
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeResult;
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeWorkflow;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeConfig;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeResult;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeWorkflow;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -60,23 +61,23 @@ class ScrapePartnersCommand extends Command
         $this->io = new SymfonyStyle($input, $output);
         $this->output = $output;
 
-        $baseUrl = $input->getOption('base-url');
-        $outputFile = $input->getOption('output-file');
-        $pageDelay = (int) $input->getOption('page-delay');
-        $partnerDelay = (int) $input->getOption('partner-delay');
-        $insecure = (bool) $input->getOption('insecure');
-        $resume = (bool) $input->getOption('resume');
-        $fullRefresh = (bool) $input->getOption('full-refresh');
+        $config = new ScrapeConfig(
+            baseUrl: $input->getOption('base-url'),
+            outputFile: $input->getOption('output-file'),
+            pageDelay: (int) $input->getOption('page-delay'),
+            partnerDelay: (int) $input->getOption('partner-delay'),
+            insecure: (bool) $input->getOption('insecure'),
+            resume: (bool) $input->getOption('resume'),
+            fullRefresh: (bool) $input->getOption('full-refresh'),
+        );
 
         if ($this->io->isVerbose()) {
-            $this->io->text(sprintf('Base URL: %s', $baseUrl));
-            $this->io->text(sprintf('Output file: %s', $outputFile));
+            $this->io->text(sprintf('Base URL: %s', $config->baseUrl));
+            $this->io->text(sprintf('Output file: %s', $config->outputFile));
         }
 
-        $baseDomain = $this->extractBaseDomain($baseUrl);
-
         try {
-            return $this->executeFullScrape($baseUrl, $outputFile, $pageDelay, $partnerDelay, $insecure, $resume, $fullRefresh, $baseDomain);
+            return $this->executeFullScrape($config);
         } catch (\Throwable $throwable) {
             $this->logger->error('Ошибка: '.$throwable->getMessage());
             $this->io->error('Ошибка: '.$throwable->getMessage());
@@ -85,27 +86,19 @@ class ScrapePartnersCommand extends Command
         }
     }
 
-    private function executeFullScrape(
-        string $baseUrl,
-        string $outputFile,
-        int $pageDelay,
-        int $partnerDelay,
-        bool $insecure,
-        bool $resume,
-        bool $fullRefresh,
-        string $baseDomain,
-    ): int {
-        if (!$resume && !$fullRefresh && file_exists($outputFile)) {
-            $this->io->error(sprintf('Файл %s уже существует. Используйте --full-refresh для перезаписи.', $outputFile));
+    private function executeFullScrape(ScrapeConfig $config): int
+    {
+        if (!$config->resume && !$config->fullRefresh && file_exists($config->outputFile)) {
+            $this->io->error(sprintf('Файл %s уже существует. Используйте --full-refresh для перезаписи.', $config->outputFile));
 
             return Command::FAILURE;
         }
 
-        $onProgress = $this->io->isVerbose()
+        $onVerbose = $this->io->isVerbose()
             ? fn (string $message) => $this->io->text($message)
             : null;
 
-        $context = $this->workflow->resolveStartContext($baseUrl, $outputFile, $insecure, $resume, $onProgress);
+        $context = $this->workflow->resolveStartContext($config, $onVerbose);
         if (null === $context) {
             $this->io->error('State-файл не найден. Запустите без --resume.');
 
@@ -117,7 +110,7 @@ class ScrapePartnersCommand extends Command
         $processedNumbers = $context['processedNumbers'];
         $partnersPerPage = $context['partnersPerPage'];
 
-        if ($resume) {
+        if ($config->resume) {
             if ($this->io->isVerbose()) {
                 $this->io->note(sprintf(
                     'Resume: продолжаем со страницы %d из %d (уже обработано: %d)',
@@ -141,23 +134,24 @@ class ScrapePartnersCommand extends Command
 
         $progressBar = $this->createProgressBar($lastPage * $partnersPerPage, count($processedNumbers));
 
+        $onProgress = function (string $event, int $value) use ($progressBar): void {
+            match ($event) {
+                'page_start' => $progressBar?->setMessage((string) $value, 'page'),
+                'partner_start' => $progressBar?->setMessage((string) $value, 'partner'),
+                'partner_advance' => $progressBar?->advance(),
+                default => null,
+            };
+        };
+
         $result = $this->workflow->run(
+            $config,
             $startPage,
             $lastPage,
-            $baseUrl,
-            $baseDomain,
-            $insecure,
-            $pageDelay,
-            $partnerDelay,
-            $outputFile,
-            $resume,
             $processedNumbers,
-            onPageStart: fn (int $page) => $progressBar?->setMessage((string) $page, 'page'),
-            onPartnerStart: fn (int $partnerNumber) => $progressBar?->setMessage((string) $partnerNumber, 'partner'),
-            onPartnerAdvance: fn () => $progressBar?->advance(),
+            $onProgress,
         );
 
-        return $this->finishScrape($outputFile, $progressBar, $result);
+        return $this->finishScrape($config->outputFile, $progressBar, $result);
     }
 
     private function createProgressBar(int $total, int $alreadyProcessed): ?ProgressBar
@@ -200,14 +194,5 @@ class ScrapePartnersCommand extends Command
         }
 
         return Command::SUCCESS;
-    }
-
-    private function extractBaseDomain(string $url): string
-    {
-        $parsed = parse_url($url);
-        $scheme = $parsed['scheme'] ?? 'https';
-        $host = $parsed['host'];
-
-        return $scheme.'://'.$host;
     }
 }

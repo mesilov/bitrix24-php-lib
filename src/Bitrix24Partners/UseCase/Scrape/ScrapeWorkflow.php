@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper;
+namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape;
 
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerCsvStorage;
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeStateManager;
 use Carbon\CarbonImmutable;
 use League\Csv\Writer;
 use Psr\Log\LoggerInterface;
@@ -18,27 +21,27 @@ class ScrapeWorkflow
     ) {}
 
     /**
-     * @param null|\Closure(string): void $onPageRangeProgress
+     * @param null|\Closure(string): void $onVerbose
      *
      * @return null|array{startPage: int, lastPage: int, processedNumbers: array<int, true>, partnersPerPage: int}
      */
-    public function resolveStartContext(string $baseUrl, string $outputFile, bool $insecure, bool $resume, ?\Closure $onPageRangeProgress = null): ?array
+    public function resolveStartContext(ScrapeConfig $config, ?\Closure $onVerbose = null): ?array
     {
-        if ($resume) {
-            $resumeState = $this->stateManager->resume($outputFile);
+        if ($config->resume) {
+            $resumeState = $this->stateManager->resume($config->outputFile);
             if (null === $resumeState) {
                 return null;
             }
 
             return [
-                'startPage' => $resumeState->startPage,
-                'lastPage' => $resumeState->lastPage,
-                'processedNumbers' => $resumeState->processedNumbers,
+                'startPage' => $resumeState['startPage'],
+                'lastPage' => $resumeState['lastPage'],
+                'processedNumbers' => $resumeState['processedNumbers'],
                 'partnersPerPage' => 12,
             ];
         }
 
-        $range = $this->scraper->getPageRange($baseUrl, $insecure, $onPageRangeProgress);
+        $range = $this->scraper->getPageRange($config->baseUrl, $config->insecure, $onVerbose);
 
         return [
             'startPage' => 1,
@@ -54,30 +57,23 @@ class ScrapeWorkflow
     }
 
     /**
-     * @param array<int, true>         $processedNumbers
-     * @param null|\Closure(int): void $onPageStart
-     * @param null|\Closure(int): void $onPartnerStart
-     * @param null|\Closure(): void    $onPartnerAdvance
+     * @param array<int, true>                 $initialProcessedNumbers
+     * @param null|\Closure(string, int): void $onProgress
      */
     public function run(
+        ScrapeConfig $config,
         int $startPage,
         int $lastPage,
-        string $baseUrl,
-        string $baseDomain,
-        bool $insecure,
-        int $pageDelay,
-        int $partnerDelay,
-        string $outputFile,
-        bool $resume,
-        array &$processedNumbers,
-        ?\Closure $onPageStart = null,
-        ?\Closure $onPartnerStart = null,
-        ?\Closure $onPartnerAdvance = null,
+        array $initialProcessedNumbers,
+        ?\Closure $onProgress = null,
     ): ScrapeResult {
-        $this->stateManager->initState($outputFile, $baseUrl, $lastPage);
+        $this->stateManager->initState($config->outputFile, $config->baseUrl, $lastPage);
 
+        $processedNumbers = $initialProcessedNumbers;
         $totalProcessed = count($processedNumbers);
-        $csvWriter = $resume ? $this->csvStorage->createWriterForResume($outputFile) : $this->csvStorage->createWriter($outputFile);
+        $csvWriter = $config->resume
+            ? $this->csvStorage->createWriterForResume($config->outputFile)
+            : $this->csvStorage->createWriter($config->outputFile);
 
         $consecutiveEmptyPages = 0;
         $totalEmptyPages = 0;
@@ -85,12 +81,12 @@ class ScrapeWorkflow
         $banDetected = false;
 
         for ($page = $startPage; $page <= $lastPage; ++$page) {
-            $onPageStart?->__invoke($page);
+            $onProgress?->__invoke('page_start', $page);
 
             $partners = [];
 
             try {
-                $partners = $this->scraper->fetchPartnerList($page, $baseUrl, $insecure);
+                $partners = $this->scraper->fetchPartnerList($page, $config->baseUrl, $config->insecure);
                 if ([] === $partners) {
                     $this->logger->warning(sprintf('Страница %d пустая, пропускаем', $page));
                 }
@@ -120,30 +116,30 @@ class ScrapeWorkflow
 
             foreach ($partners as $partner) {
                 $partnerNumber = $partner['partner_number'];
-                $onPartnerStart?->__invoke($partnerNumber);
+                $onProgress?->__invoke('partner_start', $partnerNumber);
 
                 if (isset($processedNumbers[$partnerNumber])) {
-                    $onPartnerAdvance?->__invoke();
+                    $onProgress?->__invoke('partner_advance', 0);
 
                     continue;
                 }
 
                 $this->processPartner(
                     $partner,
-                    $baseDomain,
-                    $insecure,
+                    $config->baseDomain,
+                    $config->insecure,
                     $csvWriter,
                     $processedNumbers,
                     $totalProcessed
                 );
 
-                $onPartnerAdvance?->__invoke();
-                $this->stateManager->updateProgress($outputFile, $page);
-                sleep($partnerDelay);
+                $onProgress?->__invoke('partner_advance', 0);
+                $this->stateManager->updateProgress($config->outputFile, $page);
+                sleep($config->partnerDelay);
             }
 
-            $this->stateManager->updateProgress($outputFile, $page);
-            sleep($pageDelay);
+            $this->stateManager->updateProgress($config->outputFile, $page);
+            sleep($config->pageDelay);
         }
 
         if (!$banDetected && $totalPagesProcessed > 0 && $totalEmptyPages / $totalPagesProcessed > 0.5) {
@@ -167,7 +163,7 @@ class ScrapeWorkflow
         array $partner,
         string $baseDomain,
         bool $insecure,
-        Writer &$csvWriter,
+        Writer $csvWriter,
         array &$processedNumbers,
         int &$totalProcessed,
     ): void {

@@ -55,23 +55,41 @@ readonly class PartnerHtmlParser
     }
 
     /**
-     * @return array{phone: string, email: string, logo_url: string, site: string}
+     * @return array{title: string, phone: string, email: string, logo_url: string, site: string}
      */
     public function parsePartnerDetailPage(string $html): array
     {
         $crawler = new Crawler($html);
 
+        $title = $this->extractTitle($crawler);
         $phone = $this->extractPhone($crawler);
         $email = $this->extractEmail($crawler);
         $logoUrl = $this->extractLogoUrl($crawler);
         $site = $this->extractSite($crawler);
 
         return [
+            'title' => $title,
             'phone' => $phone,
             'email' => $email,
             'logo_url' => $logoUrl,
             'site' => $site,
         ];
+    }
+
+    private function extractTitle(Crawler $crawler): string
+    {
+        try {
+            $titleNode = $crawler
+                ->filter('div.bx-partner-detail-breadcrumbs div.bx-partner-detail-breadcrumbs-item')
+                ->first();
+            if ($titleNode->count() > 0) {
+                return $this->cleanText($titleNode->text());
+            }
+        } catch (\Throwable $throwable) {
+            $this->logger->warning(sprintf('Ошибка парсинга title: %s', $throwable->getMessage()));
+        }
+
+        return '';
     }
 
     private function extractPhone(Crawler $crawler): string

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper;
 
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\PartnerData;
 use Carbon\CarbonImmutable;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
@@ -102,7 +103,7 @@ class PartnerPageScraper
 
         return new PartnerData(
             bitrix24PartnerNumber: $partnerId,
-            title: $title,
+            title: '' !== $detail['title'] ? $detail['title'] : $title,
             site: '' !== $detail['site'] ? $detail['site'] : null,
             phone: '' !== $detail['phone'] ? $detail['phone'] : null,
             email: '' !== $detail['email'] ? $detail['email'] : null,

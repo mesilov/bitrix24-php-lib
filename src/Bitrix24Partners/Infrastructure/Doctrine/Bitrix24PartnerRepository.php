@@ -170,6 +170,7 @@ class Bitrix24PartnerRepository implements Bitrix24PartnerRepositoryInterface
             ->where('p.status != :status')
             ->setParameter('status', Bitrix24PartnerStatus::deleted)
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
     }
 }

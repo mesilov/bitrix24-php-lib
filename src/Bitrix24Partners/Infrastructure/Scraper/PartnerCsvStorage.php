@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper;
 
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\PartnerData;
 use League\Csv\Reader;
 use League\Csv\Writer;
 

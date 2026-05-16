@@ -12,7 +12,10 @@ class ScrapeStateManager
         private readonly PartnerCsvStorage $csvStorage,
     ) {}
 
-    public function resume(string $outputFile): ?ScrapeResumeState
+    /**
+     * @return null|array{lastPage: int, startPage: int, processedNumbers: array<int, true>}
+     */
+    public function resume(string $outputFile): ?array
     {
         $state = $this->readStateFile($outputFile);
         if (null === $state) {
@@ -21,11 +24,11 @@ class ScrapeStateManager
 
         $processedNumbers = $this->loadProcessedPartnerNumbers($outputFile);
 
-        return new ScrapeResumeState(
-            lastPage: $state['total_pages'],
-            startPage: $state['last_completed_page'] + 1,
-            processedNumbers: $processedNumbers,
-        );
+        return [
+            'lastPage' => $state['total_pages'],
+            'startPage' => $state['last_completed_page'] + 1,
+            'processedNumbers' => $processedNumbers,
+        ];
     }
 
     public function initState(string $outputFile, string $baseUrl, int $lastPage): void

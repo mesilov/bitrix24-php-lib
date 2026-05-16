@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\Console;
 
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerCsvStorage;
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
-use League\Csv\Reader;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeResult;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\UpdateConfig;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\UpdateWorkflow;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -18,14 +18,17 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'partners:update',
-    description: 'Обновляет данные конкретных партнёров из CSV по ID'
+    description: 'Обновляет данные конкретных партнёров по ID с сайта Bitrix24'
 )]
 class UpdatePartnersCommand extends Command
 {
+    private SymfonyStyle $io;
+
+    private OutputInterface $output;
+
     public function __construct(
         private readonly LoggerInterface $logger,
-        private readonly PartnerPageScraper $scraper,
-        private readonly PartnerCsvStorage $csvStorage,
+        private readonly UpdateWorkflow $workflow,
     ) {
         parent::__construct();
     }
@@ -35,8 +38,8 @@ class UpdatePartnersCommand extends Command
     {
         $this
             ->addOption('partner-ids', null, InputOption::VALUE_REQUIRED, 'ID партнёров через запятую', '')
-            ->addOption('partner-ids-from-file', null, InputOption::VALUE_REQUIRED, 'Файл с номерами партнёров для обновления', '')
-            ->addOption('output-file', null, InputOption::VALUE_REQUIRED, 'Путь к CSV файлу', 'partners.csv')
+            ->addOption('output-file', null, InputOption::VALUE_REQUIRED, 'Путь к выходному CSV файлу', 'partners_update.csv')
+            ->addOption('base-domain', null, InputOption::VALUE_REQUIRED, 'Домен Bitrix24', 'https://www.bitrix24.ru')
             ->addOption('partner-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между партнёрами (сек)', '2')
             ->addOption('insecure', null, InputOption::VALUE_NONE, 'Отключить проверку SSL (для dev)')
         ;
@@ -45,188 +48,88 @@ class UpdatePartnersCommand extends Command
     #[\Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $this->io = new SymfonyStyle($input, $output);
+        $this->output = $output;
 
-        $partnerIds = $input->getOption('partner-ids');
-        $partnerIdsFromFile = $input->getOption('partner-ids-from-file');
-        $outputFile = $input->getOption('output-file');
-        $partnerDelay = (int) $input->getOption('partner-delay');
-        $insecure = (bool) $input->getOption('insecure');
-
-        try {
-            if ('' !== $partnerIds) {
-                return $this->executePartnerUpdate(
-                    explode(',', (string) $partnerIds),
-                    $outputFile,
-                    $partnerDelay,
-                    $insecure,
-                    $io,
-                    $output
-                );
-            }
-
-            if ('' !== $partnerIdsFromFile) {
-                return $this->executePartnerUpdateFromFile(
-                    $partnerIdsFromFile,
-                    $outputFile,
-                    $partnerDelay,
-                    $insecure,
-                    $io,
-                    $output
-                );
-            }
-
-            $io->error('Укажите --partner-ids или --partner-ids-from-file');
+        $partnerIdsRaw = $input->getOption('partner-ids');
+        if ('' === $partnerIdsRaw) {
+            $this->io->error('Укажите --partner-ids');
 
             return Command::FAILURE;
+        }
+
+        $partnerIds = array_map('intval', array_filter(array_map('trim', explode(',', (string) $partnerIdsRaw))));
+        if ([] === $partnerIds) {
+            $this->io->error('Список ID партнёров пуст.');
+
+            return Command::FAILURE;
+        }
+
+        $config = new UpdateConfig(
+            partnerIds: $partnerIds,
+            outputFile: $input->getOption('output-file'),
+            baseDomain: $input->getOption('base-domain'),
+            delay: (int) $input->getOption('partner-delay'),
+            insecure: (bool) $input->getOption('insecure'),
+        );
+
+        try {
+            return $this->executeUpdate($config);
         } catch (\Throwable $throwable) {
             $this->logger->error('Ошибка: '.$throwable->getMessage());
-            $io->error('Ошибка: '.$throwable->getMessage());
+            $this->io->error('Ошибка: '.$throwable->getMessage());
 
             return Command::FAILURE;
         }
     }
 
-    /**
-     * @param array<int, string> $partnerIdList
-     */
-    private function executePartnerUpdate(
-        array $partnerIdList,
-        string $outputFile,
-        int $partnerDelay,
-        bool $insecure,
-        SymfonyStyle $io,
-        OutputInterface $output,
-    ): int {
-        if (!file_exists($outputFile)) {
-            $io->error(sprintf('CSV файл %s не найден. Сначала выполните полную выгрузку.', $outputFile));
-
-            return Command::FAILURE;
+    private function executeUpdate(UpdateConfig $config): int
+    {
+        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $this->io->text(sprintf('Обновление %d партнёров...', count($config->partnerIds)));
         }
 
-        $partnerIds = array_map('intval', array_filter(array_map('trim', $partnerIdList)));
-        if ([] === $partnerIds) {
-            $io->error('Список ID партнёров пуст.');
+        $progressBar = $this->createProgressBar(count($config->partnerIds));
 
-            return Command::FAILURE;
-        }
+        $onProgress = function (string $event, int $value) use ($progressBar): void {
+            match ($event) {
+                'partner_start' => $progressBar?->setMessage((string) $value, 'partner'),
+                'partner_advance' => $progressBar?->advance(),
+                default => null,
+            };
+        };
 
-        if ($io->isVerbose()) {
-            $io->text(sprintf('Обновление %d партнёров...', count($partnerIds)));
-        }
+        $result = $this->workflow->run($config, $onProgress);
 
-        $records = $this->csvStorage->readAsPartnerMap($outputFile);
+        return $this->finishUpdate($progressBar, $result);
+    }
 
-        $progressBar = null;
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
-            $progressBar = new ProgressBar($output, count($partnerIds));
-            $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | Партнёр: %partner% | %message%');
-            $progressBar->setMessage('', 'partner');
-            $progressBar->setMessage('');
-            $progressBar->start();
-        }
-
-        $updated = 0;
-        $errors = 0;
-
-        foreach ($partnerIds as $partnerId) {
-            $progressBar?->setMessage((string) $partnerId, 'partner');
-            $progressBar?->advance();
-
-            if (!isset($records[$partnerId])) {
-                $this->logger->warning(sprintf('Партнёр #%d не найден в CSV, пропускаем', $partnerId));
-                ++$errors;
-
-                if ($io->isVeryVerbose()) {
-                    $io->text(sprintf('Партнёр #%d: не найден в CSV', $partnerId));
-                }
-
-                continue;
-            }
-
-            $baseDomain = $records[$partnerId]['base_domain'] ?? '';
-
-            try {
-                $partnerData = $this->scraper->fetchPartnerData($partnerId, $baseDomain, $insecure);
-                if (null === $partnerData) {
-                    $this->logger->warning(sprintf('Партнёр #%d: не удалось загрузить данные', $partnerId));
-                    ++$errors;
-
-                    if ($io->isVeryVerbose()) {
-                        $io->text(sprintf('Партнёр #%d: не удалось загрузить данные', $partnerId));
-                    }
-
-                    continue;
-                }
-
-                $records[$partnerId]['phone'] = $partnerData->phone ?? '';
-                $records[$partnerId]['email'] = $partnerData->email ?? '';
-                $records[$partnerId]['logo_url'] = $partnerData->logoUrl ?? '';
-                $records[$partnerId]['site'] = $partnerData->site ?? '';
-                $records[$partnerId]['scraped_at'] = $partnerData->scrapedAt->format(\DateTimeInterface::ATOM);
-
-                ++$updated;
-                $progressBar?->setMessage('OK');
-
-                if ($io->isVeryVerbose()) {
-                    $io->text(sprintf('Партнёр #%d: OK', $partnerId));
-                }
-            } catch (\Throwable $e) {
-                $this->logger->warning(sprintf('Ошибка обновления партнёра #%d: %s', $partnerId, $e->getMessage()));
-                $progressBar?->setMessage('Ошибка');
-                ++$errors;
-
-                if ($io->isVeryVerbose()) {
-                    $io->text(sprintf('Партнёр #%d: ошибка — %s', $partnerId, $e->getMessage()));
-                }
-            }
-
-            sleep($partnerDelay);
-        }
-
+    private function finishUpdate(?ProgressBar $progressBar, ScrapeResult $result): int
+    {
         $progressBar?->finish();
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
-            $io->newLine(2);
-        }
-
-        $this->csvStorage->writeAll($outputFile, $records);
-
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
-            $io->success(sprintf('Обновлено: %d, ошибок: %d', $updated, $errors));
+        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $this->io->newLine(2);
+            $this->io->success(sprintf(
+                'Обновлено: %d, ошибок: %d',
+                $result->totalProcessed,
+                $result->totalEmptyPages,
+            ));
         }
 
         return Command::SUCCESS;
     }
 
-    private function executePartnerUpdateFromFile(
-        string $idsFilePath,
-        string $outputFile,
-        int $partnerDelay,
-        bool $insecure,
-        SymfonyStyle $io,
-        OutputInterface $output,
-    ): int {
-        if (!file_exists($idsFilePath)) {
-            $io->error(sprintf('Файл с ID партнёров не найден: %s', $idsFilePath));
-
-            return Command::FAILURE;
+    private function createProgressBar(int $total): ?ProgressBar
+    {
+        if ($this->output->getVerbosity() < OutputInterface::VERBOSITY_NORMAL) {
+            return null;
         }
 
-        $reader = Reader::from($idsFilePath);
-        $partnerIds = [];
-        foreach ($reader->getRecords() as $record) {
-            $id = (int) trim((string) array_values($record)[0]);
-            if ($id > 0) {
-                $partnerIds[] = (string) $id;
-            }
-        }
+        $progressBar = new ProgressBar($this->output, $total);
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | Партнёр: %partner%');
+        $progressBar->setMessage('', 'partner');
+        $progressBar->start();
 
-        if ([] === $partnerIds) {
-            $io->error('Файл не содержит ID партнёров.');
-
-            return Command::FAILURE;
-        }
-
-        return $this->executePartnerUpdate($partnerIds, $outputFile, $partnerDelay, $insecure, $io, $output);
+        return $progressBar;
     }
 }

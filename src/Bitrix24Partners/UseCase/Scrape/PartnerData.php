@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper;
+namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape;
 
 use Carbon\CarbonImmutable;
 
