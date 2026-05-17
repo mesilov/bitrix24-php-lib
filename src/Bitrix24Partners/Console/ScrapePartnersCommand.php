@@ -4,22 +4,39 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\Console;
 
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeConfig;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeResult;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeWorkflow;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 #[AsCommand(
-    name: 'bitrix24:partners:scrape',
-    description: 'Scrape partners from bitrix24.ru/partners and generate CSV file'
+    name: 'partners:scrape',
+    description: 'Парсит партнеров Bitrix24 и сохраняет данные в CSV'
 )]
 class ScrapePartnersCommand extends Command
 {
+    private const string DEFAULT_BASE_URL = 'https://www.bitrix24.ru/partners/country__19/';
+
+    private const string DEFAULT_OUTPUT_FILE = 'partners.csv';
+
+    private const int DEFAULT_PAGE_DELAY = 2;
+
+    private const int DEFAULT_PARTNER_DELAY = 2;
+
+    private SymfonyStyle $io;
+
+    private OutputInterface $output;
+
     public function __construct(
-        private readonly HttpClientInterface $httpClient
+        private readonly LoggerInterface $logger,
+        private readonly ScrapeWorkflow $workflow,
     ) {
         parent::__construct();
     }
@@ -28,174 +45,152 @@ class ScrapePartnersCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption(
-                'output',
-                'o',
-                InputOption::VALUE_OPTIONAL,
-                'Output CSV file path',
-                'partners.csv'
-            )
-            ->addOption(
-                'url',
-                'u',
-                InputOption::VALUE_OPTIONAL,
-                'URL to scrape partners from',
-                'https://www.bitrix24.ru/partners/'
-            );
+            ->addOption('base-url', null, InputOption::VALUE_REQUIRED, 'URL страницы партнёров', self::DEFAULT_BASE_URL)
+            ->addOption('output-file', null, InputOption::VALUE_REQUIRED, 'Путь к выходному CSV файлу', self::DEFAULT_OUTPUT_FILE)
+            ->addOption('page-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между страницами (сек)', (string) self::DEFAULT_PAGE_DELAY)
+            ->addOption('partner-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между партнёрами (сек)', (string) self::DEFAULT_PARTNER_DELAY)
+            ->addOption('insecure', null, InputOption::VALUE_NONE, 'Отключить проверку SSL (для dev)')
+            ->addOption('resume', null, InputOption::VALUE_NONE, 'Продолжить с места обрыва (из state-файла)')
+            ->addOption('full-refresh', null, InputOption::VALUE_NONE, 'Перечитать всех с сайта → перезаписать CSV')
+        ;
     }
 
     #[\Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $this->io = new SymfonyStyle($input, $output);
+        $this->output = $output;
 
-        $url = $input->getOption('url');
-        $outputFile = $input->getOption('output');
+        $config = new ScrapeConfig(
+            baseUrl: $input->getOption('base-url'),
+            outputFile: $input->getOption('output-file'),
+            pageDelay: (int) $input->getOption('page-delay'),
+            partnerDelay: (int) $input->getOption('partner-delay'),
+            insecure: (bool) $input->getOption('insecure'),
+            resume: (bool) $input->getOption('resume'),
+            fullRefresh: (bool) $input->getOption('full-refresh'),
+        );
 
-        $io->title('Scraping Bitrix24 Partners');
-        $io->info(sprintf('Fetching partners from: %s', $url));
+        if ($this->io->isVerbose()) {
+            $this->io->text(sprintf('Base URL: %s', $config->baseUrl));
+            $this->io->text(sprintf('Output file: %s', $config->outputFile));
+        }
 
         try {
-            // Fetch HTML content
-            $html = $this->fetchUrl($url);
-
-            // Parse partners from HTML
-            $partners = $this->parsePartners($html);
-
-            if (empty($partners)) {
-                $io->warning('No partners found');
-
-                return Command::FAILURE;
-            }
-
-            // Save to CSV
-            $this->saveToCsv($partners, $outputFile);
-
-            $io->success(sprintf('Successfully scraped %d partners and saved to %s', count($partners), $outputFile));
-
-            return Command::SUCCESS;
-        } catch (\Exception $e) {
-            $io->error(sprintf('Error: %s', $e->getMessage()));
+            return $this->executeFullScrape($config);
+        } catch (\Throwable $throwable) {
+            $this->logger->error('Ошибка: '.$throwable->getMessage());
+            $this->io->error('Ошибка: '.$throwable->getMessage());
 
             return Command::FAILURE;
         }
     }
 
-    private function fetchUrl(string $url): string
+    private function executeFullScrape(ScrapeConfig $config): int
     {
-        $response = $this->httpClient->request('GET', $url, [
-            'headers' => [
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            ],
-            'max_redirects' => 5,
-            'verify_peer' => false,
-            'verify_host' => false,
-        ]);
+        if (!$config->resume && !$config->fullRefresh && file_exists($config->outputFile)) {
+            $this->io->error(sprintf('Файл %s уже существует. Используйте --full-refresh для перезаписи.', $config->outputFile));
 
-        $statusCode = $response->getStatusCode();
-
-        if (200 !== $statusCode) {
-            throw new \RuntimeException(sprintf('Failed to fetch URL: HTTP %d', $statusCode));
+            return Command::FAILURE;
         }
 
-        return $response->getContent();
+        $onVerbose = $this->io->isVerbose()
+            ? fn (string $message) => $this->io->text($message)
+            : null;
+
+        $context = $this->workflow->resolveStartContext($config, $onVerbose);
+        if (null === $context) {
+            $this->io->error('State-файл не найден. Запустите без --resume.');
+
+            return Command::FAILURE;
+        }
+
+        $startPage = $context['startPage'];
+        $lastPage = $context['lastPage'];
+        $processedNumbers = $context['processedNumbers'];
+        $partnersPerPage = $context['partnersPerPage'];
+
+        if ($config->resume) {
+            if ($this->io->isVerbose()) {
+                $this->io->note(sprintf(
+                    'Resume: продолжаем со страницы %d из %d (уже обработано: %d)',
+                    $startPage,
+                    $lastPage,
+                    count($processedNumbers)
+                ));
+            }
+        } elseif ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $this->io->section('Определение количества страниц...');
+            $this->io->success(sprintf(
+                'Найдено страниц: %d | Партнёров на странице: %d (≈%d партнёров)',
+                $lastPage,
+                $partnersPerPage,
+                $lastPage * $partnersPerPage
+            ));
+            $this->io->section('Парсинг партнёров...');
+        }
+
+        $progressBar = $this->createProgressBar($lastPage * $partnersPerPage, count($processedNumbers));
+
+        $onProgress = function (string $event, int $value) use ($progressBar): void {
+            match ($event) {
+                'page_start' => $progressBar?->setMessage((string) $value, 'page'),
+                'partner_start' => $progressBar?->setMessage((string) $value, 'partner'),
+                'partner_advance' => $progressBar?->advance(),
+                default => null,
+            };
+        };
+
+        $result = $this->workflow->run(
+            $config,
+            $startPage,
+            $lastPage,
+            $processedNumbers,
+            $onProgress,
+        );
+
+        return $this->finishScrape($config->outputFile, $progressBar, $result);
     }
 
-    /**
-     * @return array<array<string, string>>
-     */
-    private function parsePartners(string $html): array
+    private function createProgressBar(int $total, int $alreadyProcessed): ?ProgressBar
     {
-        $partners = [];
-
-        // Create DOMDocument to parse HTML
-        $dom = new \DOMDocument();
-        // Suppress warnings from malformed HTML
-        @$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
-
-        $xpath = new \DOMXPath($dom);
-
-        // Try to find partner cards/blocks
-        // This is a generic pattern - may need adjustment based on actual HTML structure
-        $partnerNodes = $xpath->query("//*[contains(@class, 'partner')]");
-
-        if (0 === $partnerNodes->length) {
-            // Try alternative selectors
-            $partnerNodes = $xpath->query("//article|//div[contains(@class, 'card')]");
+        if ($this->output->getVerbosity() < OutputInterface::VERBOSITY_NORMAL) {
+            return null;
         }
 
-        foreach ($partnerNodes as $node) {
-            $partner = [
-                'title' => '',
-                'site' => '',
-                'phone' => '',
-                'email' => '',
-            ];
+        $progressBar = new ProgressBar($this->output, $total);
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | Стр: %page% | ID: %partner%');
+        $progressBar->setMessage('', 'page');
+        $progressBar->setMessage('', 'partner');
+        $progressBar->advance($alreadyProcessed);
 
-            // Extract title
-            $titleNode = $xpath->query(".//*[contains(@class, 'title')]|.//h1|.//h2|.//h3", $node);
-            if ($titleNode->length > 0) {
-                $partner['title'] = trim($titleNode->item(0)->textContent);
-            }
-
-            // Extract website
-            $linkNode = $xpath->query(".//a[contains(@href, 'http')]", $node);
-            if ($linkNode->length > 0) {
-                $href = $linkNode->item(0)->getAttribute('href');
-                if (!empty($href) && str_contains($href, 'http')) {
-                    $partner['site'] = $href;
-                }
-            }
-
-            // Extract email
-            $emailNode = $xpath->query(".//a[contains(@href, 'mailto:')]", $node);
-            if ($emailNode->length > 0) {
-                $email = str_replace('mailto:', '', $emailNode->item(0)->getAttribute('href'));
-                $partner['email'] = $email;
-            }
-
-            // Extract phone
-            $phoneNode = $xpath->query(".//a[contains(@href, 'tel:')]", $node);
-            if ($phoneNode->length > 0) {
-                $phone = str_replace('tel:', '', $phoneNode->item(0)->getAttribute('href'));
-                $partner['phone'] = $phone;
-            }
-
-            // Only add if we have at least a title
-            if (!empty($partner['title'])) {
-                $partners[] = $partner;
-            }
-        }
-
-        return $partners;
+        return $progressBar;
     }
 
-    /**
-     * @param array<array<string, string>> $partners
-     */
-    private function saveToCsv(array $partners, string $filename): void
+    private function finishScrape(string $outputFile, ?ProgressBar $progressBar, ScrapeResult $result): int
     {
-        $fp = fopen($filename, 'w');
-        if (false === $fp) {
-            throw new \RuntimeException(sprintf('Cannot open file: %s', $filename));
+        $progressBar?->finish();
+        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $this->io->newLine(2);
         }
 
-        // Write header
-        fputcsv($fp, ['title', 'site', 'phone', 'email', 'bitrix24_partner_id', 'open_line_id', 'external_id']);
+        if ($result->banDetected) {
+            $this->io->warning(sprintf(
+                'Парсинг прерван. Обработано партнёров: %d | Пустых страниц: %d из %d. Возможно, доступ заблокирован — увеличьте задержки (--partner-delay, --page-delay) и попробуйте позже.',
+                $result->totalProcessed,
+                $result->totalEmptyPages,
+                $result->totalPagesProcessed
+            ));
 
-        // Write data
-        foreach ($partners as $partner) {
-            fputcsv($fp, [
-                $partner['title'] ?? '',
-                $partner['site'] ?? '',
-                $partner['phone'] ?? '',
-                $partner['email'] ?? '',
-                '', // bitrix24_partner_id
-                '', // open_line_id
-                '', // external_id
-            ]);
+            return Command::FAILURE;
         }
 
-        fclose($fp);
+        $this->workflow->complete($outputFile);
+
+        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $this->io->success(sprintf('Парсинг завершён. Обработано партнёров: %d', $result->totalProcessed));
+        }
+
+        return Command::SUCCESS;
     }
 }

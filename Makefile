@@ -38,15 +38,15 @@ debug-print-env:
 
 init:
 	@echo "remove all containers"
-	docker-compose down --remove-orphans
+	docker compose down --remove-orphans
 	@echo "build containers"
-	docker-compose build
+	docker compose build
 	@echo "install dependencies"
-	docker-compose run --rm php-cli composer install
+	docker compose run --rm php-cli composer install
 	@echo "change owner of var folder for access from container"
     docker-compose run --rm php-cli chown -R www-data:www-data /var/www/html/var/
 	@echo "run application…"
-	docker-compose up -d
+	docker compose up -d
 
 
 clear:
@@ -73,11 +73,11 @@ php-cli-bash:
 # composer operations
 composer-install:
 	@echo "install dependencies…"
-	docker-compose run --rm php-cli composer install
+	docker compose run --rm php-cli composer install
 
 composer-update:
 	@echo "update dependencies…"
-	docker-compose run --rm php-cli composer update
+	docker compose run --rm php-cli composer update --with-all-dependencies
 
 composer-dumpautoload:
 	docker-compose run --rm php-cli composer dumpautoload
@@ -93,33 +93,42 @@ lint-allowed-licenses:
 	vendor/bin/composer-license-checker
 # linters
 lint-phpstan:
-	docker-compose run --rm php-cli php vendor/bin/phpstan analyse --memory-limit 2G
+	docker compose run --rm php-cli php vendor/bin/phpstan analyse --memory-limit 2G
 lint-rector:
-	docker-compose run --rm php-cli php vendor/bin/rector process --dry-run
+	docker compose run --rm php-cli php vendor/bin/rector process --dry-run
 lint-rector-fix:
-	docker-compose run --rm php-cli php vendor/bin/rector process
+	docker compose run --rm php-cli php vendor/bin/rector process
 lint-cs-fixer:
-	docker-compose run --rm php-cli php vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
+	docker compose run --rm php-cli php vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
 lint-cs-fixer-fix:
-	docker-compose run --rm php-cli php vendor/bin/php-cs-fixer fix --diff --verbose
+	docker compose run --rm php-cli php vendor/bin/php-cs-fixer fix --diff --verbose
 
 # unit-tests
 test-run-unit:
-	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=unit_tests --display-warnings --testdox
+	docker compose run --rm php-cli php vendor/bin/phpunit --testsuite=unit_tests --display-warnings --testdox
 
 # functional-tests, work with test database
 test-run-functional: debug-print-env
-	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
-	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:create
-	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:update --dump-sql
-	docker-compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
+	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
+	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:create
+	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:update --dump-sql
+	docker compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
+
+test-run-partners:
+	docker compose run --rm php-cli php bin/console partners:scrape -v --full-refresh --base-url=https://www.bitrix24.kz/partners/country__22/ --output-file=partners_kz.csv --page-delay=0 --partner-delay=1
+
+test-run-update-partners:
+	docker compose run --rm php-cli php bin/console partners:update -v --partner-ids=15549800,1351003 --base-domain=https://www.bitrix24.kz  --partner-delay=1
+
+test-run-partners-import:
+	docker compose run --rm php-cli php bin/console bitrix24:partners:import partners_ru.csv --skip-errors
 
 # Run one functional test with debugger
 run-one-functional-test: debug-print-env
-	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testChangeDomainUrlWithHappyPath' tests/Functional/Bitrix24Accounts/UseCase/ChangeDomainUrl/HandlerTest.php
+	docker-compose run --rm php-cli php -dxdebug.start_with_request=yes vendor/bin/phpunit --filter 'testCreatePartner' tests/Functional/Bitrix24Partners/UseCase/Create/HandlerTest.php
 
 schema-drop:
-	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
+	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
 
 schema-create:
 	docker-compose run --rm php-cli php bin/doctrine orm:schema-tool:create
