@@ -81,7 +81,8 @@ readonly class PartnerHtmlParser
         try {
             $titleNode = $crawler
                 ->filter('div.bx-partner-detail-breadcrumbs div.bx-partner-detail-breadcrumbs-item')
-                ->first();
+                ->first()
+            ;
             if ($titleNode->count() > 0) {
                 return $this->cleanText($titleNode->text());
             }

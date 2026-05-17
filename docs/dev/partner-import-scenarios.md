@@ -1,7 +1,5 @@
 # Сценарии импорта партнёров — техническая спецификация
 
-> **Замечание:** Этот файл предназначен для разработки. После реализации кода файл можно удалить.
-
 ## Обзор
 
 CSV файл является источником истины. Команда импорта синхронизирует состояние БД с данными из CSV файла.
@@ -18,11 +16,7 @@ CSV файл является источником истины. Команда 
 
 **Действие:** Создать нового партнёра с данными из CSV. Партнёр создаётся в статусе `active`.
 
-**Используемый UseCase:** `Bitrix24Partners\UseCase\Create\Handler`
-
-**Обязательные поля:** `title`, `bitrix24_partner_number`
-
-**Опциональные поля:** `site`, `phone`, `email`, `open_line_id`, `external_id`, `logo_url`
+**Используемый UseCase:** `Bitrix24Partners\UseCase\Upsert\Handler`
 
 **Пример:**
 ```
@@ -37,7 +31,7 @@ CSV: #99999, NewPartner, https://new.com
 
 **Действие:** Обновить все изменившиеся поля партнёра данными из CSV. Поля сравниваются по одному, обновляются только изменившиеся.
 
-**Используемый UseCase:** `Bitrix24Partners\UseCase\Update\Handler`
+**Используемый UseCase:** `Bitrix24Partners\UseCase\Upsert\Handler`
 
 **Сравниваемые поля:** `title`, `site`, `phone`, `email`, `openLineId`, `externalId`, `logoUrl`
 
@@ -205,5 +199,4 @@ bitrix24_partner_number,title,site,phone,email,logo_url,detail_page_url,base_dom
 3240,Hoster.KZ,https://b24.kz/,8-727-2-379-284,info@b24.kz,https://.../logo.jpg,/partners/partner/3240/,https://www.bitrix24.kz,2026-05-01T12:27:22+00:00
 ```
 
-**Обязательные колонки:** `title`, `bitrix24_partner_number`
-**Опциональные колонки:** `site`, `phone`, `email`, `open_line_id`, `external_id`, `logo_url`
+**CSV-формат фиксирован** — файлы генерируются командами `partners:scrape` и `partners:update`.

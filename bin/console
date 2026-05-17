@@ -24,7 +24,9 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 
 use Bitrix24\Lib\Bitrix24Partners\Console\ImportPartnersCsvCommand;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Create\Handler;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Delete\Handler as DeleteHandler;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Import\ImportWorkflow;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Upsert\Handler as UpsertHandler;
 
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
@@ -48,13 +50,11 @@ $entityManager = EntityManagerFactory::get();
 $eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
 $repository = new Bitrix24PartnerRepository($entityManager);
 $flusher = new Flusher($entityManager, $eventDispatcher);
-$handler = new Handler(
-    $repository,
-    $flusher,
-    PhoneNumberUtil::getInstance(),
-    new NullLogger()
-);
 
-$application->addCommand(new ImportPartnersCsvCommand($handler, PhoneNumberUtil::getInstance()));
+$upsertHandler = new UpsertHandler($repository, $flusher, PhoneNumberUtil::getInstance(), new NullLogger());
+$deleteHandler = new DeleteHandler($repository, $flusher, new NullLogger());
+$importWorkflow = new ImportWorkflow($upsertHandler, $deleteHandler, $repository, PhoneNumberUtil::getInstance(), new NullLogger());
+
+$application->addCommand(new ImportPartnersCsvCommand($logger, $importWorkflow));
 
 $application->run();

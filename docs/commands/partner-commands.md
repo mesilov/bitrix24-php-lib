@@ -9,12 +9,38 @@ Console/
 ├── ScrapePartnersCommand.php      # Полный парсинг партнёров с сайта
 ├── UpdatePartnersCommand.php      # Обновление конкретных партнёров по ID
 ├── ImportPartnersCsvCommand.php   # Импорт из CSV в базу данных
+UseCase/Scrape/
+├── ScrapeConfig.php               # DTO конфигурации парсинга
+├── ScrapeResult.php               # DTO результата парсинга
+├── ScrapeWorkflow.php             # Оркестрация полного парсинга
+├── UpdateConfig.php               # DTO конфигурации обновления
+├── UpdateWorkflow.php             # Оркестрация обновления по ID
+├── PartnerData.php                # DTO данных партнёра (9 полей)
+UseCase/Import/
+├── ImportConfig.php               # DTO конфигурации импорта
+├── ImportResult.php               # DTO результата импорта
+├── ImportWorkflow.php             # Оркестрация импорта CSV → БД
+UseCase/Upsert/
+├── Command.php                    # Команда создания/обновления
+├── Handler.php                    # Обработчик Upsert
+UseCase/Delete/
+├── Command.php                    # Команда удаления
+├── Handler.php                    # Обработчик мягкого удаления
 Infrastructure/Scraper/
 ├── PartnerPageScraper.php         # HTTP-запросы к страницам Bitrix24
 ├── PartnerHtmlParser.php          # Парсинг HTML → структурированные данные
 ├── PartnerCsvStorage.php          # Чтение/запись CSV-файлов
 ├── ScrapeStateManager.php         # Управление state-файлами (resume)
 ```
+
+## Общие принципы скрейпинга
+
+Команды `partners:scrape` и `partners:update` работают с сайтом Bitrix24 и подчиняются одним правилам:
+
+- **Задержки.** Используйте `--page-delay=2` и `--partner-delay=2` (дефолт). Уменьшение задержек повышает риск бана.
+- **Обнаружение бана.** Команды автоматически определяют блокировку по пустым страницам. Рекомендуется увеличить задержки до 2-3 секунд.
+- **SSL.** Для dev-окружения используйте `--insecure`.
+- **Один файл = один домен.** Не смешивайте партнёров с разных доменов (Россия, Казахстан) в одном CSV.
 
 ## Команды
 
@@ -56,13 +82,11 @@ php bin/console partners:scrape --resume
 php bin/console partners:scrape --insecure
 ```
 
-**Механизм resume:** При прерывании (Ctrl+C) создаётся state-файл `<output>.state.json` с информацией о последней обработанной странице. При запуске с `--resume` парсинг продолжится с этого места.
+**Механизм resume:** При обрыве (сетевая ошибка, бан, таймаут и т.д.) создаётся state-файл `<output>.state.json` с информацией о последней обработанной странице. При запуске с `--resume` парсинг продолжится с этого места.
 
-**Обнаружение бана:** Команда автоматически определяет блокировку по двум признакам:
-- 10 пустых страниц подряд — немедленная остановка
-- Более 50% пустых страниц — предупреждение после завершения
+**Рекомендации:**
 
-При бане рекомендуется увеличить `--page-delay` и `--partner-delay` до 2-3 секунд.
+- Если парсинг прервался — запускайте с `--resume`, не с `--full-refresh`.
 
 ---
 
@@ -120,6 +144,12 @@ php bin/console partners:update --partner-ids=3240,5859557 --output-file=partner
 php bin/console bitrix24:partners:import partners_update.csv --sync-mode=partial
 ```
 
+**Рекомендации:**
+
+- Скрейпит только указанных партнёров, остальных не трогает.
+- Результат — CSV-файл для дальнейшего импорта.
+- При импорте результата всегда используйте `--sync-mode=partial`, иначе `--sync-mode=full` (дефолт) удалит всех партнёров, которых нет в этом файле.
+
 ---
 
 ### `bitrix24:partners:import` — Импорт из CSV в БД
@@ -156,9 +186,14 @@ php bin/console bitrix24:partners:import partners.csv --dry-run
 php bin/console bitrix24:partners:import partners.csv --skip-errors
 ```
 
-**Обязательные колонки CSV:** `title`, `bitrix24_partner_number`
+**CSV-формат фиксирован** — файлы генерируются командами `partners:scrape` и `partners:update`.
 
-**Опциональные колонки:** `site`, `phone`, `email`, `open_line_id`, `external_id`, `logo_url`
+**Рекомендации:**
+
+- `--sync-mode=full` (дефолт) — CSV = полная выгрузка, отсутствующие партнёры будут помечены как удалённые.
+- `--sync-mode=partial` — CSV = патч, только создать/обновить, остальное не трогается.
+- Перед импортом убедитесь, что схема БД создана (`make schema-create`).
+- Используйте `--dry-run` для предварительной проверки.
 
 ---
 
@@ -197,12 +232,3 @@ make test-run-update-partners
 # Импорт в БД
 make test-run-partners-import
 ```
-
----
-
-## Рекомендации
-
-- **Один файл = один домен.** Не смешивайте партнёров с разных доменов (Россия, Казахстан) в одном CSV, если не планируете обновлять их отдельно.
-- **Задержки.** Используйте `--page-delay=2` и `--partner-delay=2` (дефолт) для безопасного парсинга. Уменьшение задержек повышает риск бана.
-- **Resume.** Если парсинг прервался — запускайте с `--resume`, не с `--full-refresh`.
-- **Импорт в БД.** Перед импортом убедитесь, что схема БД создана (`make schema-create`).
