@@ -61,6 +61,7 @@ class ScrapeStateManager
         if (file_exists($statePath)) {
             unlink($statePath);
         }
+
         $this->state = null;
     }
 

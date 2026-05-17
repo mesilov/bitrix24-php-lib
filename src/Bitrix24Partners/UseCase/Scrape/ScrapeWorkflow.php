@@ -195,11 +195,11 @@ class ScrapeWorkflow
 
             $processedNumbers[$partnerNumber] = true;
             ++$totalProcessed;
-        } catch (\Throwable $e) {
+        } catch (\Throwable $throwable) {
             $this->logger->warning(sprintf(
                 'Ошибка при обработке партнёра #%d: %s',
                 $partnerNumber,
-                $e->getMessage()
+                $throwable->getMessage()
             ));
         }
     }

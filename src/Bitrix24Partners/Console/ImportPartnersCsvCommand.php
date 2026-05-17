@@ -114,7 +114,7 @@ class ImportPartnersCsvCommand extends Command
 
         $onProgress = function (string $event, int $value) use ($progressBar): void {
             match ($event) {
-                'csv_total' => (function () use ($progressBar, $value) {
+                'csv_total' => (function () use ($progressBar, $value): void {
                     $progressBar?->setMaxSteps($value);
                     $progressBar?->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
                 })(),

@@ -58,6 +58,7 @@ class ImportWorkflow
 
                     throw $e;
                 }
+
                 ++$errors;
                 $onVerbose?->__invoke(sprintf('Партнёр #%d: ошибка — %s', $partnerNumber, $e->getMessage()));
 
@@ -78,6 +79,7 @@ class ImportWorkflow
                     $this->upsertHandler->handle($upsertCommand);
                     $onVerbose?->__invoke(sprintf('Партнёр #%d: создан', $partnerNumber));
                 }
+
                 ++$created;
             } elseif ($this->partnerMatchesUpsert($existingPartner, $upsertCommand)) {
                 ++$skipped;
@@ -94,6 +96,7 @@ class ImportWorkflow
                     $this->upsertHandler->handle($upsertCommand);
                     $onVerbose?->__invoke(sprintf('Партнёр #%d: обновлён', $partnerNumber));
                 }
+
                 ++$updated;
             }
         }
@@ -205,18 +208,23 @@ class ImportWorkflow
         if ($partner->getTitle() !== $command->title) {
             $diffs[] = 'title';
         }
+
         if ($partner->getSite() !== $command->site) {
             $diffs[] = 'site';
         }
+
         if ($partner->getEmail() !== $command->email) {
             $diffs[] = 'email';
         }
+
         if ($partner->getOpenLineId() !== $command->openLineId) {
             $diffs[] = 'openLineId';
         }
+
         if ($partner->getExternalId() !== $command->externalId) {
             $diffs[] = 'externalId';
         }
+
         if ($partner->getLogoUrl() !== $command->logoUrl) {
             $diffs[] = 'logoUrl';
         }
@@ -249,6 +257,7 @@ class ImportWorkflow
                     ));
                     $onVerbose?->__invoke(sprintf('Партнёр #%d: удалён', $partnerNumber));
                 }
+
                 ++$softDeleted;
             }
         }

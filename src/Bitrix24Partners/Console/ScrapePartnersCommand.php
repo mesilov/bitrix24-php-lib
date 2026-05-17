@@ -119,17 +119,15 @@ class ScrapePartnersCommand extends Command
                     count($processedNumbers)
                 ));
             }
-        } else {
-            if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
-                $this->io->section('Определение количества страниц...');
-                $this->io->success(sprintf(
-                    'Найдено страниц: %d | Партнёров на странице: %d (≈%d партнёров)',
-                    $lastPage,
-                    $partnersPerPage,
-                    $lastPage * $partnersPerPage
-                ));
-                $this->io->section('Парсинг партнёров...');
-            }
+        } elseif ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $this->io->section('Определение количества страниц...');
+            $this->io->success(sprintf(
+                'Найдено страниц: %d | Партнёров на странице: %d (≈%d партнёров)',
+                $lastPage,
+                $partnersPerPage,
+                $lastPage * $partnersPerPage
+            ));
+            $this->io->section('Парсинг партнёров...');
         }
 
         $progressBar = $this->createProgressBar($lastPage * $partnersPerPage, count($processedNumbers));
