@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape;
 
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\BanDetector;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerCsvStorage;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeStateManager;
-use Carbon\CarbonImmutable;
+use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
 use League\Csv\Writer;
 use Psr\Log\LoggerInterface;
 
@@ -17,6 +18,7 @@ class ScrapeWorkflow
         private readonly PartnerPageScraper $scraper,
         private readonly PartnerCsvStorage $csvStorage,
         private readonly ScrapeStateManager $stateManager,
+        private readonly BanDetector $banDetector,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -75,10 +77,10 @@ class ScrapeWorkflow
             ? $this->csvStorage->createWriterForResume($config->outputFile)
             : $this->csvStorage->createWriter($config->outputFile);
 
-        $consecutiveEmptyPages = 0;
-        $totalEmptyPages = 0;
-        $totalPagesProcessed = 0;
-        $banDetected = false;
+        $this->banDetector->reset();
+
+        $skippedNoDetailPage = 0;
+        $skippedPartnerNumbers = [];
 
         for ($page = $startPage; $page <= $lastPage; ++$page) {
             $onProgress?->__invoke('page_start', $page);
@@ -94,24 +96,12 @@ class ScrapeWorkflow
                 $this->logger->error(sprintf('Ошибка при обработке страницы %d: %s', $page, $e->getMessage()));
             }
 
-            ++$totalPagesProcessed;
-
             if ([] === $partners) {
-                ++$consecutiveEmptyPages;
-                ++$totalEmptyPages;
+                if ($this->banDetector->onEmptyPage()) {
+                    break;
+                }
             } else {
-                $consecutiveEmptyPages = 0;
-            }
-
-            if ($consecutiveEmptyPages >= 10) {
-                $banDetected = true;
-                $this->logger->error(sprintf(
-                    'Обнаружена блокировка: %d страниц подряд без данных (страница %d). Рекомендуется увеличить задержки.',
-                    $consecutiveEmptyPages,
-                    $page
-                ));
-
-                break;
+                $this->banDetector->onSuccessfulPage();
             }
 
             foreach ($partners as $partner) {
@@ -126,11 +116,13 @@ class ScrapeWorkflow
 
                 $this->processPartner(
                     $partner,
-                    $config->baseDomain,
+                    $config->zone,
                     $config->insecure,
                     $csvWriter,
                     $processedNumbers,
-                    $totalProcessed
+                    $totalProcessed,
+                    $skippedNoDetailPage,
+                    $skippedPartnerNumbers,
                 );
 
                 $onProgress?->__invoke('partner_advance', 0);
@@ -142,30 +134,32 @@ class ScrapeWorkflow
             sleep($config->pageDelay);
         }
 
-        if (!$banDetected && $totalPagesProcessed > 0 && $totalEmptyPages / $totalPagesProcessed > 0.5) {
-            $banDetected = true;
-            $this->logger->error(sprintf(
-                'Подозрение на блокировку: %d из %d страниц пустые (%.0f%%).',
-                $totalEmptyPages,
-                $totalPagesProcessed,
-                $totalEmptyPages / $totalPagesProcessed * 100
-            ));
-        }
+        $banDetected = $this->banDetector->isSuspicious();
 
-        return new ScrapeResult($totalProcessed, $totalPagesProcessed, $totalEmptyPages, $banDetected);
+        return new ScrapeResult(
+            $totalProcessed,
+            $this->banDetector->getTotalPagesProcessed(),
+            $this->banDetector->getTotalEmptyPages(),
+            $banDetected,
+            $skippedNoDetailPage,
+            $skippedPartnerNumbers,
+        );
     }
 
     /**
      * @param array{partner_number: int, title: string, detail_page_url: string, phone: string} $partner
      * @param array<int, true>                                                                  $processedNumbers
+     * @param array<int>                                                                        $skippedPartnerNumbers
      */
     private function processPartner(
         array $partner,
-        string $baseDomain,
+        Bitrix24Zone $zone,
         bool $insecure,
         Writer $csvWriter,
         array &$processedNumbers,
         int &$totalProcessed,
+        int &$skippedNoDetailPage,
+        array &$skippedPartnerNumbers,
     ): void {
         $partnerNumber = $partner['partner_number'];
         $title = $partner['title'];
@@ -175,26 +169,21 @@ class ScrapeWorkflow
         }
 
         try {
-            $partnerData = $this->scraper->fetchPartnerData($partnerNumber, $baseDomain, $insecure, $title);
+            $partnerData = $this->scraper->fetchPartnerData($partnerNumber, $zone, $insecure, $title);
 
             if (null !== $partnerData) {
                 $this->csvStorage->writePartner($csvWriter, $partnerData);
+                $processedNumbers[$partnerNumber] = true;
+                ++$totalProcessed;
             } else {
-                $this->csvStorage->writePartner($csvWriter, new PartnerData(
-                    bitrix24PartnerNumber: $partnerNumber,
-                    title: $title,
-                    site: null,
-                    phone: $partner['phone'] ?? null,
-                    email: null,
-                    logoUrl: null,
-                    detailPageUrl: $partner['detail_page_url'],
-                    baseDomain: $baseDomain,
-                    scrapedAt: CarbonImmutable::now(),
+                ++$skippedNoDetailPage;
+                $skippedPartnerNumbers[] = $partnerNumber;
+                $this->logger->warning(sprintf(
+                    'Партнёр #%d (%s): детальная страница недоступна, пропускаем',
+                    $partnerNumber,
+                    $title,
                 ));
             }
-
-            $processedNumbers[$partnerNumber] = true;
-            ++$totalProcessed;
         } catch (\Throwable $throwable) {
             $this->logger->warning(sprintf(
                 'Ошибка при обработке партнёра #%d: %s',

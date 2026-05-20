@@ -26,21 +26,25 @@ UseCase/Upsert/
 UseCase/Delete/
 ├── Command.php                    # Команда удаления
 ├── Handler.php                    # Обработчик мягкого удаления
+ValueObjects/
+├── Bitrix24Zone.php               # Enum зоны (ru, kz)
 Infrastructure/Scraper/
 ├── PartnerPageScraper.php         # HTTP-запросы к страницам Bitrix24
 ├── PartnerHtmlParser.php          # Парсинг HTML → структурированные данные
 ├── PartnerCsvStorage.php          # Чтение/запись CSV-файлов
 ├── ScrapeStateManager.php         # Управление state-файлами (resume)
+├── BanDetector.php                # Обнаружение блокировки при скрейпинге
 ```
 
 ## Общие принципы скрейпинга
 
 Команды `partners:scrape` и `partners:update` работают с сайтом Bitrix24 и подчиняются одним правилам:
 
+- **Зоны.** Используется параметр `--zone` для выбора домена Bitrix24: `ru` (Россия, дефолт), `kz` (Казахстан).
 - **Задержки.** Используйте `--page-delay=2` и `--partner-delay=2` (дефолт). Уменьшение задержек повышает риск бана.
-- **Обнаружение бана.** Команды автоматически определяют блокировку по пустым страницам. Рекомендуется увеличить задержки до 2-3 секунд.
+- **Обнаружение бана.** Команды автоматически определяют блокировку по пустым страницам (через `BanDetector`). Рекомендуется увеличить задержки до 2-3 секунд.
 - **SSL.** Для dev-окружения используйте `--insecure`.
-- **Один файл = один домен.** Не смешивайте партнёров с разных доменов (Россия, Казахстан) в одном CSV.
+- **Один файл = одна зона.** Не смешивайте партнёров с разных зон в одном CSV.
 
 ## Команды
 
@@ -52,7 +56,7 @@ Infrastructure/Scraper/
 
 | Опция | Описание | По умолчанию |
 |-------|----------|--------------|
-| `--base-url` | URL страницы списка партнёров | `https://www.bitrix24.ru/partners/country__19/` |
+| `--zone` | Зона Bitrix24: `ru`, `kz` | `ru` |
 | `--output-file` | Путь к выходному CSV файлу | `partners.csv` |
 | `--page-delay` | Задержка между страницами (сек) | `2` |
 | `--partner-delay` | Задержка между партнёрами (сек) | `2` |
@@ -70,7 +74,7 @@ php bin/console partners:scrape
 php bin/console partners:scrape --full-refresh
 
 # Парсинг партнёров Казахстана
-php bin/console partners:scrape --base-url=https://www.bitrix24.kz/partners/country__36/
+php bin/console partners:scrape --zone=kz
 
 # Кастомный выходной файл и ускоренный парсинг
 php bin/console partners:scrape --output-file=partners_kz.csv --page-delay=1 --partner-delay=1
@@ -84,6 +88,12 @@ php bin/console partners:scrape --insecure
 
 **Механизм resume:** При обрыве (сетевая ошибка, бан, таймаут и т.д.) создаётся state-файл `<output>.state.json` с информацией о последней обработанной странице. При запуске с `--resume` парсинг продолжится с этого места.
 
+**Обнаружение бана:** `BanDetector` отслеживает:
+- 10+ пустых страниц подряд — немедленная остановка
+- Более 50% пустых страниц от общего числа — предупреждение после завершения
+
+**Партнёры без детальной страницы:** Если детальная страница партнёра недоступна, он пропускается (не записывается в CSV). ID пропущенных партнёров выводятся в лог и в финальный отчёт. Их можно позже обновить через `partners:update`.
+
 **Рекомендации:**
 
 - Если парсинг прервался — запускайте с `--resume`, не с `--full-refresh`.
@@ -94,26 +104,17 @@ php bin/console partners:scrape --insecure
 
 Скрейпит детальные страницы указанных партнёров с сайта Bitrix24 и сохраняет результат в отдельный CSV-файл. Работает автономно — не требует предварительно существующего CSV. Выходной файл имеет тот же формат, что и при полной выгрузке (`partners:scrape`), и далее подаётся на вход команде `bitrix24:partners:import`.
 
-**Константы:**
-
-| Константа | Значение | Описание |
-|-----------|----------|----------|
-| `DEFAULT_BASE_DOMAIN` | `https://www.bitrix24.ru` | Домен Bitrix24 по умолчанию |
-| `DEFAULT_INSECURE` | `false` | Проверка SSL по умолчанию |
-
 **Опции:**
 
 | Опция | Описание | По умолчанию |
 |-------|----------|--------------|
 | `--partner-ids` | ID партнёров через запятую (обязательная) | — |
-| `--base-domain` | Домен Bitrix24 для загрузки детальных страниц | `https://www.bitrix24.ru` |
+| `--zone` | Зона Bitrix24: `ru`, `kz` | `ru` |
 | `--output-file` | Путь к выходному CSV файлу | `partners_update.csv` |
 | `--partner-delay` | Задержка между партнёрами (сек) | `2` |
 | `--insecure` | Отключить проверку SSL | `false` |
 
 > **Важно:** Опция `--partner-ids` обязательна.
-
-**Как определяется URL детальной страницы:** URL конструируется из `--base-domain` и ID партнёра: `{base-domain}/partners/partner/{id}/`. Например: `https://www.bitrix24.ru/partners/partner/3240/`.
 
 **Примеры:**
 
@@ -125,7 +126,7 @@ php bin/console partners:update --partner-ids=3240,5859557
 php bin/console partners:update --partner-ids=3240 --partner-delay=0
 
 # Скрейпить партнёров Казахстана
-php bin/console partners:update --partner-ids=3240 --base-domain=https://www.bitrix24.kz
+php bin/console partners:update --partner-ids=3240 --zone=kz
 
 # Кастомный выходной файл
 php bin/console partners:update --partner-ids=3240,5859557 --output-file=partners_kz_update.csv
@@ -202,8 +203,8 @@ php bin/console bitrix24:partners:import partners.csv --skip-errors
 Все команды работают с единым форматом CSV:
 
 ```
-bitrix24_partner_number,title,site,phone,email,logo_url,detail_page_url,base_domain,scraped_at
-3240,Hoster.KZ,https://b24.kz/,8-727-2-379-284,info@b24.kz,https://.../logo.jpg,/partners/partner/3240/,https://www.bitrix24.kz,2026-05-01T12:27:22+00:00
+bitrix24_partner_number,title,site,phone,email,logo_url,detail_page_url,zone,scraped_at
+3240,Hoster.KZ,https://b24.kz/,8-727-2-379-284,info@b24.kz,https://.../logo.jpg,/partners/partner/3240/,kz,2026-05-01T12:27:22+00:00
 ```
 
 | Колонка | Описание |
@@ -215,7 +216,7 @@ bitrix24_partner_number,title,site,phone,email,logo_url,detail_page_url,base_dom
 | `email` | Email |
 | `logo_url` | URL логотипа |
 | `detail_page_url` | Относительный путь до детальной страницы |
-| `base_domain` | Домен для загрузки детальной страницы (https://www.bitrix24.ru, https://www.bitrix24.kz и т.д.) |
+| `zone` | Зона Bitrix24 (`ru`, `kz`) |
 | `scraped_at` | Дата/время последнего скрейпинга (ISO 8601) |
 
 ---

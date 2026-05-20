@@ -7,6 +7,7 @@ namespace Bitrix24\Lib\Bitrix24Partners\Console;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeConfig;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeResult;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeWorkflow;
+use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -22,8 +23,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ScrapePartnersCommand extends Command
 {
-    private const string DEFAULT_BASE_URL = 'https://www.bitrix24.ru/partners/country__19/';
-
     private const string DEFAULT_OUTPUT_FILE = 'partners.csv';
 
     private const int DEFAULT_PAGE_DELAY = 2;
@@ -45,7 +44,7 @@ class ScrapePartnersCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('base-url', null, InputOption::VALUE_REQUIRED, 'URL страницы партнёров', self::DEFAULT_BASE_URL)
+            ->addOption('zone', null, InputOption::VALUE_REQUIRED, 'Зона Bitrix24 (ru, kz)', 'ru')
             ->addOption('output-file', null, InputOption::VALUE_REQUIRED, 'Путь к выходному CSV файлу', self::DEFAULT_OUTPUT_FILE)
             ->addOption('page-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между страницами (сек)', (string) self::DEFAULT_PAGE_DELAY)
             ->addOption('partner-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между партнёрами (сек)', (string) self::DEFAULT_PARTNER_DELAY)
@@ -61,8 +60,10 @@ class ScrapePartnersCommand extends Command
         $this->io = new SymfonyStyle($input, $output);
         $this->output = $output;
 
+        $zone = Bitrix24Zone::from($input->getOption('zone'));
+
         $config = new ScrapeConfig(
-            baseUrl: $input->getOption('base-url'),
+            zone: $zone,
             outputFile: $input->getOption('output-file'),
             pageDelay: (int) $input->getOption('page-delay'),
             partnerDelay: (int) $input->getOption('partner-delay'),
@@ -72,6 +73,7 @@ class ScrapePartnersCommand extends Command
         );
 
         if ($this->io->isVerbose()) {
+            $this->io->text(sprintf('Zone: %s', $config->zone->value));
             $this->io->text(sprintf('Base URL: %s', $config->baseUrl));
             $this->io->text(sprintf('Output file: %s', $config->outputFile));
         }
@@ -182,6 +184,14 @@ class ScrapePartnersCommand extends Command
                 $result->totalPagesProcessed
             ));
 
+            if ($result->skippedNoDetailPage > 0) {
+                $this->io->note(sprintf(
+                    'Пропущено без детальной страницы: %d (ID: %s)',
+                    $result->skippedNoDetailPage,
+                    implode(', ', $result->skippedPartnerNumbers),
+                ));
+            }
+
             return Command::FAILURE;
         }
 
@@ -189,6 +199,14 @@ class ScrapePartnersCommand extends Command
 
         if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
             $this->io->success(sprintf('Парсинг завершён. Обработано партнёров: %d', $result->totalProcessed));
+
+            if ($result->skippedNoDetailPage > 0) {
+                $this->io->note(sprintf(
+                    'Пропущено без детальной страницы: %d (ID: %s)',
+                    $result->skippedNoDetailPage,
+                    implode(', ', $result->skippedPartnerNumbers),
+                ));
+            }
         }
 
         return Command::SUCCESS;

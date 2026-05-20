@@ -195,8 +195,8 @@ php bin/console bitrix24:partners:import partners.csv --dry-run
 Совпадает с форматом из `docs/commands/partner-commands.md`:
 
 ```
-bitrix24_partner_number,title,site,phone,email,logo_url,detail_page_url,base_domain,scraped_at
-3240,Hoster.KZ,https://b24.kz/,8-727-2-379-284,info@b24.kz,https://.../logo.jpg,/partners/partner/3240/,https://www.bitrix24.kz,2026-05-01T12:27:22+00:00
+bitrix24_partner_number,title,site,phone,email,logo_url,detail_page_url,zone,scraped_at
+3240,Hoster.KZ,https://b24.kz/,8-727-2-379-284,info@b24.kz,https://.../logo.jpg,/partners/partner/3240/,kz,2026-05-01T12:27:22+00:00
 ```
 
 **CSV-формат фиксирован** — файлы генерируются командами `partners:scrape` и `partners:update`.

@@ -6,10 +6,15 @@ namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape;
 
 readonly class ScrapeResult
 {
+    /**
+     * @param array<int> $skippedPartnerNumbers
+     */
     public function __construct(
         public int $totalProcessed,
         public int $totalPagesProcessed,
         public int $totalEmptyPages,
         public bool $banDetected,
+        public int $skippedNoDetailPage = 0,
+        public array $skippedPartnerNumbers = [],
     ) {}
 }

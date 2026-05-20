@@ -29,7 +29,7 @@ class PartnerDataTest extends TestCase
             email: 'test@example.com',
             logoUrl: 'https://example.com/logo.png',
             detailPageUrl: '/partners/partner/12345/',
-            baseDomain: 'https://www.bitrix24.ru',
+            zone: 'ru',
             scrapedAt: $scrapedAt,
         );
 
@@ -40,7 +40,7 @@ class PartnerDataTest extends TestCase
         $this->assertSame('test@example.com', $dto->email);
         $this->assertSame('https://example.com/logo.png', $dto->logoUrl);
         $this->assertSame('/partners/partner/12345/', $dto->detailPageUrl);
-        $this->assertSame('https://www.bitrix24.ru', $dto->baseDomain);
+        $this->assertSame('ru', $dto->zone);
         $this->assertSame($scrapedAt, $dto->scrapedAt);
     }
 
@@ -57,7 +57,7 @@ class PartnerDataTest extends TestCase
             email: null,
             logoUrl: null,
             detailPageUrl: '/partners/partner/67890/',
-            baseDomain: 'https://www.bitrix24.ru',
+            zone: 'ru',
             scrapedAt: $scrapedAt,
         );
 

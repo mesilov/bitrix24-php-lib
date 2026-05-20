@@ -16,7 +16,7 @@ readonly class PartnerData
         public ?string $email,
         public ?string $logoUrl,
         public string $detailPageUrl,
-        public string $baseDomain,
+        public string $zone,
         public CarbonImmutable $scrapedAt,
     ) {}
 }

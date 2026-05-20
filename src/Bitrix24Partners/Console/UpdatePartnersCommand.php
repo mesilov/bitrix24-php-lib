@@ -7,6 +7,7 @@ namespace Bitrix24\Lib\Bitrix24Partners\Console;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeResult;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\UpdateConfig;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\UpdateWorkflow;
+use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -39,7 +40,7 @@ class UpdatePartnersCommand extends Command
         $this
             ->addOption('partner-ids', null, InputOption::VALUE_REQUIRED, 'ID партнёров через запятую', '')
             ->addOption('output-file', null, InputOption::VALUE_REQUIRED, 'Путь к выходному CSV файлу', 'partners_update.csv')
-            ->addOption('base-domain', null, InputOption::VALUE_REQUIRED, 'Домен Bitrix24', 'https://www.bitrix24.ru')
+            ->addOption('zone', null, InputOption::VALUE_REQUIRED, 'Зона Bitrix24 (ru, kz)', 'ru')
             ->addOption('partner-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между партнёрами (сек)', '2')
             ->addOption('insecure', null, InputOption::VALUE_NONE, 'Отключить проверку SSL (для dev)')
         ;
@@ -65,10 +66,12 @@ class UpdatePartnersCommand extends Command
             return Command::FAILURE;
         }
 
+        $zone = Bitrix24Zone::from($input->getOption('zone'));
+
         $config = new UpdateConfig(
             partnerIds: $partnerIds,
             outputFile: $input->getOption('output-file'),
-            baseDomain: $input->getOption('base-domain'),
+            zone: $zone,
             delay: (int) $input->getOption('partner-delay'),
             insecure: (bool) $input->getOption('insecure'),
         );
@@ -109,14 +112,23 @@ class UpdatePartnersCommand extends Command
         $progressBar?->finish();
         if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
             $this->io->newLine(2);
-            $this->io->success(sprintf(
-                'Обновлено: %d, ошибок: %d',
-                $result->totalProcessed,
-                $result->totalEmptyPages,
-            ));
+
+            if ($result->banDetected) {
+                $this->io->warning(sprintf(
+                    'Обнаружена блокировка. Обновлено: %d, ошибок: %d',
+                    $result->totalProcessed,
+                    $result->totalEmptyPages,
+                ));
+            } else {
+                $this->io->success(sprintf(
+                    'Обновлено: %d, ошибок: %d',
+                    $result->totalProcessed,
+                    $result->totalEmptyPages,
+                ));
+            }
         }
 
-        return Command::SUCCESS;
+        return $result->banDetected ? Command::FAILURE : Command::SUCCESS;
     }
 
     private function createProgressBar(int $total): ?ProgressBar

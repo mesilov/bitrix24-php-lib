@@ -18,7 +18,7 @@ class PartnerCsvStorage
         'email',
         'logo_url',
         'detail_page_url',
-        'base_domain',
+        'zone',
         'scraped_at',
     ];
 
@@ -64,7 +64,7 @@ class PartnerCsvStorage
             $partner->email ?? '',
             $partner->logoUrl ?? '',
             $partner->detailPageUrl,
-            $partner->baseDomain,
+            $partner->zone,
             $partner->scrapedAt->format(\DateTimeInterface::ATOM),
         ]);
     }

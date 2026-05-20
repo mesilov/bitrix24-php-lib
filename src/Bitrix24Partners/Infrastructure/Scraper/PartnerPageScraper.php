@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper;
 
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\PartnerData;
+use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
 use Carbon\CarbonImmutable;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
@@ -90,9 +91,10 @@ class PartnerPageScraper
         return $this->parser->parsePartnerListPage($html);
     }
 
-    public function fetchPartnerData(int $partnerId, string $baseDomain, bool $insecure = false, string $title = ''): ?PartnerData
+    public function fetchPartnerData(int $partnerId, Bitrix24Zone $zone, bool $insecure = false, string $title = ''): ?PartnerData
     {
         $detailPageUrl = '/partners/partner/'.$partnerId.'/';
+        $baseDomain = $zone->getBaseDomain();
 
         $html = $this->fetchPartnerDetailHtml($detailPageUrl, $insecure, $baseDomain);
         if (null === $html) {
@@ -109,7 +111,7 @@ class PartnerPageScraper
             email: '' !== $detail['email'] ? $detail['email'] : null,
             logoUrl: '' !== $detail['logo_url'] ? $detail['logo_url'] : null,
             detailPageUrl: $detailPageUrl,
-            baseDomain: $baseDomain,
+            zone: $zone->value,
             scrapedAt: CarbonImmutable::now(),
         );
     }

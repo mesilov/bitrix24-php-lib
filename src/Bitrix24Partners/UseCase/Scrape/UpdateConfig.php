@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape;
 
+use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
+
 readonly class UpdateConfig
 {
     public readonly string $baseDomain;
@@ -14,10 +16,10 @@ readonly class UpdateConfig
     public function __construct(
         public array $partnerIds,
         public string $outputFile,
-        string $baseDomain = 'https://www.bitrix24.ru',
+        public Bitrix24Zone $zone = Bitrix24Zone::RU,
         public int $delay = 2,
         public bool $insecure = false,
     ) {
-        $this->baseDomain = rtrim($baseDomain, '/');
+        $this->baseDomain = $zone->getBaseDomain();
     }
 }
