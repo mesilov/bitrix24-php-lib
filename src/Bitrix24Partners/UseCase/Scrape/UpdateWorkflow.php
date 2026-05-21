@@ -5,15 +5,14 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape;
 
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\BanDetector;
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerCsvStorage;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
+use League\Csv\Writer;
 use Psr\Log\LoggerInterface;
 
 class UpdateWorkflow
 {
     public function __construct(
         private readonly PartnerPageScraper $scraper,
-        private readonly PartnerCsvStorage $csvStorage,
         private readonly BanDetector $banDetector,
         private readonly LoggerInterface $logger,
     ) {}
@@ -23,7 +22,18 @@ class UpdateWorkflow
      */
     public function run(UpdateConfig $config, ?\Closure $onProgress = null): ScrapeResult
     {
-        $csvWriter = $this->csvStorage->createWriter($config->outputFile);
+        $csvWriter = Writer::from($config->outputFile, 'w+');
+        $csvWriter->insertOne([
+            'bitrix24_partner_number',
+            'title',
+            'site',
+            'phone',
+            'email',
+            'logo_url',
+            'detail_page_url',
+            'zone',
+            'scraped_at',
+        ]);
         $totalProcessed = 0;
         $errors = 0;
         $this->banDetector->reset();
@@ -46,7 +56,7 @@ class UpdateWorkflow
                         break;
                     }
                 } else {
-                    $this->csvStorage->writePartner($csvWriter, $partnerData);
+                    $this->writePartner($csvWriter, $partnerData);
                     ++$totalProcessed;
                     $this->banDetector->onSuccessfulPage();
                 }
@@ -71,5 +81,20 @@ class UpdateWorkflow
             totalEmptyPages: $errors,
             banDetected: $banDetected,
         );
+    }
+
+    private function writePartner(Writer $writer, PartnerData $partner): void
+    {
+        $writer->insertOne([
+            $partner->bitrix24PartnerNumber,
+            $partner->title,
+            $partner->site ?? '',
+            $partner->phone ?? '',
+            $partner->email ?? '',
+            $partner->logoUrl ?? '',
+            $partner->detailPageUrl,
+            $partner->zone,
+            $partner->scrapedAt->format(\DateTimeInterface::ATOM),
+        ]);
     }
 }

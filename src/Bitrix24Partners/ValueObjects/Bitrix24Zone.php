@@ -12,8 +12,8 @@ enum Bitrix24Zone: string
     public function getBaseDomain(): string
     {
         return match ($this) {
-            self::RU => 'https://www.bitrix24.ru',
-            self::KZ => 'https://www.bitrix24.kz',
+            self::RU => 'https://www.bitrix24.ru/country__19',
+            self::KZ => 'https://www.bitrix24.kz/country_22',
         };
     }
 }

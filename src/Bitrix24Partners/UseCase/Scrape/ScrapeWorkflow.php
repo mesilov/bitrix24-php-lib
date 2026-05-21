@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape;
 
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\BanDetector;
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerCsvStorage;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeStateManager;
 use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
@@ -16,7 +15,6 @@ class ScrapeWorkflow
 {
     public function __construct(
         private readonly PartnerPageScraper $scraper,
-        private readonly PartnerCsvStorage $csvStorage,
         private readonly ScrapeStateManager $stateManager,
         private readonly BanDetector $banDetector,
         private readonly LoggerInterface $logger,
@@ -74,8 +72,21 @@ class ScrapeWorkflow
         $processedNumbers = $initialProcessedNumbers;
         $totalProcessed = count($processedNumbers);
         $csvWriter = $config->resume
-            ? $this->csvStorage->createWriterForResume($config->outputFile)
-            : $this->csvStorage->createWriter($config->outputFile);
+            ? Writer::from($config->outputFile, 'a+')
+            : Writer::from($config->outputFile, 'w+');
+        if (!$config->resume) {
+            $csvWriter->insertOne([
+                'bitrix24_partner_number',
+                'title',
+                'site',
+                'phone',
+                'email',
+                'logo_url',
+                'detail_page_url',
+                'zone',
+                'scraped_at',
+            ]);
+        }
 
         $this->banDetector->reset();
 
@@ -172,7 +183,7 @@ class ScrapeWorkflow
             $partnerData = $this->scraper->fetchPartnerData($partnerNumber, $zone, $insecure, $title);
 
             if (null !== $partnerData) {
-                $this->csvStorage->writePartner($csvWriter, $partnerData);
+                $this->writePartner($csvWriter, $partnerData);
                 $processedNumbers[$partnerNumber] = true;
                 ++$totalProcessed;
             } else {
@@ -191,5 +202,20 @@ class ScrapeWorkflow
                 $throwable->getMessage()
             ));
         }
+    }
+
+    private function writePartner(Writer $writer, PartnerData $partner): void
+    {
+        $writer->insertOne([
+            $partner->bitrix24PartnerNumber,
+            $partner->title,
+            $partner->site ?? '',
+            $partner->phone ?? '',
+            $partner->email ?? '',
+            $partner->logoUrl ?? '',
+            $partner->detailPageUrl,
+            $partner->zone,
+            $partner->scrapedAt->format(\DateTimeInterface::ATOM),
+        ]);
     }
 }

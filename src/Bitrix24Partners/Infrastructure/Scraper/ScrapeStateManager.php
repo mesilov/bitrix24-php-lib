@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper;
 
+use League\Csv\Reader;
+
 class ScrapeStateManager
 {
     private ?array $state = null;
-
-    public function __construct(
-        private readonly PartnerCsvStorage $csvStorage,
-    ) {}
 
     /**
      * @return null|array{lastPage: int, startPage: int, processedNumbers: array<int, true>}
@@ -108,8 +106,27 @@ class ScrapeStateManager
             return [];
         }
 
-        $partnerMap = $this->csvStorage->readAsPartnerMap($outputFile);
+        $partnerMap = $this->readPartnerMap($outputFile);
 
         return array_fill_keys(array_keys($partnerMap), true);
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    private function readPartnerMap(string $filePath): array
+    {
+        $reader = Reader::from($filePath);
+        $reader->setHeaderOffset(0);
+
+        $records = [];
+        foreach ($reader->getRecords() as $record) {
+            $number = (int) ($record['bitrix24_partner_number'] ?? 0);
+            if ($number > 0) {
+                $records[$number] = $record;
+            }
+        }
+
+        return $records;
     }
 }
