@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape;
 
+use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
 use Carbon\CarbonImmutable;
 
 readonly class PartnerData
@@ -16,7 +17,7 @@ readonly class PartnerData
         public ?string $email,
         public ?string $logoUrl,
         public string $detailPageUrl,
-        public string $zone,
+        public Bitrix24Zone $zone,
         public CarbonImmutable $scrapedAt,
     ) {}
 }

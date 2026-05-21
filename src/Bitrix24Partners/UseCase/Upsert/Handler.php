@@ -79,19 +79,45 @@ readonly class Handler
 
     private function updateIfNeeded(Command $command, Bitrix24Partner $existingPartner): void
     {
-        $tempPartner = new Bitrix24Partner(
-            Uuid::v7(),
-            $command->title,
-            $command->bitrix24PartnerNumber,
-            $command->site,
-            $command->phone,
-            $command->email,
-            $command->openLineId,
-            $command->externalId,
-            $command->logoUrl
-        );
+        $isUpdated = false;
 
-        if ($existingPartner->equals($tempPartner)) {
+        if ($command->title !== $existingPartner->getTitle()) {
+            $existingPartner->changeTitle($command->title);
+            $isUpdated = true;
+        }
+
+        if ($command->site !== $existingPartner->getSite()) {
+            $existingPartner->changeSite($command->site);
+            $isUpdated = true;
+        }
+
+        if (!$this->phonesEqual($command->phone, $existingPartner->getPhone())) {
+            $this->guardPhoneChange($command->phone, $existingPartner->getPhone());
+            $existingPartner->changePhone($command->phone);
+            $isUpdated = true;
+        }
+
+        if ($command->email !== $existingPartner->getEmail()) {
+            $existingPartner->changeEmail($command->email);
+            $isUpdated = true;
+        }
+
+        if ($command->openLineId !== $existingPartner->getOpenLineId()) {
+            $existingPartner->changeOpenLineId($command->openLineId);
+            $isUpdated = true;
+        }
+
+        if ($command->externalId !== $existingPartner->getExternalId()) {
+            $existingPartner->changeExternalId($command->externalId);
+            $isUpdated = true;
+        }
+
+        if ($command->logoUrl !== $existingPartner->getLogoUrl()) {
+            $existingPartner->changeLogoUrl($command->logoUrl);
+            $isUpdated = true;
+        }
+
+        if (!$isUpdated) {
             $this->logger->info('Bitrix24Partners.Upsert.skipped', [
                 'partner_id' => $existingPartner->getId()->toRfc4122(),
                 'bitrix24_partner_id' => $command->bitrix24PartnerNumber,
@@ -101,8 +127,6 @@ readonly class Handler
             return;
         }
 
-        $this->applyChanges($command, $existingPartner);
-
         $this->bitrix24PartnerRepository->save($existingPartner);
         $this->flusher->flush($existingPartner);
 
@@ -110,38 +134,6 @@ readonly class Handler
             'partner_id' => $existingPartner->getId()->toRfc4122(),
             'bitrix24_partner_id' => $command->bitrix24PartnerNumber,
         ]);
-    }
-
-    private function applyChanges(Command $command, Bitrix24PartnerInterface $partner): void
-    {
-        if ($command->title !== $partner->getTitle()) {
-            $partner->changeTitle($command->title);
-        }
-
-        if ($command->site !== $partner->getSite()) {
-            $partner->changeSite($command->site);
-        }
-
-        $this->guardPhoneChange($command->phone, $partner->getPhone());
-        if (!$this->phonesEqual($command->phone, $partner->getPhone())) {
-            $partner->changePhone($command->phone);
-        }
-
-        if ($command->email !== $partner->getEmail()) {
-            $partner->changeEmail($command->email);
-        }
-
-        if ($command->openLineId !== $partner->getOpenLineId()) {
-            $partner->changeOpenLineId($command->openLineId);
-        }
-
-        if ($command->externalId !== $partner->getExternalId()) {
-            $partner->changeExternalId($command->externalId);
-        }
-
-        if ($command->logoUrl !== $partner->getLogoUrl()) {
-            $partner->changeLogoUrl($command->logoUrl);
-        }
     }
 
     private function phonesEqual(?PhoneNumber $a, ?PhoneNumber $b): bool

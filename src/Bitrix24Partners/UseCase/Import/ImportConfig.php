@@ -8,7 +8,7 @@ readonly class ImportConfig
 {
     public function __construct(
         public string $file,
-        public string $syncMode = 'full',
+        public SyncMode $syncMode = SyncMode::Full,
         public bool $dryRun = false,
         public bool $skipErrors = false,
     ) {}

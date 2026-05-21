@@ -93,7 +93,7 @@ class UpdateWorkflow
             $partner->email ?? '',
             $partner->logoUrl ?? '',
             $partner->detailPageUrl,
-            $partner->zone,
+            $partner->zone->value,
             $partner->scrapedAt->format(\DateTimeInterface::ATOM),
         ]);
     }

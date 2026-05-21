@@ -7,6 +7,7 @@ namespace Bitrix24\Lib\Bitrix24Partners\Console;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Import\ImportConfig;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Import\ImportResult;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Import\ImportWorkflow;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Import\SyncMode;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -71,24 +72,14 @@ class ImportPartnersCsvCommand extends Command
         $this->io = new SymfonyStyle($input, $output);
         $this->output = $output;
 
-        $file = $input->getArgument('file');
-
-        if (!file_exists($file)) {
-            $this->io->error(sprintf('File not found: %s', $file));
-
+        $config = $this->resolveConfig($input);
+        if (null === $config) {
             return Command::FAILURE;
         }
 
-        $config = new ImportConfig(
-            file: $file,
-            syncMode: $input->getOption('sync-mode'),
-            dryRun: (bool) $input->getOption('dry-run'),
-            skipErrors: (bool) $input->getOption('skip-errors'),
-        );
-
         if ($this->io->isVerbose()) {
             $this->io->text(sprintf('File: %s', $config->file));
-            $this->io->text(sprintf('Sync mode: %s', $config->syncMode));
+            $this->io->text(sprintf('Sync mode: %s', $config->syncMode->value));
             $this->io->text(sprintf('Dry run: %s', $config->dryRun ? 'yes' : 'no'));
         }
 
@@ -100,6 +91,36 @@ class ImportPartnersCsvCommand extends Command
 
             return Command::FAILURE;
         }
+    }
+
+    private function resolveConfig(InputInterface $input): ?ImportConfig
+    {
+        $file = $input->getArgument('file');
+
+        if (!file_exists($file)) {
+            $this->io->error(sprintf('File not found: %s', $file));
+
+            return null;
+        }
+
+        try {
+            $syncMode = SyncMode::from($input->getOption('sync-mode'));
+        } catch (\ValueError) {
+            $this->io->error(sprintf(
+                'Invalid sync-mode "%s". Allowed values: %s',
+                $input->getOption('sync-mode'),
+                implode(', ', array_map(static fn (SyncMode $m) => $m->value, SyncMode::cases())),
+            ));
+
+            return null;
+        }
+
+        return new ImportConfig(
+            file: $file,
+            syncMode: $syncMode,
+            dryRun: (bool) $input->getOption('dry-run'),
+            skipErrors: (bool) $input->getOption('skip-errors'),
+        );
     }
 
     private function executeImport(ImportConfig $config): int

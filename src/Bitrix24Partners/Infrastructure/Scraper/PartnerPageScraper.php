@@ -111,7 +111,7 @@ class PartnerPageScraper
             email: '' !== $detail['email'] ? $detail['email'] : null,
             logoUrl: '' !== $detail['logo_url'] ? $detail['logo_url'] : null,
             detailPageUrl: $detailPageUrl,
-            zone: $zone->value,
+            zone: $zone,
             scrapedAt: CarbonImmutable::now(),
         );
     }

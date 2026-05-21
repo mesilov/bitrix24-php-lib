@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Tests\Unit\Bitrix24Partners\UseCase\Scrape;
 
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\PartnerData;
+use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
 use Carbon\CarbonImmutable;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -29,7 +30,7 @@ class PartnerDataTest extends TestCase
             email: 'test@example.com',
             logoUrl: 'https://example.com/logo.png',
             detailPageUrl: '/partners/partner/12345/',
-            zone: 'ru',
+            zone: Bitrix24Zone::RU,
             scrapedAt: $scrapedAt,
         );
 
@@ -40,7 +41,7 @@ class PartnerDataTest extends TestCase
         $this->assertSame('test@example.com', $dto->email);
         $this->assertSame('https://example.com/logo.png', $dto->logoUrl);
         $this->assertSame('/partners/partner/12345/', $dto->detailPageUrl);
-        $this->assertSame('ru', $dto->zone);
+        $this->assertSame(Bitrix24Zone::RU, $dto->zone);
         $this->assertSame($scrapedAt, $dto->scrapedAt);
     }
 
@@ -57,7 +58,7 @@ class PartnerDataTest extends TestCase
             email: null,
             logoUrl: null,
             detailPageUrl: '/partners/partner/67890/',
-            zone: 'ru',
+            zone: Bitrix24Zone::RU,
             scrapedAt: $scrapedAt,
         );
 
