@@ -9,11 +9,19 @@ enum Bitrix24Zone: string
     case RU = 'ru';
     case KZ = 'kz';
 
-    public function getBaseDomain(): string
+    public function getDomain(): string
     {
         return match ($this) {
-            self::RU => 'https://www.bitrix24.ru/country__19',
-            self::KZ => 'https://www.bitrix24.kz/country_22',
+            self::RU => 'https://www.bitrix24.ru',
+            self::KZ => 'https://www.bitrix24.kz',
+        };
+    }
+
+    public function getPartnerListUrl(): string
+    {
+        return match ($this) {
+            self::RU => 'https://www.bitrix24.ru/partners/country__19/',
+            self::KZ => 'https://www.bitrix24.kz/partners/country_22/',
         };
     }
 }

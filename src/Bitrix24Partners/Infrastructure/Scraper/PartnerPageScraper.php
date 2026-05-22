@@ -94,7 +94,7 @@ class PartnerPageScraper
     public function fetchPartnerData(int $partnerId, Bitrix24Zone $zone, bool $insecure = false, string $title = ''): ?PartnerData
     {
         $detailPageUrl = '/partners/partner/'.$partnerId.'/';
-        $baseDomain = $zone->getBaseDomain();
+        $baseDomain = $zone->getDomain();
 
         $html = $this->fetchPartnerDetailHtml($detailPageUrl, $insecure, $baseDomain);
         if (null === $html) {

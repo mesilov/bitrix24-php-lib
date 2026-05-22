@@ -24,9 +24,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ImportPartnersCsvCommand extends Command
 {
-    private SymfonyStyle $io;
+    private ?SymfonyStyle $io = null;
 
-    private OutputInterface $output;
+    private ?OutputInterface $output = null;
 
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -81,6 +81,7 @@ class ImportPartnersCsvCommand extends Command
             $this->io->text(sprintf('File: %s', $config->file));
             $this->io->text(sprintf('Sync mode: %s', $config->syncMode->value));
             $this->io->text(sprintf('Dry run: %s', $config->dryRun ? 'yes' : 'no'));
+            $this->io->text(sprintf('Skip errors: %s', $config->skipErrors ? 'yes' : 'no'));
         }
 
         try {
@@ -139,7 +140,12 @@ class ImportPartnersCsvCommand extends Command
                     $progressBar?->setMaxSteps($value);
                     $progressBar?->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
                 })(),
-                'row_advance' => $progressBar?->advance(),
+                'delete_total' => (function () use ($progressBar, $value): void {
+                    if (null !== $progressBar) {
+                        $progressBar->setMaxSteps($progressBar->getMaxSteps() + $value);
+                    }
+                })(),
+                'row_advance', 'delete_advance' => $progressBar?->advance(),
                 default => null,
             };
         };

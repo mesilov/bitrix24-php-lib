@@ -52,29 +52,18 @@ class UpdatePartnersCommand extends Command
         $this->io = new SymfonyStyle($input, $output);
         $this->output = $output;
 
-        $partnerIdsRaw = $input->getOption('partner-ids');
-        if ('' === $partnerIdsRaw) {
-            $this->io->error('Укажите --partner-ids');
-
+        $config = $this->resolveConfig($input);
+        if (null === $config) {
             return Command::FAILURE;
         }
 
-        $partnerIds = array_map('intval', array_filter(array_map('trim', explode(',', (string) $partnerIdsRaw))));
-        if ([] === $partnerIds) {
-            $this->io->error('Список ID партнёров пуст.');
-
-            return Command::FAILURE;
+        if ($this->io->isVerbose()) {
+            $this->io->text(sprintf('Partner IDs: %s', implode(', ', $config->partnerIds)));
+            $this->io->text(sprintf('Output file: %s', $config->outputFile));
+            $this->io->text(sprintf('Zone: %s', $config->zone->value));
+            $this->io->text(sprintf('Partner delay: %d sec', $config->delay));
+            $this->io->text(sprintf('Insecure: %s', $config->insecure ? 'yes' : 'no'));
         }
-
-        $zone = Bitrix24Zone::from($input->getOption('zone'));
-
-        $config = new UpdateConfig(
-            partnerIds: $partnerIds,
-            outputFile: $input->getOption('output-file'),
-            zone: $zone,
-            delay: (int) $input->getOption('partner-delay'),
-            insecure: (bool) $input->getOption('insecure'),
-        );
 
         try {
             return $this->executeUpdate($config);
@@ -84,6 +73,54 @@ class UpdatePartnersCommand extends Command
 
             return Command::FAILURE;
         }
+    }
+
+    private function resolveConfig(InputInterface $input): ?UpdateConfig
+    {
+        $partnerIdsRaw = $input->getOption('partner-ids');
+        if ('' === $partnerIdsRaw) {
+            $this->io->error('Укажите --partner-ids');
+
+            return null;
+        }
+
+        $partnerIds = [];
+        $parts = array_map('trim', explode(',', (string) $partnerIdsRaw));
+        foreach ($parts as $part) {
+            if (!ctype_digit($part)) {
+                $this->io->error(sprintf('Невалидный ID партнёра: "%s". Ожидается положительное число.', $part));
+
+                return null;
+            }
+            $partnerIds[] = (int) $part;
+        }
+
+        try {
+            $zone = Bitrix24Zone::from($input->getOption('zone'));
+        } catch (\ValueError) {
+            $this->io->error(sprintf(
+                'Invalid zone "%s". Allowed values: %s',
+                $input->getOption('zone'),
+                implode(', ', array_map(static fn (Bitrix24Zone $z) => $z->value, Bitrix24Zone::cases())),
+            ));
+
+            return null;
+        }
+
+        $delay = (int) $input->getOption('partner-delay');
+        if ($delay <= 0) {
+            $this->io->error('partner-delay must be greater than 0');
+
+            return null;
+        }
+
+        return new UpdateConfig(
+            partnerIds: $partnerIds,
+            outputFile: $input->getOption('output-file'),
+            zone: $zone,
+            delay: $delay,
+            insecure: (bool) $input->getOption('insecure'),
+        );
     }
 
     private function executeUpdate(UpdateConfig $config): int

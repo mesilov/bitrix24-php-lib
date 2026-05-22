@@ -67,18 +67,15 @@ class ImportWorkflow
         try {
             $dbMap = $this->loadDbMap($onVerbose);
 
-            if ($config->dryRun) {
-                $this->planDryRun($csvMap, $dbMap, $collector, $onVerbose);
-            } else {
-                $this->executeImport($csvMap, $config, $collector, $onProgress, $onVerbose);
-
-                if (SyncMode::Full === $config->syncMode) {
-                    $this->handleFullSync($csvMap, $dbMap, $collector, $onVerbose);
-                }
+            if (SyncMode::Full === $config->syncMode) {
+                $deleteCount = count(array_diff(array_keys($dbMap), array_keys($csvMap)));
+                $onProgress?->__invoke('delete_total', $deleteCount);
             }
 
-            if (SyncMode::Full === $config->syncMode && $config->dryRun) {
-                $this->planFullSyncDryRun($csvMap, $dbMap, $collector, $onVerbose);
+            if ($config->dryRun) {
+                $this->planDryRun($csvMap, $dbMap, $config, $collector, $onProgress, $onVerbose);
+            } else {
+                $this->executeImport($csvMap, $dbMap, $config, $collector, $onProgress, $onVerbose);
             }
 
             return $collector->toResult(count($csvMap), $config->dryRun);
@@ -88,10 +85,12 @@ class ImportWorkflow
     }
 
     /**
-     * @param array<int, array<string, string>> $csvMap
+     * @param array<int, array<string, string>>    $csvMap
+     * @param array<int, Bitrix24PartnerInterface> $dbMap
      */
     private function executeImport(
         array $csvMap,
+        array $dbMap,
         ImportConfig $config,
         ImportStatsCollector $collector,
         ?\Closure $onProgress = null,
@@ -118,15 +117,30 @@ class ImportWorkflow
             $this->upsertHandler->handle($upsertCommand);
             $onVerbose?->__invoke(sprintf('Партнёр #%d: обработан', $partnerNumber));
         }
+
+        if (SyncMode::Full === $config->syncMode) {
+            foreach ($dbMap as $partnerNumber => $partner) {
+                if (!isset($csvMap[$partnerNumber])) {
+                    $onProgress?->__invoke('delete_advance', 0);
+                    $this->deleteHandler->handle(new DeleteCommand(
+                        $partner->getId(),
+                        'soft-delete: отсутствует в CSV при полной синхронизации'
+                    ));
+                    $onVerbose?->__invoke(sprintf('Партнёр #%d: удалён', $partnerNumber));
+                }
+            }
+        }
     }
 
     /**
      * @param array<int, array<string, string>>    $csvMap
      * @param array<int, Bitrix24PartnerInterface> $dbMap
      */
-    private function planDryRun(array $csvMap, array $dbMap, ImportStatsCollector $collector, ?\Closure $onVerbose = null): void
+    private function planDryRun(array $csvMap, array $dbMap, ImportConfig $config, ImportStatsCollector $collector, ?\Closure $onProgress = null, ?\Closure $onVerbose = null): void
     {
         foreach ($csvMap as $partnerNumber => $row) {
+            $onProgress?->__invoke('row_advance', 0);
+
             try {
                 $upsertCommand = $this->buildUpsertCommand($row);
             } catch (\Throwable $e) {
@@ -159,47 +173,18 @@ class ImportWorkflow
                 ++$collector->skipped;
             }
         }
-    }
 
-    /**
-     * @param array<int, array<string, string>>    $csvMap
-     * @param array<int, Bitrix24PartnerInterface> $dbMap
-     */
-    private function handleFullSync(
-        array $csvMap,
-        array $dbMap,
-        ImportStatsCollector $collector,
-        ?\Closure $onVerbose = null,
-    ): void {
-        foreach ($dbMap as $partnerNumber => $partner) {
-            if (!isset($csvMap[$partnerNumber])) {
-                $this->deleteHandler->handle(new DeleteCommand(
-                    $partner->getId(),
-                    'soft-delete: отсутствует в CSV при полной синхронизации'
-                ));
-                $onVerbose?->__invoke(sprintf('Партнёр #%d: удалён', $partnerNumber));
-            }
-        }
-    }
-
-    /**
-     * @param array<int, array<string, string>>    $csvMap
-     * @param array<int, Bitrix24PartnerInterface> $dbMap
-     */
-    private function planFullSyncDryRun(
-        array $csvMap,
-        array $dbMap,
-        ImportStatsCollector $collector,
-        ?\Closure $onVerbose = null,
-    ): void {
-        foreach ($dbMap as $partnerNumber => $partner) {
-            if (!isset($csvMap[$partnerNumber])) {
-                $collector->plannedActions[] = [
-                    'action' => 'SOFT-DELETE',
-                    'partnerNumber' => $partnerNumber,
-                    'title' => $partner->getTitle(),
-                ];
-                $onVerbose?->__invoke(sprintf('SOFT-DELETE #%d %s', $partnerNumber, $partner->getTitle()));
+        if (SyncMode::Full === $config->syncMode) {
+            foreach ($dbMap as $partnerNumber => $partner) {
+                if (!isset($csvMap[$partnerNumber])) {
+                    $onProgress?->__invoke('delete_advance', 0);
+                    $collector->plannedActions[] = [
+                        'action' => 'SOFT-DELETE',
+                        'partnerNumber' => $partnerNumber,
+                        'title' => $partner->getTitle(),
+                    ];
+                    $onVerbose?->__invoke(sprintf('SOFT-DELETE #%d %s', $partnerNumber, $partner->getTitle()));
+                }
             }
         }
     }

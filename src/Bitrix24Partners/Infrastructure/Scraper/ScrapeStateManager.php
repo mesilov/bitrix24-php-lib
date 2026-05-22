@@ -91,10 +91,14 @@ class ScrapeStateManager
     private function writeState(string $outputFile): void
     {
         $this->state['updated_at'] = (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM);
-        file_put_contents(
+        $result = file_put_contents(
             $this->getStateFilePath($outputFile),
             json_encode($this->state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         );
+
+        if (false === $result) {
+            throw new \RuntimeException(sprintf('Не удалось записать state-файл: %s', $this->getStateFilePath($outputFile)));
+        }
     }
 
     /**
@@ -106,27 +110,17 @@ class ScrapeStateManager
             return [];
         }
 
-        $partnerMap = $this->readPartnerMap($outputFile);
-
-        return array_fill_keys(array_keys($partnerMap), true);
-    }
-
-    /**
-     * @return array<int, array<string, string>>
-     */
-    private function readPartnerMap(string $filePath): array
-    {
-        $reader = Reader::from($filePath);
+        $reader = Reader::from($outputFile);
         $reader->setHeaderOffset(0);
 
-        $records = [];
+        $numbers = [];
         foreach ($reader->getRecords() as $record) {
             $number = (int) ($record['bitrix24_partner_number'] ?? 0);
             if ($number > 0) {
-                $records[$number] = $record;
+                $numbers[$number] = true;
             }
         }
 
-        return $records;
+        return $numbers;
     }
 }

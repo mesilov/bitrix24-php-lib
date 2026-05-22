@@ -8,8 +8,6 @@ use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
 
 readonly class UpdateConfig
 {
-    public readonly string $baseDomain;
-
     /**
      * @param array<int> $partnerIds
      */
@@ -19,7 +17,5 @@ readonly class UpdateConfig
         public Bitrix24Zone $zone = Bitrix24Zone::RU,
         public int $delay = 2,
         public bool $insecure = false,
-    ) {
-        $this->baseDomain = $zone->getBaseDomain();
-    }
+    ) {}
 }

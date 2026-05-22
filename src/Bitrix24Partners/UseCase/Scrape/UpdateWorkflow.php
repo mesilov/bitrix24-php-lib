@@ -22,18 +22,8 @@ class UpdateWorkflow
      */
     public function run(UpdateConfig $config, ?\Closure $onProgress = null): ScrapeResult
     {
-        $csvWriter = Writer::from($config->outputFile, 'w+');
-        $csvWriter->insertOne([
-            'bitrix24_partner_number',
-            'title',
-            'site',
-            'phone',
-            'email',
-            'logo_url',
-            'detail_page_url',
-            'zone',
-            'scraped_at',
-        ]);
+        $csvWriter = $this->initCsvWriter($config);
+
         $totalProcessed = 0;
         $errors = 0;
         $this->banDetector->reset();
@@ -81,6 +71,24 @@ class UpdateWorkflow
             totalEmptyPages: $errors,
             banDetected: $banDetected,
         );
+    }
+
+    private function initCsvWriter(UpdateConfig $config): Writer
+    {
+        $csvWriter = Writer::from($config->outputFile, 'w+');
+        $csvWriter->insertOne([
+            'bitrix24_partner_number',
+            'title',
+            'site',
+            'phone',
+            'email',
+            'logo_url',
+            'detail_page_url',
+            'zone',
+            'scraped_at',
+        ]);
+
+        return $csvWriter;
     }
 
     private function writePartner(Writer $writer, PartnerData $partner): void

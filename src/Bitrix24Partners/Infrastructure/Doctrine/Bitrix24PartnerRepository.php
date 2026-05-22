@@ -59,34 +59,6 @@ class Bitrix24PartnerRepository implements Bitrix24PartnerRepositoryInterface
 
     /**
      * @throws InvalidArgumentException
-     * @throws Bitrix24PartnerNotFoundException
-     */
-    #[\Override]
-    public function delete(Uuid $uuid): void
-    {
-        $bitrix24Partner = $this->repository->find($uuid);
-
-        if (null === $bitrix24Partner) {
-            throw new Bitrix24PartnerNotFoundException(
-                sprintf('bitrix24 partner not found by id %s', $uuid->toRfc4122())
-            );
-        }
-
-        if (Bitrix24PartnerStatus::deleted !== $bitrix24Partner->getStatus()) {
-            throw new InvalidArgumentException(
-                sprintf(
-                    'you cannot delete bitrix24 partner «%s», they must be in status «deleted», current status «%s»',
-                    $bitrix24Partner->getId()->toRfc4122(),
-                    $bitrix24Partner->getStatus()->name
-                )
-            );
-        }
-
-        $this->save($bitrix24Partner);
-    }
-
-    /**
-     * @throws InvalidArgumentException
      */
     #[\Override]
     public function findByBitrix24PartnerNumber(int $bitrix24PartnerNumber): ?Bitrix24PartnerInterface

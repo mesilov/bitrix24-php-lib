@@ -60,22 +60,20 @@ class ScrapePartnersCommand extends Command
         $this->io = new SymfonyStyle($input, $output);
         $this->output = $output;
 
-        $zone = Bitrix24Zone::from($input->getOption('zone'));
-
-        $config = new ScrapeConfig(
-            zone: $zone,
-            outputFile: $input->getOption('output-file'),
-            pageDelay: (int) $input->getOption('page-delay'),
-            partnerDelay: (int) $input->getOption('partner-delay'),
-            insecure: (bool) $input->getOption('insecure'),
-            resume: (bool) $input->getOption('resume'),
-            fullRefresh: (bool) $input->getOption('full-refresh'),
-        );
+        $config = $this->resolveConfig($input);
+        if (null === $config) {
+            return Command::FAILURE;
+        }
 
         if ($this->io->isVerbose()) {
             $this->io->text(sprintf('Zone: %s', $config->zone->value));
             $this->io->text(sprintf('Base URL: %s', $config->baseUrl));
             $this->io->text(sprintf('Output file: %s', $config->outputFile));
+            $this->io->text(sprintf('Page delay: %d sec', $config->pageDelay));
+            $this->io->text(sprintf('Partner delay: %d sec', $config->partnerDelay));
+            $this->io->text(sprintf('Insecure: %s', $config->insecure ? 'yes' : 'no'));
+            $this->io->text(sprintf('Resume: %s', $config->resume ? 'yes' : 'no'));
+            $this->io->text(sprintf('Full refresh: %s', $config->fullRefresh ? 'yes' : 'no'));
         }
 
         try {
@@ -86,6 +84,45 @@ class ScrapePartnersCommand extends Command
 
             return Command::FAILURE;
         }
+    }
+
+    private function resolveConfig(InputInterface $input): ?ScrapeConfig
+    {
+        try {
+            $zone = Bitrix24Zone::from($input->getOption('zone'));
+        } catch (\ValueError) {
+            $this->io->error(sprintf(
+                'Invalid zone "%s". Allowed values: %s',
+                $input->getOption('zone'),
+                implode(', ', array_map(static fn (Bitrix24Zone $z) => $z->value, Bitrix24Zone::cases())),
+            ));
+
+            return null;
+        }
+
+        $pageDelay = (int) $input->getOption('page-delay');
+        if ($pageDelay <= 0) {
+            $this->io->error('page-delay must be greater than 0');
+
+            return null;
+        }
+
+        $partnerDelay = (int) $input->getOption('partner-delay');
+        if ($partnerDelay <= 0) {
+            $this->io->error('partner-delay must be greater than 0');
+
+            return null;
+        }
+
+        return new ScrapeConfig(
+            zone: $zone,
+            outputFile: $input->getOption('output-file'),
+            pageDelay: $pageDelay,
+            partnerDelay: $partnerDelay,
+            insecure: (bool) $input->getOption('insecure'),
+            resume: (bool) $input->getOption('resume'),
+            fullRefresh: (bool) $input->getOption('full-refresh'),
+        );
     }
 
     private function executeFullScrape(ScrapeConfig $config): int

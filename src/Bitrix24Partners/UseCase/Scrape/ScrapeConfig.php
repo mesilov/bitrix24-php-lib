@@ -10,8 +10,6 @@ readonly class ScrapeConfig
 {
     public readonly string $baseUrl;
 
-    public readonly string $baseDomain;
-
     public function __construct(
         public Bitrix24Zone $zone,
         public string $outputFile,
@@ -22,15 +20,6 @@ readonly class ScrapeConfig
         public bool $fullRefresh,
         ?string $baseUrl = null,
     ) {
-        $this->baseDomain = $zone->getBaseDomain();
-        $this->baseUrl = $baseUrl ?? $this->buildDefaultListUrl($zone);
-    }
-
-    private function buildDefaultListUrl(Bitrix24Zone $zone): string
-    {
-        return match ($zone) {
-            Bitrix24Zone::RU => 'https://www.bitrix24.ru/partners/country__19/',
-            Bitrix24Zone::KZ => 'https://www.bitrix24.kz/partners/country__36/',
-        };
+        $this->baseUrl = $baseUrl ?? $zone->getPartnerListUrl();
     }
 }

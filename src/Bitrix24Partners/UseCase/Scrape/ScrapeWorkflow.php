@@ -68,9 +68,39 @@ class ScrapeWorkflow
         ?\Closure $onProgress = null,
     ): ScrapeResult {
         $this->stateManager->initState($config->outputFile, $config->baseUrl, $lastPage);
+        $this->banDetector->reset();
+
+        $csvWriter = $this->initCsvWriter($config);
 
         $processedNumbers = $initialProcessedNumbers;
         $totalProcessed = count($processedNumbers);
+        $skippedNoDetailPage = 0;
+        $skippedPartnerNumbers = [];
+
+        $this->scrapePages(
+            $config,
+            $startPage,
+            $lastPage,
+            $csvWriter,
+            $processedNumbers,
+            $totalProcessed,
+            $skippedNoDetailPage,
+            $skippedPartnerNumbers,
+            $onProgress,
+        );
+
+        return new ScrapeResult(
+            $totalProcessed,
+            $this->banDetector->getTotalPagesProcessed(),
+            $this->banDetector->getTotalEmptyPages(),
+            $this->banDetector->isSuspicious(),
+            $skippedNoDetailPage,
+            $skippedPartnerNumbers,
+        );
+    }
+
+    private function initCsvWriter(ScrapeConfig $config): Writer
+    {
         $csvWriter = $config->resume
             ? Writer::from($config->outputFile, 'a+')
             : Writer::from($config->outputFile, 'w+');
@@ -88,11 +118,25 @@ class ScrapeWorkflow
             ]);
         }
 
-        $this->banDetector->reset();
+        return $csvWriter;
+    }
 
-        $skippedNoDetailPage = 0;
-        $skippedPartnerNumbers = [];
-
+    /**
+     * @param array<int, true>                 $processedNumbers
+     * @param array<int>                       $skippedPartnerNumbers
+     * @param null|\Closure(string, int): void $onProgress
+     */
+    private function scrapePages(
+        ScrapeConfig $config,
+        int $startPage,
+        int $lastPage,
+        Writer $csvWriter,
+        array &$processedNumbers,
+        int &$totalProcessed,
+        int &$skippedNoDetailPage,
+        array &$skippedPartnerNumbers,
+        ?\Closure $onProgress = null,
+    ): void {
         for ($page = $startPage; $page <= $lastPage; ++$page) {
             $onProgress?->__invoke('page_start', $page);
 
@@ -115,46 +159,64 @@ class ScrapeWorkflow
                 $this->banDetector->onSuccessfulPage();
             }
 
-            foreach ($partners as $partner) {
-                $partnerNumber = $partner['partner_number'];
-                $onProgress?->__invoke('partner_start', $partnerNumber);
-
-                if (isset($processedNumbers[$partnerNumber])) {
-                    $onProgress?->__invoke('partner_advance', 0);
-
-                    continue;
-                }
-
-                $this->processPartner(
-                    $partner,
-                    $config->zone,
-                    $config->insecure,
-                    $csvWriter,
-                    $processedNumbers,
-                    $totalProcessed,
-                    $skippedNoDetailPage,
-                    $skippedPartnerNumbers,
-                );
-
-                $onProgress?->__invoke('partner_advance', 0);
-                $this->stateManager->updateProgress($config->outputFile, $page);
-                sleep($config->partnerDelay);
-            }
+            $this->processPagePartners(
+                $page,
+                $partners,
+                $config,
+                $csvWriter,
+                $processedNumbers,
+                $totalProcessed,
+                $skippedNoDetailPage,
+                $skippedPartnerNumbers,
+                $onProgress,
+            );
 
             $this->stateManager->updateProgress($config->outputFile, $page);
             sleep($config->pageDelay);
         }
+    }
 
-        $banDetected = $this->banDetector->isSuspicious();
+    /**
+     * @param array<int, array{partner_number: int, title: string, detail_page_url: string, phone: string}> $partners
+     * @param array<int, true>       $processedNumbers
+     * @param array<int>             $skippedPartnerNumbers
+     */
+    private function processPagePartners(
+        int $page,
+        array $partners,
+        ScrapeConfig $config,
+        Writer $csvWriter,
+        array &$processedNumbers,
+        int &$totalProcessed,
+        int &$skippedNoDetailPage,
+        array &$skippedPartnerNumbers,
+        ?\Closure $onProgress = null,
+    ): void {
+        foreach ($partners as $partner) {
+            $partnerNumber = $partner['partner_number'];
+            $onProgress?->__invoke('partner_start', $partnerNumber);
 
-        return new ScrapeResult(
-            $totalProcessed,
-            $this->banDetector->getTotalPagesProcessed(),
-            $this->banDetector->getTotalEmptyPages(),
-            $banDetected,
-            $skippedNoDetailPage,
-            $skippedPartnerNumbers,
-        );
+            if (isset($processedNumbers[$partnerNumber])) {
+                $onProgress?->__invoke('partner_advance', 0);
+
+                continue;
+            }
+
+            $this->processPartner(
+                $partner,
+                $config->zone,
+                $config->insecure,
+                $csvWriter,
+                $processedNumbers,
+                $totalProcessed,
+                $skippedNoDetailPage,
+                $skippedPartnerNumbers,
+            );
+
+            $onProgress?->__invoke('partner_advance', 0);
+            $this->stateManager->updateProgress($config->outputFile, $page);
+            sleep($config->partnerDelay);
+        }
     }
 
     /**
