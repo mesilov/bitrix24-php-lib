@@ -92,6 +92,7 @@ class UpdatePartnersCommand extends Command
 
                 return null;
             }
+
             $partnerIds[] = (int) $part;
         }
 

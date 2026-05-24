@@ -265,12 +265,23 @@ class ImportWorkflow
 
     private function partnerHasChanges(Bitrix24PartnerInterface $partner, UpsertCommand $command): bool
     {
-        return $partner->getTitle() !== $command->title
-            || $partner->getSite() !== $command->site
-            || $partner->getEmail() !== $command->email
-            || $partner->getOpenLineId() !== $command->openLineId
-            || $partner->getExternalId() !== $command->externalId
-            || $partner->getLogoUrl() !== $command->logoUrl;
+        if ($partner->getTitle() !== $command->title) {
+            return true;
+        }
+        if ($partner->getSite() !== $command->site) {
+            return true;
+        }
+        if ($partner->getEmail() !== $command->email) {
+            return true;
+        }
+        if ($partner->getOpenLineId() !== $command->openLineId) {
+            return true;
+        }
+        if ($partner->getExternalId() !== $command->externalId) {
+            return true;
+        }
+
+        return $partner->getLogoUrl() !== $command->logoUrl;
     }
 
     private function diffFields(Bitrix24PartnerInterface $partner, UpsertCommand $command): string
