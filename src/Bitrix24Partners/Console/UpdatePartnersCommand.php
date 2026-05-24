@@ -41,7 +41,7 @@ class UpdatePartnersCommand extends Command
             ->addOption('partner-ids', null, InputOption::VALUE_REQUIRED, 'ID партнёров через запятую', '')
             ->addOption('output-file', null, InputOption::VALUE_REQUIRED, 'Путь к выходному CSV файлу', 'partners_update.csv')
             ->addOption('zone', null, InputOption::VALUE_REQUIRED, 'Зона Bitrix24 (ru, kz)', 'ru')
-            ->addOption('partner-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между партнёрами (сек)', '2')
+            ->addOption('partner-detail-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между карточками партнёров (сек)', '2')
             ->addOption('insecure', null, InputOption::VALUE_NONE, 'Отключить проверку SSL (для dev)')
         ;
     }
@@ -61,7 +61,7 @@ class UpdatePartnersCommand extends Command
             $this->io->text(sprintf('Partner IDs: %s', implode(', ', $config->partnerIds)));
             $this->io->text(sprintf('Output file: %s', $config->outputFile));
             $this->io->text(sprintf('Zone: %s', $config->zone->value));
-            $this->io->text(sprintf('Partner delay: %d sec', $config->delay));
+            $this->io->text(sprintf('Partner detail delay: %d sec', $config->partnerDetailDelay));
             $this->io->text(sprintf('Insecure: %s', $config->insecure ? 'yes' : 'no'));
         }
 
@@ -107,9 +107,9 @@ class UpdatePartnersCommand extends Command
             return null;
         }
 
-        $delay = (int) $input->getOption('partner-delay');
-        if ($delay <= 0) {
-            $this->io->error('partner-delay must be greater than 0');
+        $partnerDetailDelay = (int) $input->getOption('partner-detail-delay');
+        if ($partnerDetailDelay <= 0) {
+            $this->io->error('partner-detail-delay must be greater than 0');
 
             return null;
         }
@@ -118,7 +118,7 @@ class UpdatePartnersCommand extends Command
             partnerIds: $partnerIds,
             outputFile: $input->getOption('output-file'),
             zone: $zone,
-            delay: $delay,
+            partnerDetailDelay: $partnerDetailDelay,
             insecure: (bool) $input->getOption('insecure'),
         );
     }

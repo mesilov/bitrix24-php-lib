@@ -80,11 +80,17 @@ readonly class PartnerHtmlParser
     {
         try {
             $titleNode = $crawler
-                ->filter('div.bx-partner-detail-breadcrumbs div.bx-partner-detail-breadcrumbs-item')
+                ->filter('h1.header-content-area-content__title')
                 ->first()
             ;
             if ($titleNode->count() > 0) {
-                return $this->cleanText($titleNode->text());
+                $text = $this->cleanText($titleNode->text());
+                $separator = ' - ';
+                if (str_contains($text, $separator)) {
+                    return trim(substr($text, strrpos($text, $separator) + strlen($separator)));
+                }
+
+                return $text;
             }
         } catch (\Throwable $throwable) {
             $this->logger->warning(sprintf('Ошибка парсинга title: %s', $throwable->getMessage()));

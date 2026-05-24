@@ -15,7 +15,7 @@ readonly class UpdateConfig
         public array $partnerIds,
         public string $outputFile,
         public Bitrix24Zone $zone = Bitrix24Zone::RU,
-        public int $delay = 2,
+        public int $partnerDetailDelay = 2,
         public bool $insecure = false,
     ) {}
 }

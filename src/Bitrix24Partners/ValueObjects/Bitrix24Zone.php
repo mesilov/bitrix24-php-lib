@@ -21,7 +21,7 @@ enum Bitrix24Zone: string
     {
         return match ($this) {
             self::RU => 'https://www.bitrix24.ru/partners/country__19/',
-            self::KZ => 'https://www.bitrix24.kz/partners/country_22/',
+            self::KZ => 'https://www.bitrix24.kz/partners/country__22/',
         };
     }
 }

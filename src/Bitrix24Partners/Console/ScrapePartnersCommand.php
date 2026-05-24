@@ -25,9 +25,9 @@ class ScrapePartnersCommand extends Command
 {
     private const string DEFAULT_OUTPUT_FILE = 'partners.csv';
 
-    private const int DEFAULT_PAGE_DELAY = 2;
+    private const int DEFAULT_CATALOG_PAGE_DELAY = 2;
 
-    private const int DEFAULT_PARTNER_DELAY = 2;
+    private const int DEFAULT_PARTNER_DETAIL_DELAY = 2;
 
     private SymfonyStyle $io;
 
@@ -46,8 +46,8 @@ class ScrapePartnersCommand extends Command
         $this
             ->addOption('zone', null, InputOption::VALUE_REQUIRED, 'Зона Bitrix24 (ru, kz)', 'ru')
             ->addOption('output-file', null, InputOption::VALUE_REQUIRED, 'Путь к выходному CSV файлу', self::DEFAULT_OUTPUT_FILE)
-            ->addOption('page-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между страницами (сек)', (string) self::DEFAULT_PAGE_DELAY)
-            ->addOption('partner-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между партнёрами (сек)', (string) self::DEFAULT_PARTNER_DELAY)
+            ->addOption('catalog-page-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между страницами каталога (сек)', (string) self::DEFAULT_CATALOG_PAGE_DELAY)
+            ->addOption('partner-detail-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между карточками партнёров (сек)', (string) self::DEFAULT_PARTNER_DETAIL_DELAY)
             ->addOption('insecure', null, InputOption::VALUE_NONE, 'Отключить проверку SSL (для dev)')
             ->addOption('resume', null, InputOption::VALUE_NONE, 'Продолжить с места обрыва (из state-файла)')
             ->addOption('full-refresh', null, InputOption::VALUE_NONE, 'Перечитать всех с сайта → перезаписать CSV')
@@ -69,8 +69,8 @@ class ScrapePartnersCommand extends Command
             $this->io->text(sprintf('Zone: %s', $config->zone->value));
             $this->io->text(sprintf('Base URL: %s', $config->baseUrl));
             $this->io->text(sprintf('Output file: %s', $config->outputFile));
-            $this->io->text(sprintf('Page delay: %d sec', $config->pageDelay));
-            $this->io->text(sprintf('Partner delay: %d sec', $config->partnerDelay));
+            $this->io->text(sprintf('Catalog page delay: %d sec', $config->catalogPageDelay));
+            $this->io->text(sprintf('Partner detail delay: %d sec', $config->partnerDetailDelay));
             $this->io->text(sprintf('Insecure: %s', $config->insecure ? 'yes' : 'no'));
             $this->io->text(sprintf('Resume: %s', $config->resume ? 'yes' : 'no'));
             $this->io->text(sprintf('Full refresh: %s', $config->fullRefresh ? 'yes' : 'no'));
@@ -100,16 +100,16 @@ class ScrapePartnersCommand extends Command
             return null;
         }
 
-        $pageDelay = (int) $input->getOption('page-delay');
-        if ($pageDelay <= 0) {
-            $this->io->error('page-delay must be greater than 0');
+        $catalogPageDelay = (int) $input->getOption('catalog-page-delay');
+        if ($catalogPageDelay <= 0) {
+            $this->io->error('catalog-page-delay must be greater than 0');
 
             return null;
         }
 
-        $partnerDelay = (int) $input->getOption('partner-delay');
-        if ($partnerDelay <= 0) {
-            $this->io->error('partner-delay must be greater than 0');
+        $partnerDetailDelay = (int) $input->getOption('partner-detail-delay');
+        if ($partnerDetailDelay <= 0) {
+            $this->io->error('partner-detail-delay must be greater than 0');
 
             return null;
         }
@@ -117,8 +117,8 @@ class ScrapePartnersCommand extends Command
         return new ScrapeConfig(
             zone: $zone,
             outputFile: $input->getOption('output-file'),
-            pageDelay: $pageDelay,
-            partnerDelay: $partnerDelay,
+            catalogPageDelay: $catalogPageDelay,
+            partnerDetailDelay: $partnerDetailDelay,
             insecure: (bool) $input->getOption('insecure'),
             resume: (bool) $input->getOption('resume'),
             fullRefresh: (bool) $input->getOption('full-refresh'),
@@ -215,7 +215,7 @@ class ScrapePartnersCommand extends Command
 
         if ($result->banDetected) {
             $this->io->warning(sprintf(
-                'Парсинг прерван. Обработано партнёров: %d | Пустых страниц: %d из %d. Возможно, доступ заблокирован — увеличьте задержки (--partner-delay, --page-delay) и попробуйте позже.',
+                'Парсинг прерван. Обработано партнёров: %d | Пустых страниц: %d из %d. Возможно, доступ заблокирован — увеличьте задержки (--partner-detail-delay, --catalog-page-delay) и попробуйте позже.',
                 $result->totalProcessed,
                 $result->totalEmptyPages,
                 $result->totalPagesProcessed

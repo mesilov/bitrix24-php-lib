@@ -60,7 +60,7 @@ class UpdateWorkflow
             }
 
             $onProgress?->__invoke('partner_advance', 0);
-            sleep($config->delay);
+            sleep($config->partnerDetailDelay);
         }
 
         $banDetected = $this->banDetector->isSuspicious();

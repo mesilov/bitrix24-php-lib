@@ -172,14 +172,14 @@ class ScrapeWorkflow
             );
 
             $this->stateManager->updateProgress($config->outputFile, $page);
-            sleep($config->pageDelay);
+            sleep($config->catalogPageDelay);
         }
     }
 
     /**
      * @param array<int, array{partner_number: int, title: string, detail_page_url: string, phone: string}> $partners
-     * @param array<int, true>       $processedNumbers
-     * @param array<int>             $skippedPartnerNumbers
+     * @param array<int, true>                                                                              $processedNumbers
+     * @param array<int>                                                                                    $skippedPartnerNumbers
      */
     private function processPagePartners(
         int $page,
@@ -215,7 +215,7 @@ class ScrapeWorkflow
 
             $onProgress?->__invoke('partner_advance', 0);
             $this->stateManager->updateProgress($config->outputFile, $page);
-            sleep($config->partnerDelay);
+            sleep($config->partnerDetailDelay);
         }
     }
 

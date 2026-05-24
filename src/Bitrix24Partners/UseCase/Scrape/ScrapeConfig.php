@@ -13,8 +13,8 @@ readonly class ScrapeConfig
     public function __construct(
         public Bitrix24Zone $zone,
         public string $outputFile,
-        public int $pageDelay,
-        public int $partnerDelay,
+        public int $catalogPageDelay,
+        public int $partnerDetailDelay,
         public bool $insecure,
         public bool $resume,
         public bool $fullRefresh,
