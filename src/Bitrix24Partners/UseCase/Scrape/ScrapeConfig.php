@@ -10,6 +10,9 @@ readonly class ScrapeConfig
 {
     public readonly string $baseUrl;
 
+    /**
+     * @param null|array<int> $partnerIds
+     */
     public function __construct(
         public Bitrix24Zone $zone,
         public string $outputFile,
@@ -18,8 +21,14 @@ readonly class ScrapeConfig
         public bool $insecure,
         public bool $resume,
         public bool $fullRefresh,
+        public ?array $partnerIds = null,
         ?string $baseUrl = null,
     ) {
         $this->baseUrl = $baseUrl ?? $zone->getPartnerListUrl();
+    }
+
+    public function isUpdateMode(): bool
+    {
+        return null !== $this->partnerIds && [] !== $this->partnerIds;
     }
 }

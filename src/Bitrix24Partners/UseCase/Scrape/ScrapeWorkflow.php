@@ -57,6 +57,60 @@ class ScrapeWorkflow
     }
 
     /**
+     * @param null|\Closure(string, int): void $onProgress
+     */
+    public function runUpdate(ScrapeConfig $config, ?\Closure $onProgress = null): ScrapeResult
+    {
+        $csvWriter = $this->initCsvWriter($config);
+
+        $totalProcessed = 0;
+        $errors = 0;
+        $this->banDetector->reset();
+
+        foreach ($config->partnerIds as $partnerId) {
+            $onProgress?->__invoke('partner_start', $partnerId);
+
+            try {
+                $partnerData = $this->scraper->fetchPartnerData(
+                    $partnerId,
+                    $config->zone,
+                    $config->insecure,
+                );
+
+                if (null === $partnerData) {
+                    $this->logger->warning(sprintf('Партнёр #%d: детальная страница недоступна', $partnerId));
+                    ++$errors;
+
+                    if ($this->banDetector->onEmptyPage()) {
+                        break;
+                    }
+                } else {
+                    $this->writePartner($csvWriter, $partnerData);
+                    ++$totalProcessed;
+                    $this->banDetector->onSuccessfulPage();
+                }
+            } catch (\Throwable $e) {
+                $this->logger->warning(sprintf('Ошибка обновления партнёра #%d: %s', $partnerId, $e->getMessage()));
+                ++$errors;
+
+                if ($this->banDetector->onEmptyPage()) {
+                    break;
+                }
+            }
+
+            $onProgress?->__invoke('partner_advance', 0);
+            sleep($config->partnerDetailDelay);
+        }
+
+        return new ScrapeResult(
+            totalProcessed: $totalProcessed,
+            totalPagesProcessed: $this->banDetector->getTotalPagesProcessed(),
+            totalEmptyPages: $errors,
+            banDetected: $this->banDetector->isSuspicious(),
+        );
+    }
+
+    /**
      * @param array<int, true>                 $initialProcessedNumbers
      * @param null|\Closure(string, int): void $onProgress
      */
