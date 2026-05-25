@@ -115,13 +115,13 @@ test-run-functional: debug-print-env
 	docker compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
 
 test-run-partners:
-	docker compose run --rm php-cli php bin/console partners:scrape -v --zone=kz --output-file=partners_kz.csv --catalog-page-delay=1 --partner-detail-delay=1 --insecure
+	docker compose run --rm php-cli php bin/console partners:scrape -v --full-refresh --base-url=https://www.bitrix24.kz/partners/country__22/ --output-file=partners_kz.csv --page-delay=0 --partner-delay=1
 
 test-run-update-partners:
-	docker compose run --rm php-cli php bin/console partners:update -v --partner-ids=16592200,12438716 --zone=kz  --partner-detail-delay=1
+	docker compose run --rm php-cli php bin/console partners:update -v --partner-ids=15549800,1351003 --base-domain=https://www.bitrix24.kz  --partner-delay=1
 
 test-run-partners-import:
-	docker compose run --rm php-cli php bin/console bitrix24:partners:import partners_update.csv --sync-mode=partial
+	docker compose run --rm php-cli php bin/console bitrix24:partners:import partners_ru.csv --skip-errors
 
 # Run one functional test with debugger
 run-one-functional-test: debug-print-env

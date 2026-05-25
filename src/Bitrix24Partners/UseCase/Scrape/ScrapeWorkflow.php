@@ -23,12 +23,12 @@ class ScrapeWorkflow
     /**
      * @param null|\Closure(string): void $onVerbose
      *
-     * @return null|array{startPage: int, lastPage: int, processedNumbers: array<int, true>, partnersPerPage: int}
+     * @return null|array{startPage: int, lastPage: int, processedNumbers: array<int, true>, partnersPerPage: int, outputFile: string}
      */
     public function resolveStartContext(ScrapeConfig $config, ?\Closure $onVerbose = null): ?array
     {
         if ($config->resume) {
-            $resumeState = $this->stateManager->resume($config->outputFile);
+            $resumeState = $this->stateManager->resume($config->outputDir);
             if (null === $resumeState) {
                 return null;
             }
@@ -38,6 +38,7 @@ class ScrapeWorkflow
                 'lastPage' => $resumeState['lastPage'],
                 'processedNumbers' => $resumeState['processedNumbers'],
                 'partnersPerPage' => 12,
+                'outputFile' => $resumeState['outputFile'],
             ];
         }
 
@@ -48,12 +49,13 @@ class ScrapeWorkflow
             'lastPage' => $range['lastPage'],
             'processedNumbers' => [],
             'partnersPerPage' => $range['partnersPerPage'],
+            'outputFile' => $config->outputFile,
         ];
     }
 
-    public function complete(string $outputFile): void
+    public function complete(string $outputDir): void
     {
-        $this->stateManager->complete($outputFile);
+        $this->stateManager->complete($outputDir);
     }
 
     /**
@@ -121,7 +123,7 @@ class ScrapeWorkflow
         array $initialProcessedNumbers,
         ?\Closure $onProgress = null,
     ): ScrapeResult {
-        $this->stateManager->initState($config->outputFile, $config->baseUrl, $lastPage);
+        $this->stateManager->initState($config->outputDir, $config->outputFile, $config->baseUrl, $lastPage);
         $this->banDetector->reset();
 
         $csvWriter = $this->initCsvWriter($config);
@@ -225,7 +227,7 @@ class ScrapeWorkflow
                 $onProgress,
             );
 
-            $this->stateManager->updateProgress($config->outputFile, $page);
+            $this->stateManager->updateProgress($config->outputDir, $page);
             sleep($config->catalogPageDelay);
         }
     }
@@ -268,7 +270,7 @@ class ScrapeWorkflow
             );
 
             $onProgress?->__invoke('partner_advance', 0);
-            $this->stateManager->updateProgress($config->outputFile, $page);
+            $this->stateManager->updateProgress($config->outputDir, $page);
             sleep($config->partnerDetailDelay);
         }
     }

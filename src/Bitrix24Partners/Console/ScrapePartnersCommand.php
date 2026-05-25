@@ -23,7 +23,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ScrapePartnersCommand extends Command
 {
-    private const string DEFAULT_OUTPUT_FILE = 'partners.csv';
+    private const string DEFAULT_OUTPUT_DIR = 'var/scraper';
 
     private const int DEFAULT_CATALOG_PAGE_DELAY = 2;
 
@@ -45,13 +45,12 @@ class ScrapePartnersCommand extends Command
     {
         $this
             ->addOption('zone', null, InputOption::VALUE_REQUIRED, 'Зона Bitrix24 (ru, kz)', 'ru')
-            ->addOption('output-file', null, InputOption::VALUE_REQUIRED, 'Путь к выходному CSV файлу', self::DEFAULT_OUTPUT_FILE)
+            ->addOption('output-dir', null, InputOption::VALUE_REQUIRED, 'Путь к папке для CSV файлов', self::DEFAULT_OUTPUT_DIR)
             ->addOption('catalog-page-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между страницами каталога (сек)', (string) self::DEFAULT_CATALOG_PAGE_DELAY)
             ->addOption('partner-detail-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между карточками партнёров (сек)', (string) self::DEFAULT_PARTNER_DETAIL_DELAY)
             ->addOption('insecure', null, InputOption::VALUE_NONE, 'Отключить проверку SSL (для dev)')
             ->addOption('partner-ids', null, InputOption::VALUE_REQUIRED, 'ID партнёров через запятую (режим обновления)', '')
-            ->addOption('resume', null, InputOption::VALUE_NONE, 'Продолжить с места обрыва (из state-файла)')
-            ->addOption('full-refresh', null, InputOption::VALUE_NONE, 'Перечитать всех с сайта → перезаписать CSV')
+            ->addOption('resume', null, InputOption::VALUE_NONE, 'Продолжить с места обрыва (из state.json)')
         ;
     }
 
@@ -69,6 +68,7 @@ class ScrapePartnersCommand extends Command
         if ($this->io->isVerbose()) {
             $this->io->text(sprintf('Zone: %s', $config->zone->value));
             $this->io->text(sprintf('Base URL: %s', $config->baseUrl));
+            $this->io->text(sprintf('Output dir: %s', $config->outputDir));
             $this->io->text(sprintf('Output file: %s', $config->outputFile));
             $this->io->text(sprintf('Partner detail delay: %d sec', $config->partnerDetailDelay));
             $this->io->text(sprintf('Insecure: %s', $config->insecure ? 'yes' : 'no'));
@@ -78,7 +78,6 @@ class ScrapePartnersCommand extends Command
             } else {
                 $this->io->text(sprintf('Catalog page delay: %d sec', $config->catalogPageDelay));
                 $this->io->text(sprintf('Resume: %s', $config->resume ? 'yes' : 'no'));
-                $this->io->text(sprintf('Full refresh: %s', $config->fullRefresh ? 'yes' : 'no'));
             }
         }
 
@@ -140,14 +139,22 @@ class ScrapePartnersCommand extends Command
             return null;
         }
 
+        $outputDir = $input->getOption('output-dir');
+        if (!is_dir($outputDir)) {
+            if (!mkdir($outputDir, 0755, true) && !is_dir($outputDir)) {
+                $this->io->error(sprintf('Не удалось создать директорию: %s', $outputDir));
+
+                return null;
+            }
+        }
+
         return new ScrapeConfig(
             zone: $zone,
-            outputFile: $input->getOption('output-file'),
+            outputDir: $outputDir,
             catalogPageDelay: $catalogPageDelay,
             partnerDetailDelay: $partnerDetailDelay,
             insecure: (bool) $input->getOption('insecure'),
             resume: (bool) $input->getOption('resume'),
-            fullRefresh: (bool) $input->getOption('full-refresh'),
             partnerIds: $partnerIds,
         );
     }
@@ -175,12 +182,6 @@ class ScrapePartnersCommand extends Command
 
     private function executeFullScrape(ScrapeConfig $config): int
     {
-        if (!$config->resume && !$config->fullRefresh && file_exists($config->outputFile)) {
-            $this->io->error(sprintf('Файл %s уже существует. Используйте --full-refresh для перезаписи.', $config->outputFile));
-
-            return Command::FAILURE;
-        }
-
         $onVerbose = $this->io->isVerbose()
             ? fn (string $message) => $this->io->text($message)
             : null;
@@ -196,8 +197,21 @@ class ScrapePartnersCommand extends Command
         $lastPage = $context['lastPage'];
         $processedNumbers = $context['processedNumbers'];
         $partnersPerPage = $context['partnersPerPage'];
+        $outputFile = $context['outputFile'];
 
         if ($config->resume) {
+            $resumeConfig = new ScrapeConfig(
+                zone: $config->zone,
+                outputDir: $config->outputDir,
+                catalogPageDelay: $config->catalogPageDelay,
+                partnerDetailDelay: $config->partnerDetailDelay,
+                insecure: $config->insecure,
+                resume: true,
+                partnerIds: $config->partnerIds,
+                outputFile: $outputFile,
+            );
+            $config = $resumeConfig;
+
             if ($this->io->isVerbose()) {
                 $this->io->note(sprintf(
                     'Resume: продолжаем со страницы %d из %d (уже обработано: %d)',
@@ -236,7 +250,7 @@ class ScrapePartnersCommand extends Command
             $onProgress,
         );
 
-        return $this->finishScrape($config->outputFile, $progressBar, $result);
+        return $this->finishScrape($config->outputDir, $progressBar, $result);
     }
 
     private function createScrapeProgressBar(int $total, int $alreadyProcessed): ?ProgressBar
@@ -268,7 +282,7 @@ class ScrapePartnersCommand extends Command
         return $progressBar;
     }
 
-    private function finishScrape(string $outputFile, ?ProgressBar $progressBar, ScrapeResult $result): int
+    private function finishScrape(string $outputDir, ?ProgressBar $progressBar, ScrapeResult $result): int
     {
         $progressBar?->finish();
         if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
@@ -294,7 +308,7 @@ class ScrapePartnersCommand extends Command
             return Command::FAILURE;
         }
 
-        $this->scrapeWorkflow->complete($outputFile);
+        $this->scrapeWorkflow->complete($outputDir);
 
         if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
             $this->io->success(sprintf('Парсинг завершён. Обработано партнёров: %d', $result->totalProcessed));

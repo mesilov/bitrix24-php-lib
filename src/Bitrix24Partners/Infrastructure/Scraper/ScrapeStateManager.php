@@ -11,51 +11,59 @@ class ScrapeStateManager
     private ?array $state = null;
 
     /**
-     * @return null|array{lastPage: int, startPage: int, processedNumbers: array<int, true>}
+     * @return null|array{lastPage: int, startPage: int, processedNumbers: array<int, true>, outputFile: string}
      */
-    public function resume(string $outputFile): ?array
+    public function resume(string $outputDir): ?array
     {
-        $state = $this->readStateFile($outputFile);
+        $state = $this->readStateFile($outputDir);
         if (null === $state) {
             return null;
         }
 
+        $outputFile = $state['output_dir'].'/'.$state['output_file'];
         $processedNumbers = $this->loadProcessedPartnerNumbers($outputFile);
 
         return [
             'lastPage' => $state['total_pages'],
             'startPage' => $state['last_completed_page'] + 1,
             'processedNumbers' => $processedNumbers,
+            'outputFile' => $outputFile,
         ];
     }
 
-    public function initState(string $outputFile, string $baseUrl, int $lastPage): void
+    public function initState(string $outputDir, string $outputFile, string $baseUrl, int $lastPage): void
     {
+        $statePath = $this->getStateFilePath($outputDir);
+        if (file_exists($statePath)) {
+            unlink($statePath);
+        }
+
         $this->state = [
             'mode' => 'full_scrape',
             'base_url' => $baseUrl,
             'total_pages' => $lastPage,
             'last_completed_page' => 0,
-            'output_file' => $outputFile,
+            'output_dir' => rtrim($outputDir, '/'),
+            'output_file' => basename($outputFile),
             'started_at' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
             'updated_at' => '',
         ];
-        $this->writeState($outputFile);
+        $this->writeState($outputDir);
     }
 
-    public function updateProgress(string $outputFile, int $completedPage): void
+    public function updateProgress(string $outputDir, int $completedPage): void
     {
         if (null === $this->state) {
             return;
         }
 
         $this->state['last_completed_page'] = $completedPage;
-        $this->writeState($outputFile);
+        $this->writeState($outputDir);
     }
 
-    public function complete(string $outputFile): void
+    public function complete(string $outputDir): void
     {
-        $statePath = $this->getStateFilePath($outputFile);
+        $statePath = $this->getStateFilePath($outputDir);
         if (file_exists($statePath)) {
             unlink($statePath);
         }
@@ -63,14 +71,14 @@ class ScrapeStateManager
         $this->state = null;
     }
 
-    private function getStateFilePath(string $outputFile): string
+    private function getStateFilePath(string $outputDir): string
     {
-        return $outputFile.'.state.json';
+        return rtrim($outputDir, '/').'/state.json';
     }
 
-    private function readStateFile(string $outputFile): ?array
+    private function readStateFile(string $outputDir): ?array
     {
-        $statePath = $this->getStateFilePath($outputFile);
+        $statePath = $this->getStateFilePath($outputDir);
         if (!file_exists($statePath)) {
             return null;
         }
@@ -88,16 +96,16 @@ class ScrapeStateManager
         return $data;
     }
 
-    private function writeState(string $outputFile): void
+    private function writeState(string $outputDir): void
     {
         $this->state['updated_at'] = (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM);
         $result = file_put_contents(
-            $this->getStateFilePath($outputFile),
+            $this->getStateFilePath($outputDir),
             json_encode($this->state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         );
 
         if (false === $result) {
-            throw new \RuntimeException(sprintf('Не удалось записать state-файл: %s', $this->getStateFilePath($outputFile)));
+            throw new \RuntimeException(sprintf('Не удалось записать state-файл: %s', $this->getStateFilePath($outputDir)));
         }
     }
 
