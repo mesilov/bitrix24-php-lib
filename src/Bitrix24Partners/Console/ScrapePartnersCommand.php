@@ -25,9 +25,7 @@ class ScrapePartnersCommand extends Command
 {
     private const string DEFAULT_OUTPUT_DIR = 'var/scraper';
 
-    private const int DEFAULT_CATALOG_PAGE_DELAY = 2;
-
-    private const int DEFAULT_PARTNER_DETAIL_DELAY = 2;
+    private const int DEFAULT_REQUEST_DELAY = 2;
 
     private SymfonyStyle $io;
 
@@ -46,8 +44,7 @@ class ScrapePartnersCommand extends Command
         $this
             ->addOption('zone', null, InputOption::VALUE_REQUIRED, 'Зона Bitrix24 (ru, kz)', 'ru')
             ->addOption('output-dir', null, InputOption::VALUE_REQUIRED, 'Путь к папке для CSV файлов', self::DEFAULT_OUTPUT_DIR)
-            ->addOption('catalog-page-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между страницами каталога (сек)', (string) self::DEFAULT_CATALOG_PAGE_DELAY)
-            ->addOption('partner-detail-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между карточками партнёров (сек)', (string) self::DEFAULT_PARTNER_DETAIL_DELAY)
+            ->addOption('request-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между HTTP-запросами (сек)', (string) self::DEFAULT_REQUEST_DELAY)
             ->addOption('insecure', null, InputOption::VALUE_NONE, 'Отключить проверку SSL (для dev)')
             ->addOption('partner-ids', null, InputOption::VALUE_REQUIRED, 'ID партнёров через запятую (режим обновления)', '')
             ->addOption('resume', null, InputOption::VALUE_NONE, 'Продолжить с места обрыва (из state.json)')
@@ -60,33 +57,31 @@ class ScrapePartnersCommand extends Command
         $this->io = new SymfonyStyle($input, $output);
         $this->output = $output;
 
-        $config = $this->resolveConfig($input);
-        if (null === $config) {
+        $options = $this->resolveOptions($input);
+        if (null === $options) {
             return Command::FAILURE;
         }
 
-        if ($this->io->isVerbose()) {
-            $this->io->text(sprintf('Zone: %s', $config->zone->value));
-            $this->io->text(sprintf('Base URL: %s', $config->baseUrl));
-            $this->io->text(sprintf('Output dir: %s', $config->outputDir));
-            $this->io->text(sprintf('Output file: %s', $config->outputFile));
-            $this->io->text(sprintf('Partner detail delay: %d sec', $config->partnerDetailDelay));
-            $this->io->text(sprintf('Insecure: %s', $config->insecure ? 'yes' : 'no'));
-
-            if ($config->isUpdateMode()) {
-                $this->io->text(sprintf('Partner IDs: %s', implode(', ', $config->partnerIds)));
-            } else {
-                $this->io->text(sprintf('Catalog page delay: %d sec', $config->catalogPageDelay));
-                $this->io->text(sprintf('Resume: %s', $config->resume ? 'yes' : 'no'));
-            }
-        }
+        $resume = (bool) $input->getOption('resume');
+        $isUpdateMode = null !== $options['partnerIds'] && [] !== $options['partnerIds'];
 
         try {
-            if ($config->isUpdateMode()) {
+            if ($isUpdateMode) {
+                $outputFile = ScrapeConfig::getOutputPath($options['outputDir']);
+                $config = new ScrapeConfig(
+                    zone: $options['zone'],
+                    outputDir: $options['outputDir'],
+                    requestDelay: $options['requestDelay'],
+                    insecure: $options['insecure'],
+                    resume: false,
+                    partnerIds: $options['partnerIds'],
+                    outputFile: $outputFile,
+                );
+
                 return $this->executeUpdate($config);
             }
 
-            return $this->executeFullScrape($config);
+            return $this->executeFullScrape($options, $resume);
         } catch (\Throwable $throwable) {
             $this->logger->error('Ошибка: '.$throwable->getMessage());
             $this->io->error('Ошибка: '.$throwable->getMessage());
@@ -95,7 +90,10 @@ class ScrapePartnersCommand extends Command
         }
     }
 
-    private function resolveConfig(InputInterface $input): ?ScrapeConfig
+    /**
+     * @return null|array{zone: Bitrix24Zone, outputDir: string, requestDelay: int, insecure: bool, partnerIds: null|array<int>}
+     */
+    private function resolveOptions(InputInterface $input): ?array
     {
         try {
             $zone = Bitrix24Zone::from($input->getOption('zone'));
@@ -109,9 +107,9 @@ class ScrapePartnersCommand extends Command
             return null;
         }
 
-        $partnerDetailDelay = (int) $input->getOption('partner-detail-delay');
-        if ($partnerDetailDelay <= 0) {
-            $this->io->error('partner-detail-delay must be greater than 0');
+        $requestDelay = (int) $input->getOption('request-delay');
+        if ($requestDelay <= 0) {
+            $this->io->error('request-delay must be greater than 0');
 
             return null;
         }
@@ -132,31 +130,19 @@ class ScrapePartnersCommand extends Command
             }
         }
 
-        $catalogPageDelay = (int) $input->getOption('catalog-page-delay');
-        if (null === $partnerIds && $catalogPageDelay <= 0) {
-            $this->io->error('catalog-page-delay must be greater than 0');
-
+        $outputDir = $input->getOption('output-dir');
+        if (!is_dir($outputDir) && (!mkdir($outputDir, 0755, true) && !is_dir($outputDir))) {
+            $this->io->error(sprintf('Не удалось создать директорию: %s', $outputDir));
             return null;
         }
 
-        $outputDir = $input->getOption('output-dir');
-        if (!is_dir($outputDir)) {
-            if (!mkdir($outputDir, 0755, true) && !is_dir($outputDir)) {
-                $this->io->error(sprintf('Не удалось создать директорию: %s', $outputDir));
-
-                return null;
-            }
-        }
-
-        return new ScrapeConfig(
-            zone: $zone,
-            outputDir: $outputDir,
-            catalogPageDelay: $catalogPageDelay,
-            partnerDetailDelay: $partnerDetailDelay,
-            insecure: (bool) $input->getOption('insecure'),
-            resume: (bool) $input->getOption('resume'),
-            partnerIds: $partnerIds,
-        );
+        return [
+            'zone' => $zone,
+            'outputDir' => $outputDir,
+            'requestDelay' => $requestDelay,
+            'insecure' => (bool) $input->getOption('insecure'),
+            'partnerIds' => $partnerIds,
+        ];
     }
 
     private function executeUpdate(ScrapeConfig $config): int
@@ -180,39 +166,61 @@ class ScrapePartnersCommand extends Command
         return $this->finishUpdate($progressBar, $result);
     }
 
-    private function executeFullScrape(ScrapeConfig $config): int
+    /**
+     * @param array{zone: Bitrix24Zone, outputDir: string, requestDelay: int, insecure: bool, partnerIds: null|array<int>} $options
+     */
+    private function executeFullScrape(array $options, bool $resume): int
     {
         $onVerbose = $this->io->isVerbose()
             ? fn (string $message) => $this->io->text($message)
             : null;
 
-        $context = $this->scrapeWorkflow->resolveStartContext($config, $onVerbose);
-        if (null === $context) {
-            $this->io->error('State-файл не найден. Запустите без --resume.');
+        $outputFile = null;
+        $startPage = 1;
+        $lastPage = 0;
+        $processedNumbers = [];
+        $partnersPerPage = 12;
 
-            return Command::FAILURE;
+        if ($resume) {
+                $resumeState = $this->scrapeWorkflow->resolveResumeContext($options['outputDir'], $options['zone']->value);
+            if (null === $resumeState) {
+                $this->io->error('State-файл не найден. Запустите без --resume.');
+
+                return Command::FAILURE;
+            }
+
+            $outputFile = $resumeState['outputFile'];
+            $startPage = $resumeState['startPage'];
+            $lastPage = $resumeState['lastPage'];
+            $processedNumbers = $resumeState['processedNumbers'];
+        } else {
+            $outputFile = ScrapeConfig::getOutputPath($options['outputDir']);
+
+            $range = $this->scrapeWorkflow->getPageRange($options['zone'], $options['insecure'], $onVerbose);
+            $lastPage = $range['lastPage'];
+            $partnersPerPage = $range['partnersPerPage'];
         }
 
-        $startPage = $context['startPage'];
-        $lastPage = $context['lastPage'];
-        $processedNumbers = $context['processedNumbers'];
-        $partnersPerPage = $context['partnersPerPage'];
-        $outputFile = $context['outputFile'];
+        $config = new ScrapeConfig(
+            zone: $options['zone'],
+            outputDir: $options['outputDir'],
+            requestDelay: $options['requestDelay'],
+            insecure: $options['insecure'],
+            resume: $resume,
+            partnerIds: $options['partnerIds'],
+            outputFile: $outputFile,
+        );
 
-        if ($config->resume) {
-            $resumeConfig = new ScrapeConfig(
-                zone: $config->zone,
-                outputDir: $config->outputDir,
-                catalogPageDelay: $config->catalogPageDelay,
-                partnerDetailDelay: $config->partnerDetailDelay,
-                insecure: $config->insecure,
-                resume: true,
-                partnerIds: $config->partnerIds,
-                outputFile: $outputFile,
-            );
-            $config = $resumeConfig;
+        if ($this->io->isVerbose()) {
+            $this->io->text(sprintf('Zone: %s', $config->zone->value));
+            $this->io->text(sprintf('Base URL: %s', $config->baseUrl));
+            $this->io->text(sprintf('Output dir: %s', $config->outputDir));
+            $this->io->text(sprintf('Output file: %s', $config->outputFile));
+            $this->io->text(sprintf('Request delay: %d sec', $config->requestDelay));
+            $this->io->text(sprintf('Insecure: %s', $config->insecure ? 'yes' : 'no'));
+            $this->io->text(sprintf('Resume: %s', $config->resume ? 'yes' : 'no'));
 
-            if ($this->io->isVerbose()) {
+            if ($resume) {
                 $this->io->note(sprintf(
                     'Resume: продолжаем со страницы %d из %d (уже обработано: %d)',
                     $startPage,
@@ -220,7 +228,9 @@ class ScrapePartnersCommand extends Command
                     count($processedNumbers)
                 ));
             }
-        } elseif ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+        }
+
+        if (!$resume && $this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
             $this->io->section('Определение количества страниц...');
             $this->io->success(sprintf(
                 'Найдено страниц: %d | Партнёров на странице: %d (≈%d партнёров)',
@@ -291,7 +301,7 @@ class ScrapePartnersCommand extends Command
 
         if ($result->banDetected) {
             $this->io->warning(sprintf(
-                'Парсинг прерван. Обработано партнёров: %d | Пустых страниц: %d из %d. Возможно, доступ заблокирован — увеличьте задержки (--partner-detail-delay, --catalog-page-delay) и попробуйте позже.',
+                'Парсинг прерван. Обработано партнёров: %d | Пустых страниц: %d из %d. Возможно, доступ заблокирован — увеличьте задержку (--request-delay) и попробуйте позже.',
                 $result->totalProcessed,
                 $result->totalEmptyPages,
                 $result->totalPagesProcessed

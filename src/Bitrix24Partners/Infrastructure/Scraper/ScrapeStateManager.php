@@ -11,16 +11,32 @@ class ScrapeStateManager
     private ?array $state = null;
 
     /**
-     * @return null|array{lastPage: int, startPage: int, processedNumbers: array<int, true>, outputFile: string}
+     * @return null|array{lastPage: int, startPage: int, processedNumbers: array<int, true>, outputFile: string, zone: string}
      */
-    public function resume(string $outputDir): ?array
+    public function resume(string $outputDir, string $zone): ?array
     {
         $state = $this->readStateFile($outputDir);
         if (null === $state) {
             return null;
         }
 
-        $outputFile = $state['output_dir'].'/'.$state['output_file'];
+        if (rtrim($outputDir, '/') !== $state['output_dir']) {
+            throw new \RuntimeException(sprintf(
+                'output-dir не совпадает: запрошен "%s", ожидается "%s"',
+                rtrim($outputDir, '/'),
+                $state['output_dir'],
+            ));
+        }
+
+        if ($zone !== $state['zone']) {
+            throw new \RuntimeException(sprintf(
+                'zone не совпадает: запрошена "%s", ожидается "%s"',
+                $zone,
+                $state['zone'],
+            ));
+        }
+
+        $outputFile = $state['output_file'];
         $processedNumbers = $this->loadProcessedPartnerNumbers($outputFile);
 
         return [
@@ -28,10 +44,11 @@ class ScrapeStateManager
             'startPage' => $state['last_completed_page'] + 1,
             'processedNumbers' => $processedNumbers,
             'outputFile' => $outputFile,
+            'zone' => $state['zone'],
         ];
     }
 
-    public function initState(string $outputDir, string $outputFile, string $baseUrl, int $lastPage): void
+    public function initState(string $outputDir, string $outputFile, string $baseUrl, int $lastPage, string $zone): void
     {
         $statePath = $this->getStateFilePath($outputDir);
         if (file_exists($statePath)) {
@@ -44,7 +61,8 @@ class ScrapeStateManager
             'total_pages' => $lastPage,
             'last_completed_page' => 0,
             'output_dir' => rtrim($outputDir, '/'),
-            'output_file' => basename($outputFile),
+            'output_file' => $outputFile,
+            'zone' => $zone,
             'started_at' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
             'updated_at' => '',
         ];

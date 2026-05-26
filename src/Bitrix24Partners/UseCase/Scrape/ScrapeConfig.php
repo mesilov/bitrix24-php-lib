@@ -11,24 +11,20 @@ readonly class ScrapeConfig
 {
     public readonly string $baseUrl;
 
-    public readonly string $outputFile;
-
     /**
      * @param null|array<int> $partnerIds
      */
     public function __construct(
         public Bitrix24Zone $zone,
         public string $outputDir,
-        public int $catalogPageDelay,
-        public int $partnerDetailDelay,
+        public int $requestDelay,
         public bool $insecure,
         public bool $resume,
         public ?array $partnerIds = null,
         ?string $baseUrl = null,
-        ?string $outputFile = null,
+        public ?string $outputFile = null,
     ) {
         $this->baseUrl = $baseUrl ?? $zone->getPartnerListUrl();
-        $this->outputFile = $outputFile ?? self::generateTimestampedPath($outputDir);
     }
 
     public function isUpdateMode(): bool
@@ -36,7 +32,7 @@ readonly class ScrapeConfig
         return null !== $this->partnerIds && [] !== $this->partnerIds;
     }
 
-    public static function generateTimestampedPath(string $outputDir): string
+    public static function getOutputPath(string $outputDir): string
     {
         return rtrim($outputDir, '/').'/partners-'.CarbonImmutable::now()->format('Ymd-His').'.csv';
     }

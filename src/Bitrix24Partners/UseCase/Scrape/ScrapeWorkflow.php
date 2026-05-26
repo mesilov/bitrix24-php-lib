@@ -21,35 +21,26 @@ class ScrapeWorkflow
     ) {}
 
     /**
+     * @return null|array{startPage: int, lastPage: int, processedNumbers: array<int, true>, outputFile: string, zone: string}
+     */
+    public function resolveResumeContext(string $outputDir, string $zone): ?array
+    {
+        return $this->stateManager->resume($outputDir, $zone);
+    }
+
+    /**
      * @param null|\Closure(string): void $onVerbose
      *
-     * @return null|array{startPage: int, lastPage: int, processedNumbers: array<int, true>, partnersPerPage: int, outputFile: string}
+     * @return array{lastPage: int, partnersPerPage: int}
      */
-    public function resolveStartContext(ScrapeConfig $config, ?\Closure $onVerbose = null): ?array
+    public function getPageRange(Bitrix24Zone $zone, bool $insecure, ?\Closure $onVerbose = null): array
     {
-        if ($config->resume) {
-            $resumeState = $this->stateManager->resume($config->outputDir);
-            if (null === $resumeState) {
-                return null;
-            }
-
-            return [
-                'startPage' => $resumeState['startPage'],
-                'lastPage' => $resumeState['lastPage'],
-                'processedNumbers' => $resumeState['processedNumbers'],
-                'partnersPerPage' => 12,
-                'outputFile' => $resumeState['outputFile'],
-            ];
-        }
-
-        $range = $this->scraper->getPageRange($config->baseUrl, $config->insecure, $onVerbose);
+        $baseUrl = $zone->getPartnerListUrl();
+        $range = $this->scraper->getPageRange($baseUrl, $insecure, $onVerbose);
 
         return [
-            'startPage' => 1,
             'lastPage' => $range['lastPage'],
-            'processedNumbers' => [],
             'partnersPerPage' => $range['partnersPerPage'],
-            'outputFile' => $config->outputFile,
         ];
     }
 
@@ -101,7 +92,7 @@ class ScrapeWorkflow
             }
 
             $onProgress?->__invoke('partner_advance', 0);
-            sleep($config->partnerDetailDelay);
+            sleep($config->requestDelay);
         }
 
         return new ScrapeResult(
@@ -123,7 +114,11 @@ class ScrapeWorkflow
         array $initialProcessedNumbers,
         ?\Closure $onProgress = null,
     ): ScrapeResult {
-        $this->stateManager->initState($config->outputDir, $config->outputFile, $config->baseUrl, $lastPage);
+        if (null === $config->outputFile) {
+            throw new \LogicException('outputFile must be set before running scrape.');
+        }
+
+        $this->stateManager->initState($config->outputDir, $config->outputFile, $config->baseUrl, $lastPage, $config->zone->value);
         $this->banDetector->reset();
 
         $csvWriter = $this->initCsvWriter($config);
@@ -157,6 +152,10 @@ class ScrapeWorkflow
 
     private function initCsvWriter(ScrapeConfig $config): Writer
     {
+        if (null === $config->outputFile) {
+            throw new \LogicException('outputFile must be set before initializing CSV writer.');
+        }
+
         $csvWriter = $config->resume
             ? Writer::from($config->outputFile, 'a+')
             : Writer::from($config->outputFile, 'w+');
@@ -228,7 +227,7 @@ class ScrapeWorkflow
             );
 
             $this->stateManager->updateProgress($config->outputDir, $page);
-            sleep($config->catalogPageDelay);
+            sleep($config->requestDelay);
         }
     }
 
@@ -271,7 +270,7 @@ class ScrapeWorkflow
 
             $onProgress?->__invoke('partner_advance', 0);
             $this->stateManager->updateProgress($config->outputDir, $page);
-            sleep($config->partnerDetailDelay);
+            sleep($config->requestDelay);
         }
     }
 
