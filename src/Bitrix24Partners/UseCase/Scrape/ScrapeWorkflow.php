@@ -104,14 +104,13 @@ class ScrapeWorkflow
     }
 
     /**
-     * @param array<int, true>                 $initialProcessedNumbers
      * @param null|\Closure(string, int): void $onProgress
      */
     public function run(
         ScrapeConfig $config,
         int $startPage,
         int $lastPage,
-        array $initialProcessedNumbers,
+        ScrapeProgress $progress,
         ?\Closure $onProgress = null,
     ): ScrapeResult {
         if (null === $config->outputFile) {
@@ -123,30 +122,22 @@ class ScrapeWorkflow
 
         $csvWriter = $this->initCsvWriter($config);
 
-        $processedNumbers = $initialProcessedNumbers;
-        $totalProcessed = count($processedNumbers);
-        $skippedNoDetailPage = 0;
-        $skippedPartnerNumbers = [];
-
         $this->scrapePages(
             $config,
             $startPage,
             $lastPage,
             $csvWriter,
-            $processedNumbers,
-            $totalProcessed,
-            $skippedNoDetailPage,
-            $skippedPartnerNumbers,
+            $progress,
             $onProgress,
         );
 
         return new ScrapeResult(
-            $totalProcessed,
+            $progress->totalProcessed,
             $this->banDetector->getTotalPagesProcessed(),
             $this->banDetector->getTotalEmptyPages(),
             $this->banDetector->isSuspicious(),
-            $skippedNoDetailPage,
-            $skippedPartnerNumbers,
+            $progress->skippedNoDetailPage,
+            $progress->skippedPartnerNumbers,
         );
     }
 
@@ -177,8 +168,6 @@ class ScrapeWorkflow
     }
 
     /**
-     * @param array<int, true>                 $processedNumbers
-     * @param array<int>                       $skippedPartnerNumbers
      * @param null|\Closure(string, int): void $onProgress
      */
     private function scrapePages(
@@ -186,10 +175,7 @@ class ScrapeWorkflow
         int $startPage,
         int $lastPage,
         Writer $csvWriter,
-        array &$processedNumbers,
-        int &$totalProcessed,
-        int &$skippedNoDetailPage,
-        array &$skippedPartnerNumbers,
+        ScrapeProgress $progress,
         ?\Closure $onProgress = null,
     ): void {
         for ($page = $startPage; $page <= $lastPage; ++$page) {
@@ -219,10 +205,7 @@ class ScrapeWorkflow
                 $partners,
                 $config,
                 $csvWriter,
-                $processedNumbers,
-                $totalProcessed,
-                $skippedNoDetailPage,
-                $skippedPartnerNumbers,
+                $progress,
                 $onProgress,
             );
 
@@ -233,25 +216,21 @@ class ScrapeWorkflow
 
     /**
      * @param array<int, array{partner_number: int, title: string, detail_page_url: string, phone: string}> $partners
-     * @param array<int, true>                                                                              $processedNumbers
-     * @param array<int>                                                                                    $skippedPartnerNumbers
+     * @param null|\Closure(string, int): void                                                              $onProgress
      */
     private function processPagePartners(
         int $page,
         array $partners,
         ScrapeConfig $config,
         Writer $csvWriter,
-        array &$processedNumbers,
-        int &$totalProcessed,
-        int &$skippedNoDetailPage,
-        array &$skippedPartnerNumbers,
+        ScrapeProgress $progress,
         ?\Closure $onProgress = null,
     ): void {
         foreach ($partners as $partner) {
             $partnerNumber = $partner['partner_number'];
             $onProgress?->__invoke('partner_start', $partnerNumber);
 
-            if (isset($processedNumbers[$partnerNumber])) {
+            if ($progress->isProcessed($partnerNumber)) {
                 $onProgress?->__invoke('partner_advance', 0);
 
                 continue;
@@ -262,10 +241,7 @@ class ScrapeWorkflow
                 $config->zone,
                 $config->insecure,
                 $csvWriter,
-                $processedNumbers,
-                $totalProcessed,
-                $skippedNoDetailPage,
-                $skippedPartnerNumbers,
+                $progress,
             );
 
             $onProgress?->__invoke('partner_advance', 0);
@@ -276,23 +252,18 @@ class ScrapeWorkflow
 
     /**
      * @param array{partner_number: int, title: string, detail_page_url: string, phone: string} $partner
-     * @param array<int, true>                                                                  $processedNumbers
-     * @param array<int>                                                                        $skippedPartnerNumbers
      */
     private function processPartner(
         array $partner,
         Bitrix24Zone $zone,
         bool $insecure,
         Writer $csvWriter,
-        array &$processedNumbers,
-        int &$totalProcessed,
-        int &$skippedNoDetailPage,
-        array &$skippedPartnerNumbers,
+        ScrapeProgress $progress,
     ): void {
         $partnerNumber = $partner['partner_number'];
         $title = $partner['title'];
 
-        if (isset($processedNumbers[$partnerNumber])) {
+        if ($progress->isProcessed($partnerNumber)) {
             return;
         }
 
@@ -301,11 +272,9 @@ class ScrapeWorkflow
 
             if (null !== $partnerData) {
                 $this->writePartner($csvWriter, $partnerData);
-                $processedNumbers[$partnerNumber] = true;
-                ++$totalProcessed;
+                $progress->markProcessed($partnerNumber);
             } else {
-                ++$skippedNoDetailPage;
-                $skippedPartnerNumbers[] = $partnerNumber;
+                $progress->markSkipped($partnerNumber);
                 $this->logger->warning(sprintf(
                     'Партнёр #%d (%s): детальная страница недоступна, пропускаем',
                     $partnerNumber,

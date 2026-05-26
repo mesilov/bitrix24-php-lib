@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape;
 
 use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
-use Carbon\CarbonImmutable;
 
-readonly class ScrapeConfig
+readonly class ScrapeOptions
 {
-    public readonly string $baseUrl;
-
     /**
      * @param null|array<int> $partnerIds
      */
@@ -21,14 +18,10 @@ readonly class ScrapeConfig
         public bool $insecure,
         public bool $resume,
         public ?array $partnerIds = null,
-        ?string $baseUrl = null,
-        public ?string $outputFile = null,
-    ) {
-        $this->baseUrl = $baseUrl ?? $zone->getPartnerListUrl();
-    }
+    ) {}
 
-    public static function getOutputPath(string $outputDir): string
+    public function isUpdateMode(): bool
     {
-        return rtrim($outputDir, '/').'/partners-'.CarbonImmutable::now()->format('Ymd-His').'.csv';
+        return null !== $this->partnerIds && [] !== $this->partnerIds;
     }
 }

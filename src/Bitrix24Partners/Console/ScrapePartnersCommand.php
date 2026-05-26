@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Bitrix24Partners\Console;
 
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeConfig;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeOptions;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeProgress;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeResult;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeWorkflow;
 use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
@@ -62,26 +64,23 @@ class ScrapePartnersCommand extends Command
             return Command::FAILURE;
         }
 
-        $resume = (bool) $input->getOption('resume');
-        $isUpdateMode = null !== $options['partnerIds'] && [] !== $options['partnerIds'];
-
         try {
-            if ($isUpdateMode) {
-                $outputFile = ScrapeConfig::getOutputPath($options['outputDir']);
+            if ($options->isUpdateMode()) {
+                $outputFile = ScrapeConfig::getOutputPath($options->outputDir);
                 $config = new ScrapeConfig(
-                    zone: $options['zone'],
-                    outputDir: $options['outputDir'],
-                    requestDelay: $options['requestDelay'],
-                    insecure: $options['insecure'],
+                    zone: $options->zone,
+                    outputDir: $options->outputDir,
+                    requestDelay: $options->requestDelay,
+                    insecure: $options->insecure,
                     resume: false,
-                    partnerIds: $options['partnerIds'],
+                    partnerIds: $options->partnerIds,
                     outputFile: $outputFile,
                 );
 
                 return $this->executeUpdate($config);
             }
 
-            return $this->executeFullScrape($options, $resume);
+            return $this->executeFullScrape($options);
         } catch (\Throwable $throwable) {
             $this->logger->error('Ошибка: '.$throwable->getMessage());
             $this->io->error('Ошибка: '.$throwable->getMessage());
@@ -90,10 +89,7 @@ class ScrapePartnersCommand extends Command
         }
     }
 
-    /**
-     * @return null|array{zone: Bitrix24Zone, outputDir: string, requestDelay: int, insecure: bool, partnerIds: null|array<int>}
-     */
-    private function resolveOptions(InputInterface $input): ?array
+    private function resolveOptions(InputInterface $input): ?ScrapeOptions
     {
         try {
             $zone = Bitrix24Zone::from($input->getOption('zone'));
@@ -133,16 +129,18 @@ class ScrapePartnersCommand extends Command
         $outputDir = $input->getOption('output-dir');
         if (!is_dir($outputDir) && (!mkdir($outputDir, 0755, true) && !is_dir($outputDir))) {
             $this->io->error(sprintf('Не удалось создать директорию: %s', $outputDir));
+
             return null;
         }
 
-        return [
-            'zone' => $zone,
-            'outputDir' => $outputDir,
-            'requestDelay' => $requestDelay,
-            'insecure' => (bool) $input->getOption('insecure'),
-            'partnerIds' => $partnerIds,
-        ];
+        return new ScrapeOptions(
+            zone: $zone,
+            outputDir: $outputDir,
+            requestDelay: $requestDelay,
+            insecure: (bool) $input->getOption('insecure'),
+            resume: (bool) $input->getOption('resume'),
+            partnerIds: $partnerIds,
+        );
     }
 
     private function executeUpdate(ScrapeConfig $config): int
@@ -166,10 +164,7 @@ class ScrapePartnersCommand extends Command
         return $this->finishUpdate($progressBar, $result);
     }
 
-    /**
-     * @param array{zone: Bitrix24Zone, outputDir: string, requestDelay: int, insecure: bool, partnerIds: null|array<int>} $options
-     */
-    private function executeFullScrape(array $options, bool $resume): int
+    private function executeFullScrape(ScrapeOptions $options): int
     {
         $onVerbose = $this->io->isVerbose()
             ? fn (string $message) => $this->io->text($message)
@@ -178,11 +173,11 @@ class ScrapePartnersCommand extends Command
         $outputFile = null;
         $startPage = 1;
         $lastPage = 0;
-        $processedNumbers = [];
+        $progress = new ScrapeProgress();
         $partnersPerPage = 12;
 
-        if ($resume) {
-                $resumeState = $this->scrapeWorkflow->resolveResumeContext($options['outputDir'], $options['zone']->value);
+        if ($options->resume) {
+            $resumeState = $this->scrapeWorkflow->resolveResumeContext($options->outputDir, $options->zone->value);
             if (null === $resumeState) {
                 $this->io->error('State-файл не найден. Запустите без --resume.');
 
@@ -192,22 +187,21 @@ class ScrapePartnersCommand extends Command
             $outputFile = $resumeState['outputFile'];
             $startPage = $resumeState['startPage'];
             $lastPage = $resumeState['lastPage'];
-            $processedNumbers = $resumeState['processedNumbers'];
+            $progress = new ScrapeProgress($resumeState['processedNumbers']);
         } else {
-            $outputFile = ScrapeConfig::getOutputPath($options['outputDir']);
-
-            $range = $this->scrapeWorkflow->getPageRange($options['zone'], $options['insecure'], $onVerbose);
+            $outputFile = ScrapeConfig::getOutputPath($options->outputDir);
+            $range = $this->scrapeWorkflow->getPageRange($options->zone, $options->insecure, $onVerbose);
             $lastPage = $range['lastPage'];
             $partnersPerPage = $range['partnersPerPage'];
         }
 
         $config = new ScrapeConfig(
-            zone: $options['zone'],
-            outputDir: $options['outputDir'],
-            requestDelay: $options['requestDelay'],
-            insecure: $options['insecure'],
-            resume: $resume,
-            partnerIds: $options['partnerIds'],
+            zone: $options->zone,
+            outputDir: $options->outputDir,
+            requestDelay: $options->requestDelay,
+            insecure: $options->insecure,
+            resume: $options->resume,
+            partnerIds: $options->partnerIds,
             outputFile: $outputFile,
         );
 
@@ -220,17 +214,17 @@ class ScrapePartnersCommand extends Command
             $this->io->text(sprintf('Insecure: %s', $config->insecure ? 'yes' : 'no'));
             $this->io->text(sprintf('Resume: %s', $config->resume ? 'yes' : 'no'));
 
-            if ($resume) {
+            if ($options->resume) {
                 $this->io->note(sprintf(
                     'Resume: продолжаем со страницы %d из %d (уже обработано: %d)',
                     $startPage,
                     $lastPage,
-                    count($processedNumbers)
+                    $progress->totalProcessed
                 ));
             }
         }
 
-        if (!$resume && $this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+        if (!$options->resume && $this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
             $this->io->section('Определение количества страниц...');
             $this->io->success(sprintf(
                 'Найдено страниц: %d | Партнёров на странице: %d (≈%d партнёров)',
@@ -241,7 +235,7 @@ class ScrapePartnersCommand extends Command
             $this->io->section('Парсинг партнёров...');
         }
 
-        $progressBar = $this->createScrapeProgressBar($lastPage * $partnersPerPage, count($processedNumbers));
+        $progressBar = $this->createScrapeProgressBar($lastPage * $partnersPerPage, $progress->totalProcessed);
 
         $onProgress = function (string $event, int $value) use ($progressBar): void {
             match ($event) {
@@ -256,7 +250,7 @@ class ScrapePartnersCommand extends Command
             $config,
             $startPage,
             $lastPage,
-            $processedNumbers,
+            $progress,
             $onProgress,
         );
 

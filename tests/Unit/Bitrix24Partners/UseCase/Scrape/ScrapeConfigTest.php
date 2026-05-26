@@ -73,33 +73,4 @@ class ScrapeConfigTest extends TestCase
 
         $this->assertSame(Bitrix24Zone::RU->getPartnerListUrl(), $config->baseUrl);
     }
-
-    #[Test]
-    public function isUpdateModeReturnsTrueWithPartnerIds(): void
-    {
-        $config = new ScrapeConfig(
-            zone: Bitrix24Zone::RU,
-            outputDir: '/tmp/test',
-            requestDelay: 2,
-            insecure: false,
-            resume: false,
-            partnerIds: [1, 2, 3],
-        );
-
-        $this->assertTrue($config->isUpdateMode());
-    }
-
-    #[Test]
-    public function isUpdateModeReturnsFalseWithoutPartnerIds(): void
-    {
-        $config = new ScrapeConfig(
-            zone: Bitrix24Zone::RU,
-            outputDir: '/tmp/test',
-            requestDelay: 2,
-            insecure: false,
-            resume: false,
-        );
-
-        $this->assertFalse($config->isUpdateMode());
-    }
 }
