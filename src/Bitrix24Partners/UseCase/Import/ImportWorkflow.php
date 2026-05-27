@@ -61,7 +61,7 @@ class ImportWorkflow
             return new ImportResult(0, 0, 0, 0, 0, $config->dryRun);
         }
 
-        $collector = new ImportStatsCollector();
+        $collector = new ImportStats();
         $this->registerListeners($collector);
 
         try {
@@ -92,7 +92,7 @@ class ImportWorkflow
         array $csvMap,
         array $dbMap,
         ImportConfig $config,
-        ImportStatsCollector $collector,
+        ImportStats $collector,
         ?\Closure $onProgress = null,
         ?\Closure $onVerbose = null,
     ): void {
@@ -136,7 +136,7 @@ class ImportWorkflow
      * @param array<int, array<string, string>>    $csvMap
      * @param array<int, Bitrix24PartnerInterface> $dbMap
      */
-    private function planDryRun(array $csvMap, array $dbMap, ImportConfig $config, ImportStatsCollector $collector, ?\Closure $onProgress = null, ?\Closure $onVerbose = null): void
+    private function planDryRun(array $csvMap, array $dbMap, ImportConfig $config, ImportStats $collector, ?\Closure $onProgress = null, ?\Closure $onVerbose = null): void
     {
         foreach ($csvMap as $partnerNumber => $row) {
             $onProgress?->__invoke('row_advance', 0);
@@ -318,14 +318,14 @@ class ImportWorkflow
         return implode(', ', $diffs);
     }
 
-    private function registerListeners(ImportStatsCollector $collector): void
+    private function registerListeners(ImportStats $collector): void
     {
         foreach (self::LISTENER_MAP as $eventClass => $method) {
             $this->eventDispatcher->addListener($eventClass, [$collector, $method]);
         }
     }
 
-    private function unregisterListeners(ImportStatsCollector $collector): void
+    private function unregisterListeners(ImportStats $collector): void
     {
         foreach (self::LISTENER_MAP as $eventClass => $method) {
             $this->eventDispatcher->removeListener($eventClass, [$collector, $method]);

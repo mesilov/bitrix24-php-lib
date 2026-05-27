@@ -24,6 +24,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ImportPartnersCsvCommand extends Command
 {
+    private const string DEFAULT_SCRAPER_DIR = 'var/scraper';
+
     private ?SymfonyStyle $io = null;
 
     private ?OutputInterface $output = null;
@@ -97,6 +99,10 @@ class ImportPartnersCsvCommand extends Command
     private function resolveConfig(InputInterface $input): ?ImportConfig
     {
         $file = $input->getArgument('file');
+
+        if (!str_contains($file, '/')) {
+            $file = self::DEFAULT_SCRAPER_DIR.'/'.$file;
+        }
 
         if (!file_exists($file)) {
             $this->io->error(sprintf('File not found: %s', $file));

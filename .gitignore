@@ -8,3 +8,4 @@ composer.lock
 *.log
 .env.local
 *.cache
+opencode.json

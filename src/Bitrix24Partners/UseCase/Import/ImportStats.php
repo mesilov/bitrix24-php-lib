@@ -15,7 +15,7 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerSi
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerTitleChangedEvent;
 use Symfony\Component\Uid\Uuid;
 
-class ImportStatsCollector
+class ImportStats
 {
     public int $created = 0;
 
