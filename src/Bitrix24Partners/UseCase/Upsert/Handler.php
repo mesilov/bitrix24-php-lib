@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Upsert;
 
 use Bitrix24\Lib\Bitrix24Partners\Entity\Bitrix24Partner;
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerRepository;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Entity\Bitrix24PartnerInterface;
-use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Repository\Bitrix24PartnerRepositoryInterface;
+use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Entity\Bitrix24PartnerStatus;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use libphonenumber\PhoneNumber;
@@ -18,7 +19,7 @@ use Symfony\Component\Uid\Uuid;
 readonly class Handler
 {
     public function __construct(
-        private Bitrix24PartnerRepositoryInterface $bitrix24PartnerRepository,
+        private Bitrix24PartnerRepository $bitrix24PartnerRepository,
         private Flusher $flusher,
         private PhoneNumberUtil $phoneNumberUtil,
         private LoggerInterface $logger
@@ -32,7 +33,10 @@ readonly class Handler
 
         try {
             /** @var AggregateRootEventsEmitterInterface|Bitrix24PartnerInterface $existingPartner */
-            $existingPartner = $this->bitrix24PartnerRepository->findByBitrix24PartnerNumber($command->bitrix24PartnerNumber);
+            $existingPartner = $this->bitrix24PartnerRepository->findByBitrix24PartnerNumber(
+                $command->bitrix24PartnerNumber,
+                withDeleted: true
+            );
 
             if (null !== $command->phone) {
                 $this->guardMobilePhoneNumber($command->phone);
@@ -40,6 +44,16 @@ readonly class Handler
 
             if (null === $existingPartner) {
                 $this->create($command);
+
+                return;
+            }
+
+            if (Bitrix24PartnerStatus::deleted === $existingPartner->getStatus()) {
+                $this->logger->warning('Bitrix24Partners.Upsert.skipped', [
+                    'partner_id' => $existingPartner->getId()->toRfc4122(),
+                    'bitrix24_partner_id' => $command->bitrix24PartnerNumber,
+                    'reason' => 'partner is deleted',
+                ]);
 
                 return;
             }
