@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Upsert;
+namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Import;
 
 use libphonenumber\PhoneNumber;
 
@@ -14,8 +14,6 @@ readonly class Command
         public ?string $site = null,
         public ?PhoneNumber $phone = null,
         public ?string $email = null,
-        public ?string $openLineId = null,
-        public ?string $externalId = null,
         public ?string $logoUrl = null,
     ) {
         $this->validate();
@@ -43,14 +41,6 @@ readonly class Command
             if (false === filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
                 throw new \InvalidArgumentException(sprintf('email %s is invalid', $this->email));
             }
-        }
-
-        if (null !== $this->openLineId && '' === trim($this->openLineId)) {
-            throw new \InvalidArgumentException('openLineId must be null or non-empty string');
-        }
-
-        if (null !== $this->externalId && '' === trim($this->externalId)) {
-            throw new \InvalidArgumentException('externalId must be null or non-empty string');
         }
 
         if (null !== $this->logoUrl && '' === trim($this->logoUrl)) {

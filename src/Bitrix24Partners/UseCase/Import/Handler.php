@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Upsert;
+namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Import;
 
 use Bitrix24\Lib\Bitrix24Partners\Entity\Bitrix24Partner;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerRepository;
@@ -27,7 +27,7 @@ readonly class Handler
 
     public function handle(Command $command): void
     {
-        $this->logger->info('Bitrix24Partners.Upsert.start', [
+        $this->logger->info('Bitrix24Partners.Import.start', [
             'bitrix24_partner_id' => $command->bitrix24PartnerNumber,
         ]);
 
@@ -49,7 +49,7 @@ readonly class Handler
             }
 
             if (Bitrix24PartnerStatus::deleted === $existingPartner->getStatus()) {
-                $this->logger->warning('Bitrix24Partners.Upsert.skipped', [
+                $this->logger->warning('Bitrix24Partners.Import.skipped', [
                     'partner_id' => $existingPartner->getId()->toRfc4122(),
                     'bitrix24_partner_id' => $command->bitrix24PartnerNumber,
                     'reason' => 'partner is deleted',
@@ -58,11 +58,17 @@ readonly class Handler
                 return;
             }
 
-            \assert($existingPartner instanceof Bitrix24Partner);
+            if (!$existingPartner instanceof Bitrix24Partner) {
+                throw new \LogicException(sprintf(
+                    'Expected instance of %s, got %s',
+                    Bitrix24Partner::class,
+                    $existingPartner::class
+                ));
+            }
 
             $this->updateIfNeeded($command, $existingPartner);
         } finally {
-            $this->logger->info('Bitrix24Partners.Upsert.finish', [
+            $this->logger->info('Bitrix24Partners.Import.finish', [
                 'bitrix24_partner_id' => $command->bitrix24PartnerNumber,
             ]);
         }
@@ -77,15 +83,15 @@ readonly class Handler
             $command->site,
             $command->phone,
             $command->email,
-            $command->openLineId,
-            $command->externalId,
+            null,
+            null,
             $command->logoUrl
         );
 
         $this->bitrix24PartnerRepository->save($partner);
         $this->flusher->flush($partner);
 
-        $this->logger->info('Bitrix24Partners.Upsert.created', [
+        $this->logger->info('Bitrix24Partners.Import.created', [
             'partner_id' => $partner->getId()->toRfc4122(),
             'bitrix24_partner_id' => $command->bitrix24PartnerNumber,
         ]);
@@ -116,23 +122,13 @@ readonly class Handler
             $isUpdated = true;
         }
 
-        if ($command->openLineId !== $existingPartner->getOpenLineId()) {
-            $existingPartner->changeOpenLineId($command->openLineId);
-            $isUpdated = true;
-        }
-
-        if ($command->externalId !== $existingPartner->getExternalId()) {
-            $existingPartner->changeExternalId($command->externalId);
-            $isUpdated = true;
-        }
-
         if ($command->logoUrl !== $existingPartner->getLogoUrl()) {
             $existingPartner->changeLogoUrl($command->logoUrl);
             $isUpdated = true;
         }
 
         if (!$isUpdated) {
-            $this->logger->info('Bitrix24Partners.Upsert.skipped', [
+            $this->logger->info('Bitrix24Partners.Import.skipped', [
                 'partner_id' => $existingPartner->getId()->toRfc4122(),
                 'bitrix24_partner_id' => $command->bitrix24PartnerNumber,
                 'reason' => 'no changes',
@@ -144,7 +140,7 @@ readonly class Handler
         $this->bitrix24PartnerRepository->save($existingPartner);
         $this->flusher->flush($existingPartner);
 
-        $this->logger->info('Bitrix24Partners.Upsert.updated', [
+        $this->logger->info('Bitrix24Partners.Import.updated', [
             'partner_id' => $existingPartner->getId()->toRfc4122(),
             'bitrix24_partner_id' => $command->bitrix24PartnerNumber,
         ]);
@@ -175,7 +171,7 @@ readonly class Handler
     private function guardMobilePhoneNumber(PhoneNumber $phoneNumber): void
     {
         if (!$this->phoneNumberUtil->isValidNumber($phoneNumber)) {
-            $this->logger->warning('Bitrix24Partners.Upsert.InvalidMobilePhoneNumber', [
+            $this->logger->warning('Bitrix24Partners.Import.InvalidMobilePhoneNumber', [
                 'mobilePhoneNumber' => (string) $phoneNumber,
             ]);
 

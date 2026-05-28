@@ -10,6 +10,5 @@ readonly class ImportConfig
         public string $file,
         public SyncMode $syncMode = SyncMode::Full,
         public bool $dryRun = false,
-        public bool $skipErrors = false,
     ) {}
 }

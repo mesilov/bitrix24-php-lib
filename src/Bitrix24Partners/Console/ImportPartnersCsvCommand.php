@@ -59,12 +59,6 @@ class ImportPartnersCsvCommand extends Command
                 InputOption::VALUE_NONE,
                 'Show what would be done without making changes'
             )
-            ->addOption(
-                'skip-errors',
-                's',
-                InputOption::VALUE_NONE,
-                'Skip rows with errors and continue processing'
-            )
         ;
     }
 
@@ -83,7 +77,6 @@ class ImportPartnersCsvCommand extends Command
             $this->io->text(sprintf('File: %s', $config->file));
             $this->io->text(sprintf('Sync mode: %s', $config->syncMode->value));
             $this->io->text(sprintf('Dry run: %s', $config->dryRun ? 'yes' : 'no'));
-            $this->io->text(sprintf('Skip errors: %s', $config->skipErrors ? 'yes' : 'no'));
         }
 
         try {
@@ -126,7 +119,6 @@ class ImportPartnersCsvCommand extends Command
             file: $file,
             syncMode: $syncMode,
             dryRun: (bool) $input->getOption('dry-run'),
-            skipErrors: (bool) $input->getOption('skip-errors'),
         );
     }
 

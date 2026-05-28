@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Tests\Unit\Bitrix24Partners\UseCase\Upsert;
+namespace Bitrix24\Lib\Tests\Unit\Bitrix24Partners\UseCase\Import;
 
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Upsert\Command;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Import\Command;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -23,8 +23,6 @@ class CommandTest extends TestCase
         int $bitrix24PartnerNumber,
         ?string $site,
         ?string $email,
-        ?string $openLineId,
-        ?string $externalId,
         ?string $logoUrl,
         ?string $expectedException,
         ?string $expectedExceptionMessage
@@ -43,8 +41,6 @@ class CommandTest extends TestCase
             $site,
             null,
             $email,
-            $openLineId,
-            $externalId,
             $logoUrl
         );
 
@@ -53,8 +49,6 @@ class CommandTest extends TestCase
             $this->assertEquals($bitrix24PartnerNumber, $command->bitrix24PartnerNumber);
             $this->assertEquals($site, $command->site);
             $this->assertEquals($email, $command->email);
-            $this->assertEquals($openLineId, $command->openLineId);
-            $this->assertEquals($externalId, $command->externalId);
             $this->assertEquals($logoUrl, $command->logoUrl);
         }
     }
@@ -66,8 +60,6 @@ class CommandTest extends TestCase
             123,
             'https://example.com',
             'test@example.com',
-            'line-123',
-            'ext-123',
             'https://example.com/logo.png',
             null,
             null,
@@ -81,8 +73,6 @@ class CommandTest extends TestCase
             null,
             null,
             null,
-            null,
-            null,
         ];
 
         yield 'emptyTitle' => [
@@ -90,8 +80,6 @@ class CommandTest extends TestCase
             123,
             'https://example.com',
             'test@example.com',
-            'line-123',
-            'ext-123',
             'https://example.com/logo.png',
             \InvalidArgumentException::class,
             'title must be a non-empty string',
@@ -102,8 +90,6 @@ class CommandTest extends TestCase
             123,
             '',
             'test@example.com',
-            'line-123',
-            'ext-123',
             'https://example.com/logo.png',
             \InvalidArgumentException::class,
             'site must be null or non-empty string',
@@ -114,8 +100,6 @@ class CommandTest extends TestCase
             123,
             'https://example.com',
             '',
-            'line-123',
-            'ext-123',
             'https://example.com/logo.png',
             \InvalidArgumentException::class,
             'email must be null or non-empty string',
@@ -126,35 +110,9 @@ class CommandTest extends TestCase
             -1,
             'https://example.com',
             'test@example.com',
-            'line-123',
-            'ext-123',
             'https://example.com/logo.png',
             \InvalidArgumentException::class,
             'bitrix24PartnerNumber must be non-negative integer',
-        ];
-
-        yield 'emptyOpenLineId' => [
-            'Test Partner',
-            123,
-            'https://example.com',
-            'test@example.com',
-            '',
-            'ext-123',
-            'https://example.com/logo.png',
-            \InvalidArgumentException::class,
-            'openLineId must be null or non-empty string',
-        ];
-
-        yield 'emptyExternalId' => [
-            'Test Partner',
-            123,
-            'https://example.com',
-            'test@example.com',
-            'line-123',
-            '',
-            'https://example.com/logo.png',
-            \InvalidArgumentException::class,
-            'externalId must be null or non-empty string',
         ];
 
         yield 'emptyLogoUrl' => [
@@ -162,8 +120,6 @@ class CommandTest extends TestCase
             123,
             'https://example.com',
             'test@example.com',
-            'line-123',
-            'ext-123',
             '',
             \InvalidArgumentException::class,
             'logoUrl must be null or non-empty string',

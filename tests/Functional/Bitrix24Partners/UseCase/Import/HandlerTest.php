@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Tests\Functional\Bitrix24Partners\UseCase\Upsert;
+namespace Bitrix24\Lib\Tests\Functional\Bitrix24Partners\UseCase\Import;
 
 use Bitrix24\Lib\Bitrix24Partners;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerRepository;
@@ -26,12 +26,12 @@ use Symfony\Component\Stopwatch\Stopwatch;
 /**
  * @internal
  */
-#[CoversClass(Bitrix24Partners\UseCase\Upsert\Handler::class)]
+#[CoversClass(Bitrix24Partners\UseCase\Import\Handler::class)]
 class HandlerTest extends TestCase
 {
     use FunctionalTestTrait;
 
-    private Bitrix24Partners\UseCase\Upsert\Handler $handler;
+    private Bitrix24Partners\UseCase\Import\Handler $handler;
 
     private Flusher $flusher;
 
@@ -49,7 +49,7 @@ class HandlerTest extends TestCase
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $this->repository = new Bitrix24PartnerRepository($this->entityManager);
         $this->flusher = new Flusher($this->entityManager, $this->eventDispatcher);
-        $this->handler = new Bitrix24Partners\UseCase\Upsert\Handler(
+        $this->handler = new Bitrix24Partners\UseCase\Import\Handler(
             $this->repository,
             $this->flusher,
             PhoneNumberUtil::getInstance(),
@@ -66,14 +66,12 @@ class HandlerTest extends TestCase
         $email = 'new@example.com';
         $logoUrl = 'https://new.com/logo.png';
 
-        $command = new Bitrix24Partners\UseCase\Upsert\Command(
+        $command = new Bitrix24Partners\UseCase\Import\Command(
             $title,
             $partnerNumber,
             $site,
             null,
             $email,
-            null,
-            null,
             $logoUrl
         );
 
@@ -92,6 +90,8 @@ class HandlerTest extends TestCase
         $this->assertEquals($site, $created->getSite());
         $this->assertEquals($email, $created->getEmail());
         $this->assertEquals($logoUrl, $created->getLogoUrl());
+        $this->assertNull($created->getOpenLineId());
+        $this->assertNull($created->getExternalId());
     }
 
     #[Test]
@@ -116,14 +116,12 @@ class HandlerTest extends TestCase
         $this->flusher->flush($existing);
         $this->entityManager->clear();
 
-        $command = new Bitrix24Partners\UseCase\Upsert\Command(
+        $command = new Bitrix24Partners\UseCase\Import\Command(
             $title,
             $partnerNumber,
             $site,
             null,
             $email,
-            null,
-            null,
             $logoUrl
         );
 
@@ -166,14 +164,12 @@ class HandlerTest extends TestCase
         $this->flusher->flush($existing);
         $this->entityManager->clear();
 
-        $command = new Bitrix24Partners\UseCase\Upsert\Command(
+        $command = new Bitrix24Partners\UseCase\Import\Command(
             $newTitle,
             $partnerNumber,
             $site,
             null,
             $newEmail,
-            null,
-            null,
             $newLogoUrl
         );
 
@@ -190,18 +186,60 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
+    public function testImportDoesNotOverwriteOpenLineIdAndExternalId(): void
+    {
+        $partnerNumber = 3240;
+        $title = 'Hoster.KZ';
+        $openLineId = 'openline-123';
+        $externalId = 'ext-456';
+
+        $existing = (new Bitrix24PartnerBuilder())
+            ->withTitle($title)
+            ->withBitrix24PartnerNumber($partnerNumber)
+            ->withOpenLineId($openLineId)
+            ->withExternalId($externalId)
+            ->build()
+        ;
+
+        $this->repository->save($existing);
+        $this->flusher->flush($existing);
+        $this->entityManager->clear();
+
+        $command = new Bitrix24Partners\UseCase\Import\Command(
+            $title,
+            $partnerNumber,
+            null,
+            null,
+            null,
+            null
+        );
+
+        $this->handler->handle($command);
+
+        $this->entityManager->clear();
+
+        $partner = $this->repository->findByBitrix24PartnerNumber($partnerNumber);
+        $this->assertNotNull($partner);
+        $this->assertEquals($openLineId, $partner->getOpenLineId());
+        $this->assertEquals($externalId, $partner->getExternalId());
+        $this->assertEquals(
+            $existing->getUpdatedAt()->toIso8601String(),
+            $partner->getUpdatedAt()->toIso8601String(),
+            'updatedAt must not change when import does not modify any fields'
+        );
+    }
+
+    #[Test]
     public function testCreatePartnerWithInvalidPhone(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid mobile phone number.');
 
-        $command = new Bitrix24Partners\UseCase\Upsert\Command(
+        $command = new Bitrix24Partners\UseCase\Import\Command(
             'Bad Phone Partner',
             random_int(1000, 9999),
             null,
             PhoneNumberUtil::getInstance()->parse('+70000000000', 'RU'),
-            null,
-            null,
             null,
             null
         );

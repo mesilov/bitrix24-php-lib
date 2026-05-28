@@ -7,8 +7,6 @@ namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Import;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerRepository;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Delete\Command as DeleteCommand;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Delete\Handler as DeleteHandler;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Upsert\Command as UpsertCommand;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Upsert\Handler as UpsertHandler;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Entity\Bitrix24PartnerInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerDeletedEvent;
@@ -42,7 +40,7 @@ class ImportWorkflow
     ];
 
     public function __construct(
-        private readonly UpsertHandler $upsertHandler,
+        private readonly Handler $importHandler,
         private readonly DeleteHandler $deleteHandler,
         private readonly Bitrix24PartnerRepository $repository,
         private readonly PhoneNumberUtil $phoneUtil,
@@ -100,21 +98,15 @@ class ImportWorkflow
             $onProgress?->__invoke('row_advance', 0);
 
             try {
-                $upsertCommand = $this->buildUpsertCommand($row);
+                $command = $this->buildCommand($row);
             } catch (\Throwable $e) {
                 $this->logger->warning(sprintf('Ошибка в строке партнёра #%d: %s', $partnerNumber, $e->getMessage()));
                 ++$collector->errors;
 
-                if (!$config->skipErrors) {
-                    throw $e;
-                }
-
-                $onVerbose?->__invoke(sprintf('Партнёр #%d: ошибка — %s', $partnerNumber, $e->getMessage()));
-
-                continue;
+                throw $e;
             }
 
-            $this->upsertHandler->handle($upsertCommand);
+            $this->importHandler->handle($command);
             $onVerbose?->__invoke(sprintf('Партнёр #%d: обработан', $partnerNumber));
         }
 
@@ -142,7 +134,7 @@ class ImportWorkflow
             $onProgress?->__invoke('row_advance', 0);
 
             try {
-                $upsertCommand = $this->buildUpsertCommand($row);
+                $command = $this->buildCommand($row);
             } catch (\Throwable $e) {
                 ++$collector->errors;
                 $onVerbose?->__invoke(sprintf('Партнёр #%d: ошибка — %s', $partnerNumber, $e->getMessage()));
@@ -156,19 +148,19 @@ class ImportWorkflow
                 $collector->plannedActions[] = [
                     'action' => 'CREATE',
                     'partnerNumber' => $partnerNumber,
-                    'title' => $upsertCommand->title,
+                    'title' => $command->title,
                 ];
                 ++$collector->created;
-                $onVerbose?->__invoke(sprintf('CREATE #%d %s', $partnerNumber, $upsertCommand->title));
-            } elseif ($this->partnerHasChanges($existingPartner, $upsertCommand)) {
+                $onVerbose?->__invoke(sprintf('CREATE #%d %s', $partnerNumber, $command->title));
+            } elseif ($this->partnerHasChanges($existingPartner, $command)) {
                 $collector->plannedActions[] = [
                     'action' => 'UPDATE',
                     'partnerNumber' => $partnerNumber,
-                    'title' => $upsertCommand->title,
-                    'details' => $this->diffFields($existingPartner, $upsertCommand),
+                    'title' => $command->title,
+                    'details' => $this->diffFields($existingPartner, $command),
                 ];
                 ++$collector->updated;
-                $onVerbose?->__invoke(sprintf('UPDATE #%d %s (%s)', $partnerNumber, $upsertCommand->title, $this->diffFields($existingPartner, $upsertCommand)));
+                $onVerbose?->__invoke(sprintf('UPDATE #%d %s (%s)', $partnerNumber, $command->title, $this->diffFields($existingPartner, $command)));
             } else {
                 ++$collector->skipped;
             }
@@ -236,7 +228,7 @@ class ImportWorkflow
     /**
      * @param array<string, string> $row
      */
-    private function buildUpsertCommand(array $row): UpsertCommand
+    private function buildCommand(array $row): Command
     {
         $title = trim((string) ($row['title'] ?? ''));
         $bitrix24PartnerNumber = (int) ($row['bitrix24_partner_number'] ?? 0);
@@ -251,19 +243,17 @@ class ImportWorkflow
 
         $phone = $this->parsePhone($row['phone'] ?? null);
 
-        return new UpsertCommand(
+        return new Command(
             title: $title,
             bitrix24PartnerNumber: $bitrix24PartnerNumber,
             site: $this->nullableField($row['site'] ?? null),
             phone: $phone,
             email: $this->nullableField($row['email'] ?? null),
-            openLineId: $this->nullableField($row['open_line_id'] ?? null),
-            externalId: $this->nullableField($row['external_id'] ?? null),
             logoUrl: $this->nullableField($row['logo_url'] ?? null),
         );
     }
 
-    private function partnerHasChanges(Bitrix24PartnerInterface $partner, UpsertCommand $command): bool
+    private function partnerHasChanges(Bitrix24PartnerInterface $partner, Command $command): bool
     {
         if ($partner->getTitle() !== $command->title) {
             return true;
@@ -277,18 +267,10 @@ class ImportWorkflow
             return true;
         }
 
-        if ($partner->getOpenLineId() !== $command->openLineId) {
-            return true;
-        }
-
-        if ($partner->getExternalId() !== $command->externalId) {
-            return true;
-        }
-
         return $partner->getLogoUrl() !== $command->logoUrl;
     }
 
-    private function diffFields(Bitrix24PartnerInterface $partner, UpsertCommand $command): string
+    private function diffFields(Bitrix24PartnerInterface $partner, Command $command): string
     {
         $diffs = [];
         if ($partner->getTitle() !== $command->title) {
@@ -301,14 +283,6 @@ class ImportWorkflow
 
         if ($partner->getEmail() !== $command->email) {
             $diffs[] = 'email';
-        }
-
-        if ($partner->getOpenLineId() !== $command->openLineId) {
-            $diffs[] = 'openLineId';
-        }
-
-        if ($partner->getExternalId() !== $command->externalId) {
-            $diffs[] = 'externalId';
         }
 
         if ($partner->getLogoUrl() !== $command->logoUrl) {
