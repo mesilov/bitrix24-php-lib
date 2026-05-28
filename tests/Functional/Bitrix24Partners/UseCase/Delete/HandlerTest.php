@@ -60,7 +60,7 @@ class HandlerTest extends TestCase
     #[Test]
     public function testDeletePartner(): void
     {
-        $partner = (new Bitrix24PartnerBuilder())
+        $partner = new Bitrix24PartnerBuilder()
             ->withTitle('Partner for delete test')
             ->build()
         ;
@@ -89,7 +89,7 @@ class HandlerTest extends TestCase
     #[Test]
     public function testDeleteDeletedPartnerExpectException(): void
     {
-        $partner = (new Bitrix24PartnerBuilder())
+        $partner = new Bitrix24PartnerBuilder()
             ->withTitle('Active partner for delete test exception')
             ->withStatus(Bitrix24PartnerStatus::deleted)
             ->build()

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Tests\Functional\Bitrix24Partners\UseCase\MarkAsActive\MarkAsActive;
+namespace Bitrix24\Lib\Tests\Functional\Bitrix24Partners\UseCase\MarkAsActive;
 
 use Bitrix24\Lib\Bitrix24Partners;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerRepository;
@@ -59,7 +59,7 @@ class HandlerTest extends TestCase
     #[Test]
     public function testMarkAsActive(): void
     {
-        $partner = (new Bitrix24PartnerBuilder())
+        $partner = new Bitrix24PartnerBuilder()
             ->withTitle('Blocked Partner for activation test')
             ->withStatus(Bitrix24PartnerStatus::blocked)
             ->build();
@@ -86,7 +86,7 @@ class HandlerTest extends TestCase
     #[Test]
     public function testActivateActivePartnerExpectException(): void
     {
-        $partner = (new Bitrix24PartnerBuilder())
+        $partner = new Bitrix24PartnerBuilder()
             ->withTitle('Already Active Partner for activation test exception')
             ->build();
         $this->repository->save($partner);

@@ -114,7 +114,7 @@ class ScrapePartnersCommand extends Command
         $partnerIdsRaw = $input->getOption('partner-ids');
         if ('' !== $partnerIdsRaw) {
             $partnerIds = [];
-            $parts = array_map('trim', explode(',', (string) $partnerIdsRaw));
+            $parts = array_map(trim(...), explode(',', (string) $partnerIdsRaw));
             foreach ($parts as $part) {
                 if (!ctype_digit($part)) {
                     $this->io->error(sprintf('Невалидный ID партнёра: "%s". Ожидается положительное число.', $part));
@@ -167,7 +167,7 @@ class ScrapePartnersCommand extends Command
     private function executeFullScrape(ScrapeOptions $options): int
     {
         $onVerbose = $this->io->isVerbose()
-            ? fn (string $message) => $this->io->text($message)
+            ? $this->io->text(...)
             : null;
 
         $outputFile = null;

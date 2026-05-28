@@ -103,7 +103,7 @@ class HandlerTest extends TestCase
         $email = 'info@b24.kz';
         $logoUrl = 'https://b24.kz/logo.png';
 
-        $existing = (new Bitrix24PartnerBuilder())
+        $existing = new Bitrix24PartnerBuilder()
             ->withTitle($title)
             ->withBitrix24PartnerNumber($partnerNumber)
             ->withSite($site)
@@ -151,7 +151,7 @@ class HandlerTest extends TestCase
         $newEmail = 'new@b24.kz';
         $newLogoUrl = 'https://b24.kz/new-logo.png';
 
-        $existing = (new Bitrix24PartnerBuilder())
+        $existing = new Bitrix24PartnerBuilder()
             ->withTitle($title)
             ->withBitrix24PartnerNumber($partnerNumber)
             ->withSite($site)
@@ -193,7 +193,7 @@ class HandlerTest extends TestCase
         $openLineId = 'openline-123';
         $externalId = 'ext-456';
 
-        $existing = (new Bitrix24PartnerBuilder())
+        $existing = new Bitrix24PartnerBuilder()
             ->withTitle($title)
             ->withBitrix24PartnerNumber($partnerNumber)
             ->withOpenLineId($openLineId)
@@ -207,11 +207,7 @@ class HandlerTest extends TestCase
 
         $command = new Bitrix24Partners\UseCase\Import\Command(
             $title,
-            $partnerNumber,
-            null,
-            null,
-            null,
-            null
+            $partnerNumber
         );
 
         $this->handler->handle($command);
@@ -239,9 +235,7 @@ class HandlerTest extends TestCase
             'Bad Phone Partner',
             random_int(1000, 9999),
             null,
-            PhoneNumberUtil::getInstance()->parse('+70000000000', 'RU'),
-            null,
-            null
+            PhoneNumberUtil::getInstance()->parse('+70000000000', 'RU')
         );
 
         $this->handler->handle($command);

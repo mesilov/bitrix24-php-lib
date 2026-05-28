@@ -66,7 +66,6 @@ class ScrapeOptionsTest extends TestCase
             requestDelay: 2,
             insecure: false,
             resume: false,
-            partnerIds: null,
         );
 
         $this->assertFalse($options->isUpdateMode());

@@ -18,7 +18,6 @@ use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerPh
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerSiteChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerTitleChangedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Repository\Bitrix24PartnerRepositoryInterface;
-use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Doctrine\ORM\EntityManagerInterface;
 use libphonenumber\PhoneNumber;
 use libphonenumber\PhoneNumberUtil;
@@ -80,8 +79,7 @@ class HandlerTest extends TestCase
         ?string $newLogoUrl,
         array $expectedEvents
     ): void {
-
-        $partner = (new Bitrix24PartnerBuilder())
+        $partner = new Bitrix24PartnerBuilder()
             ->withTitle('Original Title')
             ->withSite('https://original.com')
             ->withPhone(PhoneNumberUtil::getInstance()->parse('+79001112233', 'RU'))
@@ -89,7 +87,8 @@ class HandlerTest extends TestCase
             ->withOpenLineId('line-orig')
             ->withExternalId('ext-orig')
             ->withLogoUrl('https://original.com/logo.png')
-            ->build();
+            ->build()
+        ;
 
         $this->repository->save($partner);
         $this->flusher->flush();
@@ -136,60 +135,6 @@ class HandlerTest extends TestCase
         $this->assertEquals($newLogoUrl, $updatedPartner->getLogoUrl());
     }
 
-    #[Test]
-    #[DataProvider('invalidUpdateDataProvider')]
-    public function testUpdatePartnerWithInvalidData(
-        ?string $newTitle,
-        ?string $newSite,
-        ?PhoneNumber $newPhone,
-        ?string $newEmail,
-        ?string $newOpenLineId,
-        ?string $newExternalId,
-        ?string $newLogoUrl,
-        string $expectedExceptionMessage
-    ): void {
-        $partner = (new Bitrix24PartnerBuilder())
-            ->withTitle('Original Title')
-            ->build();
-
-        $this->repository->save($partner);
-        $this->flusher->flush();
-        $id = $partner->getId();
-
-        $this->entityManager->clear();
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage($expectedExceptionMessage);
-
-        new Bitrix24Partners\UseCase\Update\Command(
-            $id,
-            $newTitle,
-            $newSite,
-            $newPhone,
-            $newEmail,
-            $newOpenLineId,
-            $newExternalId,
-            $newLogoUrl
-        );
-    }
-
-    public static function invalidUpdateDataProvider(): \Generator
-    {
-        yield 'empty title' => ['', null, null, null, null, null, null, 'title must be non-empty string'];
-        yield 'blank title' => ['  ', null, null, null, null, null, null, 'title must be non-empty string'];
-        yield 'empty site' => ['Valid Title', '', null, null, null, null, null, 'site must be non-empty string'];
-        yield 'blank site' => ['Valid Title', '  ', null, null, null, null, null, 'site must be non-empty string'];
-        yield 'empty email' => ['Valid Title', null, null, '', null, null, null, 'email must be non-empty string'];
-        yield 'blank email' => ['Valid Title', null, null, '  ', null, null, null, 'email must be non-empty string'];
-        yield 'invalid email' => ['Valid Title', null, null, 'invalid-email', null, null, null, 'is invalid'];
-        yield 'empty openLineId' => ['Valid Title', null, null, null, '', null, null, 'openLineId must be non-empty string'];
-        yield 'blank openLineId' => ['Valid Title', null, null, null, '  ', null, null, 'openLineId must be non-empty string'];
-        yield 'empty externalId' => ['Valid Title', null, null, null, null, '', null, 'externalId must be non-empty string'];
-        yield 'blank externalId' => ['Valid Title', null, null, null, null, '  ', null, 'externalId must be non-empty string'];
-        yield 'empty logoUrl' => ['Valid Title', null, null, null, null, null, '', 'logoUrl must be non-empty string'];
-        yield 'blank logoUrl' => ['Valid Title', null, null, null, null, null, '  ', 'logoUrl must be non-empty string'];
-    }
-
     public static function updateDataProvider(): \Generator
     {
         yield 'update all fields' => [
@@ -223,5 +168,72 @@ class HandlerTest extends TestCase
                 Bitrix24PartnerTitleChangedEvent::class,
             ],
         ];
+    }
+
+    #[Test]
+    #[DataProvider('invalidUpdateDataProvider')]
+    public function testUpdatePartnerWithInvalidData(
+        ?string $newTitle,
+        ?string $newSite,
+        ?PhoneNumber $newPhone,
+        ?string $newEmail,
+        ?string $newOpenLineId,
+        ?string $newExternalId,
+        ?string $newLogoUrl,
+        string $expectedExceptionMessage
+    ): void {
+        $partner = new Bitrix24PartnerBuilder()
+            ->withTitle('Original Title')
+            ->build()
+        ;
+
+        $this->repository->save($partner);
+        $this->flusher->flush();
+        $id = $partner->getId();
+
+        $this->entityManager->clear();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage($expectedExceptionMessage);
+
+        new Bitrix24Partners\UseCase\Update\Command(
+            $id,
+            $newTitle,
+            $newSite,
+            $newPhone,
+            $newEmail,
+            $newOpenLineId,
+            $newExternalId,
+            $newLogoUrl
+        );
+    }
+
+    public static function invalidUpdateDataProvider(): \Generator
+    {
+        yield 'empty title' => ['', null, null, null, null, null, null, 'title must be non-empty string'];
+
+        yield 'blank title' => ['  ', null, null, null, null, null, null, 'title must be non-empty string'];
+
+        yield 'empty site' => ['Valid Title', '', null, null, null, null, null, 'site must be non-empty string'];
+
+        yield 'blank site' => ['Valid Title', '  ', null, null, null, null, null, 'site must be non-empty string'];
+
+        yield 'empty email' => ['Valid Title', null, null, '', null, null, null, 'email must be non-empty string'];
+
+        yield 'blank email' => ['Valid Title', null, null, '  ', null, null, null, 'email must be non-empty string'];
+
+        yield 'invalid email' => ['Valid Title', null, null, 'invalid-email', null, null, null, 'is invalid'];
+
+        yield 'empty openLineId' => ['Valid Title', null, null, null, '', null, null, 'openLineId must be non-empty string'];
+
+        yield 'blank openLineId' => ['Valid Title', null, null, null, '  ', null, null, 'openLineId must be non-empty string'];
+
+        yield 'empty externalId' => ['Valid Title', null, null, null, null, '', null, 'externalId must be non-empty string'];
+
+        yield 'blank externalId' => ['Valid Title', null, null, null, null, '  ', null, 'externalId must be non-empty string'];
+
+        yield 'empty logoUrl' => ['Valid Title', null, null, null, null, null, '', 'logoUrl must be non-empty string'];
+
+        yield 'blank logoUrl' => ['Valid Title', null, null, null, null, null, '  ', 'logoUrl must be non-empty string'];
     }
 }

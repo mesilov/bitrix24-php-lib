@@ -9,7 +9,7 @@ use Carbon\CarbonImmutable;
 
 readonly class ScrapeConfig
 {
-    public readonly string $baseUrl;
+    public string $baseUrl;
 
     /**
      * @param null|array<int> $partnerIds

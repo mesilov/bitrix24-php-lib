@@ -6,9 +6,6 @@ namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape;
 
 class ScrapeProgress
 {
-    /** @var array<int, true> */
-    public array $processedNumbers = [];
-
     public int $totalProcessed = 0;
 
     public int $skippedNoDetailPage = 0;
@@ -17,12 +14,11 @@ class ScrapeProgress
     public array $skippedPartnerNumbers = [];
 
     /**
-     * @param array<int, true> $initialProcessedNumbers
+     * @param array<int, true> $processedNumbers
      */
-    public function __construct(array $initialProcessedNumbers = [])
+    public function __construct(public array $processedNumbers = [])
     {
-        $this->processedNumbers = $initialProcessedNumbers;
-        $this->totalProcessed = count($initialProcessedNumbers);
+        $this->totalProcessed = count($this->processedNumbers);
     }
 
     public function markProcessed(int $partnerNumber): void

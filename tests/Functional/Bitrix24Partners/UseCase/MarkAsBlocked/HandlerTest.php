@@ -60,7 +60,7 @@ class HandlerTest extends TestCase
     #[Test]
     public function testMarkAsBlocked(): void
     {
-        $partner = (new Bitrix24PartnerBuilder())
+        $partner = new Bitrix24PartnerBuilder()
             ->withTitle('Active Partner for blocking test')
             ->build();
 
@@ -88,7 +88,7 @@ class HandlerTest extends TestCase
     #[Test]
     public function testBlockDeletedPartnerExpectException(): void
     {
-        $partner = (new Bitrix24PartnerBuilder())
+        $partner = new Bitrix24PartnerBuilder()
             ->withTitle('Deleted Partner for blocking test exception')
             ->withStatus(Bitrix24PartnerStatus::deleted)
             ->build();
@@ -107,7 +107,7 @@ class HandlerTest extends TestCase
     #[Test]
     public function testBlockBlockedPartnerExpectException(): void
     {
-        $partner = (new Bitrix24PartnerBuilder())
+        $partner = new Bitrix24PartnerBuilder()
             ->withTitle('Blocked Partner for blocking test exception')
             ->withStatus(Bitrix24PartnerStatus::blocked)
             ->build();

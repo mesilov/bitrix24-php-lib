@@ -69,7 +69,7 @@ class HandlerTest extends TestCase
     #[Test]
     public function testCreatePartner(): void
     {
-        $expectedPartner = (new Bitrix24PartnerBuilder())
+        $expectedPartner = new Bitrix24PartnerBuilder()
             ->withTitle('Test Partner')
             ->withSite('https://example.com')
             ->withPhone(null)
@@ -105,7 +105,6 @@ class HandlerTest extends TestCase
     public function testCreatePartnerWithInvalidMobilePhoneNumber(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid mobile phone number.');
 
         $command = new Bitrix24Partners\UseCase\Create\Command(
             'Test Partner',

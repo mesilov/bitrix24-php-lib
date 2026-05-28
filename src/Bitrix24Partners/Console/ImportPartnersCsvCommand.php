@@ -93,7 +93,7 @@ class ImportPartnersCsvCommand extends Command
     {
         $file = $input->getArgument('file');
 
-        if (!str_contains($file, '/')) {
+        if (!str_contains((string) $file, '/')) {
             $file = self::DEFAULT_SCRAPER_DIR.'/'.$file;
         }
 
