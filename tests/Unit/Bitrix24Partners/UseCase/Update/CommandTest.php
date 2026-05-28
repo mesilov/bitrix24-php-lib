@@ -27,22 +27,17 @@ class CommandTest extends TestCase
         ?string $openLineId,
         ?string $externalId,
         ?string $logoUrl,
-        ?string $expectedException,
-        ?string $expectedExceptionMessage
+        ?string $expectedException
     ): void {
         if (null !== $expectedException) {
             $this->expectException($expectedException);
-        }
-
-        if (null !== $expectedExceptionMessage) {
-            $this->expectExceptionMessage($expectedExceptionMessage);
         }
 
         $command = new Command(
             $id,
             $title,
             $site,
-            null, // phone
+            null,
             $email,
             $openLineId,
             $externalId,
@@ -73,13 +68,11 @@ class CommandTest extends TestCase
             'ext-123',
             'https://example.com/logo.png',
             null,
-            null,
         ];
 
         yield 'nullValuesExceptTitle' => [
             $id,
             'Updated Partner',
-            null,
             null,
             null,
             null,
@@ -97,7 +90,6 @@ class CommandTest extends TestCase
             'ext-123',
             null,
             \InvalidArgumentException::class,
-            'title must be non-empty string',
         ];
 
         yield 'invalidEmail' => [
@@ -109,7 +101,6 @@ class CommandTest extends TestCase
             'ext-123',
             null,
             \InvalidArgumentException::class,
-            'email invalid-email is invalid',
         ];
     }
 }

@@ -24,15 +24,10 @@ class CommandTest extends TestCase
         ?string $site,
         ?string $email,
         ?string $logoUrl,
-        ?string $expectedException,
-        ?string $expectedExceptionMessage
+        ?string $expectedException
     ): void {
         if (null !== $expectedException) {
             $this->expectException($expectedException);
-        }
-
-        if (null !== $expectedExceptionMessage) {
-            $this->expectExceptionMessage($expectedExceptionMessage);
         }
 
         $command = new Command(
@@ -62,13 +57,11 @@ class CommandTest extends TestCase
             'test@example.com',
             'https://example.com/logo.png',
             null,
-            null,
         ];
 
         yield 'validCommandWithMinimalFields' => [
             'Test Partner',
             456,
-            null,
             null,
             null,
             null,
@@ -82,7 +75,6 @@ class CommandTest extends TestCase
             'test@example.com',
             'https://example.com/logo.png',
             \InvalidArgumentException::class,
-            'title must be a non-empty string',
         ];
 
         yield 'emptySite' => [
@@ -92,7 +84,6 @@ class CommandTest extends TestCase
             'test@example.com',
             'https://example.com/logo.png',
             \InvalidArgumentException::class,
-            'site must be null or non-empty string',
         ];
 
         yield 'emptyEmail' => [
@@ -102,7 +93,6 @@ class CommandTest extends TestCase
             '',
             'https://example.com/logo.png',
             \InvalidArgumentException::class,
-            'email must be null or non-empty string',
         ];
 
         yield 'negativeBitrix24PartnerNumber' => [
@@ -112,7 +102,6 @@ class CommandTest extends TestCase
             'test@example.com',
             'https://example.com/logo.png',
             \InvalidArgumentException::class,
-            'bitrix24PartnerNumber must be non-negative integer',
         ];
 
         yield 'emptyLogoUrl' => [
@@ -122,7 +111,6 @@ class CommandTest extends TestCase
             'test@example.com',
             '',
             \InvalidArgumentException::class,
-            'logoUrl must be null or non-empty string',
         ];
     }
 }

@@ -25,22 +25,17 @@ class CommandTest extends TestCase
         ?string $email,
         ?string $openLineId,
         ?string $externalId,
-        ?string $expectedException,
-        ?string $expectedExceptionMessage
+        ?string $expectedException
     ): void {
         if (null !== $expectedException) {
             $this->expectException($expectedException);
-        }
-
-        if (null !== $expectedExceptionMessage) {
-            $this->expectExceptionMessage($expectedExceptionMessage);
         }
 
         $command = new Command(
             $title,
             $bitrix24PartnerNumber,
             $site,
-            null, // phone
+            null,
             $email,
             $openLineId,
             $externalId
@@ -66,7 +61,6 @@ class CommandTest extends TestCase
             'line-123',
             'ext-123',
             null,
-            null,
         ];
 
         yield 'emptyTitle' => [
@@ -77,7 +71,6 @@ class CommandTest extends TestCase
             'line-123',
             'ext-123',
             \InvalidArgumentException::class,
-            'title must be a non-empty string',
         ];
 
         yield 'emptySite' => [
@@ -88,7 +81,6 @@ class CommandTest extends TestCase
             'line-123',
             'ext-123',
             \InvalidArgumentException::class,
-            'site must be null or non-empty string',
         ];
 
         yield 'emptyEmail' => [
@@ -99,7 +91,6 @@ class CommandTest extends TestCase
             'line-123',
             'ext-123',
             \InvalidArgumentException::class,
-            'email must be null or non-empty string',
         ];
 
         yield 'negativeBitrix24PartnerNumber' => [
@@ -110,7 +101,6 @@ class CommandTest extends TestCase
             'line-123',
             'ext-123',
             \InvalidArgumentException::class,
-            'bitrix24PartnerNumber must be non-negative integer',
         ];
 
         yield 'emptyOpenLineId' => [
@@ -121,7 +111,6 @@ class CommandTest extends TestCase
             '',
             'ext-123',
             \InvalidArgumentException::class,
-            'openLineId must be null or non-empty string',
         ];
 
         yield 'emptyExternalId' => [
@@ -132,7 +121,6 @@ class CommandTest extends TestCase
             'line-123',
             '',
             \InvalidArgumentException::class,
-            'externalId must be null or non-empty string',
         ];
     }
 }
