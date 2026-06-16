@@ -12,7 +12,6 @@ use Bitrix24\Lib\Tests\Functional\Bitrix24Partners\Builders\Bitrix24PartnerBuild
 use Bitrix24\Lib\Tests\Functional\FunctionalTestTrait;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Repository\Bitrix24PartnerRepositoryInterface;
-use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Doctrine\ORM\EntityManagerInterface;
 use libphonenumber\PhoneNumberUtil;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -226,18 +225,23 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    public function testCreatePartnerWithInvalidPhone(): void
+    public function testCreatePartnerWithInvalidPhoneNormalizesToNull(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid mobile phone number.');
+        $partnerNumber = random_int(1000, 9999);
 
         $command = new Bitrix24Partners\UseCase\Import\Command(
             'Bad Phone Partner',
-            random_int(1000, 9999),
+            $partnerNumber,
             null,
             PhoneNumberUtil::getInstance()->parse('+70000000000', 'RU')
         );
 
         $this->handler->handle($command);
+
+        $this->entityManager->clear();
+
+        $partner = $this->repository->findByBitrix24PartnerNumber($partnerNumber);
+        $this->assertNotNull($partner);
+        $this->assertNull($partner->getPhone());
     }
 }

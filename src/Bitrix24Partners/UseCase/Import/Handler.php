@@ -10,7 +10,6 @@ use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Entity\Bitrix24PartnerInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Entity\Bitrix24PartnerStatus;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
-use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use libphonenumber\PhoneNumber;
 use libphonenumber\PhoneNumberUtil;
 use Psr\Log\LoggerInterface;
@@ -32,18 +31,16 @@ readonly class Handler
         ]);
 
         try {
-            /** @var AggregateRootEventsEmitterInterface|Bitrix24PartnerInterface $existingPartner */
+            /** @var AggregateRootEventsEmitterInterface&Bitrix24PartnerInterface $existingPartner */
             $existingPartner = $this->bitrix24PartnerRepository->findByBitrix24PartnerNumber(
                 $command->bitrix24PartnerNumber,
                 withDeleted: true
             );
 
-            if (null !== $command->phone) {
-                $this->guardMobilePhoneNumber($command->phone);
-            }
+            $phone = $this->normalizePhone($command->phone);
 
             if (null === $existingPartner) {
-                $this->create($command);
+                $this->create($command, $phone);
 
                 return;
             }
@@ -58,15 +55,7 @@ readonly class Handler
                 return;
             }
 
-            if (!$existingPartner instanceof Bitrix24Partner) {
-                throw new \LogicException(sprintf(
-                    'Expected instance of %s, got %s',
-                    Bitrix24Partner::class,
-                    $existingPartner::class
-                ));
-            }
-
-            $this->updateIfNeeded($command, $existingPartner);
+            $this->updateIfNeeded($command, $existingPartner, $phone);
         } finally {
             $this->logger->info('Bitrix24Partners.Import.finish', [
                 'bitrix24_partner_id' => $command->bitrix24PartnerNumber,
@@ -74,14 +63,14 @@ readonly class Handler
         }
     }
 
-    private function create(Command $command): void
+    private function create(Command $command, ?PhoneNumber $phone): void
     {
         $partner = new Bitrix24Partner(
             Uuid::v7(),
             $command->title,
             $command->bitrix24PartnerNumber,
             $command->site,
-            $command->phone,
+            $phone,
             $command->email,
             null,
             null,
@@ -97,7 +86,7 @@ readonly class Handler
         ]);
     }
 
-    private function updateIfNeeded(Command $command, Bitrix24Partner $existingPartner): void
+    private function updateIfNeeded(Command $command, AggregateRootEventsEmitterInterface&Bitrix24PartnerInterface $existingPartner, ?PhoneNumber $phone): void
     {
         $isUpdated = false;
 
@@ -111,9 +100,8 @@ readonly class Handler
             $isUpdated = true;
         }
 
-        if (!$this->phonesEqual($command->phone, $existingPartner->getPhone())) {
-            $this->guardPhoneChange($command->phone, $existingPartner->getPhone());
-            $existingPartner->changePhone($command->phone);
+        if (!$this->phonesEqual($phone, $existingPartner->getPhone())) {
+            $existingPartner->changePhone($phone);
             $isUpdated = true;
         }
 
@@ -146,36 +134,29 @@ readonly class Handler
         ]);
     }
 
-    private function phonesEqual(?PhoneNumber $a, ?PhoneNumber $b): bool
+    private function phonesEqual(?PhoneNumber $newPhone, ?PhoneNumber $existingPhone): bool
     {
-        if (null === $a && null === $b) {
-            return true;
+        if (null === $newPhone || null === $existingPhone) {
+            return $newPhone === $existingPhone;
         }
 
-        if (null !== $a && null !== $b) {
-            return $a->equals($b);
-        }
-
-        return false;
+        return $newPhone->equals($existingPhone);
     }
 
-    private function guardPhoneChange(?PhoneNumber $newPhone, ?PhoneNumber $currentPhone): void
+    private function normalizePhone(?PhoneNumber $phone): ?PhoneNumber
     {
-        if (null === $newPhone || null !== $currentPhone) {
-            return;
+        if (null === $phone) {
+            return null;
         }
 
-        $this->guardMobilePhoneNumber($newPhone);
-    }
-
-    private function guardMobilePhoneNumber(PhoneNumber $phoneNumber): void
-    {
-        if (!$this->phoneNumberUtil->isValidNumber($phoneNumber)) {
-            $this->logger->warning('Bitrix24Partners.Import.InvalidMobilePhoneNumber', [
-                'mobilePhoneNumber' => (string) $phoneNumber,
+        if (!$this->phoneNumberUtil->isValidNumber($phone)) {
+            $this->logger->warning('Bitrix24Partners.Import.InvalidPhoneNumber', [
+                'phone' => (string) $phone,
             ]);
 
-            throw new InvalidArgumentException('Invalid mobile phone number.');
+            return null;
         }
+
+        return $phone;
     }
 }

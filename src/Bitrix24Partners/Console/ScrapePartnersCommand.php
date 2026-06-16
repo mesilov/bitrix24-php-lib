@@ -116,13 +116,14 @@ class ScrapePartnersCommand extends Command
             $partnerIds = [];
             $parts = array_map(trim(...), explode(',', (string) $partnerIdsRaw));
             foreach ($parts as $part) {
-                if (!ctype_digit($part)) {
+                $partnerId = (int) $part;
+                if ($partnerId <= 0 || (string) $partnerId !== $part) {
                     $this->io->error(sprintf('Невалидный ID партнёра: "%s". Ожидается положительное число.', $part));
 
                     return null;
                 }
 
-                $partnerIds[] = (int) $part;
+                $partnerIds[] = $partnerId;
             }
         }
 
