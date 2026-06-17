@@ -24,8 +24,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ImportPartnersCsvCommand extends Command
 {
-    private const string DEFAULT_SCRAPER_DIR = 'var/scraper';
-
     private ?SymfonyStyle $io = null;
 
     private ?OutputInterface $output = null;
@@ -44,7 +42,7 @@ class ImportPartnersCsvCommand extends Command
             ->addArgument(
                 'file',
                 InputArgument::REQUIRED,
-                'Path to CSV file to import'
+                'Path to CSV file (absolute or relative to project root)'
             )
             ->addOption(
                 'sync-mode',
@@ -92,10 +90,6 @@ class ImportPartnersCsvCommand extends Command
     private function resolveConfig(InputInterface $input): ?ImportConfig
     {
         $file = $input->getArgument('file');
-
-        if (!str_contains((string) $file, '/')) {
-            $file = self::DEFAULT_SCRAPER_DIR.'/'.$file;
-        }
 
         if (!file_exists($file)) {
             $this->io->error(sprintf('File not found: %s', $file));

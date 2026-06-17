@@ -7,7 +7,6 @@ namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Import;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerRepository;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Delete\Command as DeleteCommand;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Delete\Handler as DeleteHandler;
-use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Entity\Bitrix24PartnerInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerDeletedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerEmailChangedEvent;
@@ -83,8 +82,8 @@ class ImportWorkflow
     }
 
     /**
-     * @param array<int, array<string, string>>    $csvMap
-     * @param array<int, Bitrix24PartnerInterface> $dbMap
+     * @param array<int, array<string, string>> $csvMap
+     * @param array<int, PartnerSyncView>       $dbMap
      */
     private function executeImport(
         array $csvMap,
@@ -115,7 +114,7 @@ class ImportWorkflow
                 if (!isset($csvMap[$partnerNumber])) {
                     $onProgress?->__invoke('delete_advance', 0);
                     $this->deleteHandler->handle(new DeleteCommand(
-                        $partner->getId(),
+                        $partner->id,
                         'soft-delete: отсутствует в CSV при полной синхронизации'
                     ));
                     $onVerbose?->__invoke(sprintf('Партнёр #%d: удалён', $partnerNumber));
@@ -125,8 +124,8 @@ class ImportWorkflow
     }
 
     /**
-     * @param array<int, array<string, string>>    $csvMap
-     * @param array<int, Bitrix24PartnerInterface> $dbMap
+     * @param array<int, array<string, string>> $csvMap
+     * @param array<int, PartnerSyncView>       $dbMap
      */
     private function planDryRun(array $csvMap, array $dbMap, ImportConfig $config, ImportStats $collector, ?\Closure $onProgress = null, ?\Closure $onVerbose = null): void
     {
@@ -173,9 +172,9 @@ class ImportWorkflow
                     $collector->plannedActions[] = [
                         'action' => 'SOFT-DELETE',
                         'partnerNumber' => $partnerNumber,
-                        'title' => $partner->getTitle(),
+                        'title' => $partner->title,
                     ];
-                    $onVerbose?->__invoke(sprintf('SOFT-DELETE #%d %s', $partnerNumber, $partner->getTitle()));
+                    $onVerbose?->__invoke(sprintf('SOFT-DELETE #%d %s', $partnerNumber, $partner->title));
                 }
             }
         }
@@ -210,16 +209,17 @@ class ImportWorkflow
     }
 
     /**
-     * @return array<int, Bitrix24PartnerInterface>
+     * @return array<int, PartnerSyncView>
      */
     private function loadDbMap(?\Closure $onVerbose = null): array
     {
-        $partners = $this->repository->findAllActive();
-        $onVerbose?->__invoke(sprintf('Загрузка из БД: %d партнёров', count($partners)));
+        $rows = $this->repository->findAllActiveAsArray();
+        $onVerbose?->__invoke(sprintf('Загрузка из БД: %d партнёров', count($rows)));
 
         $dbMap = [];
-        foreach ($partners as $partner) {
-            $dbMap[$partner->getBitrix24PartnerNumber()] = $partner;
+        foreach ($rows as $row) {
+            $view = PartnerSyncView::fromArray($row);
+            $dbMap[$view->bitrix24PartnerNumber] = $view;
         }
 
         return $dbMap;
@@ -253,39 +253,39 @@ class ImportWorkflow
         );
     }
 
-    private function partnerHasChanges(Bitrix24PartnerInterface $partner, Command $command): bool
+    private function partnerHasChanges(PartnerSyncView $partner, Command $command): bool
     {
-        if ($partner->getTitle() !== $command->title) {
+        if ($partner->title !== $command->title) {
             return true;
         }
 
-        if ($partner->getSite() !== $command->site) {
+        if ($partner->site !== $command->site) {
             return true;
         }
 
-        if ($partner->getEmail() !== $command->email) {
+        if ($partner->email !== $command->email) {
             return true;
         }
 
-        return $partner->getLogoUrl() !== $command->logoUrl;
+        return $partner->logoUrl !== $command->logoUrl;
     }
 
-    private function diffFields(Bitrix24PartnerInterface $partner, Command $command): string
+    private function diffFields(PartnerSyncView $partner, Command $command): string
     {
         $diffs = [];
-        if ($partner->getTitle() !== $command->title) {
+        if ($partner->title !== $command->title) {
             $diffs[] = 'title';
         }
 
-        if ($partner->getSite() !== $command->site) {
+        if ($partner->site !== $command->site) {
             $diffs[] = 'site';
         }
 
-        if ($partner->getEmail() !== $command->email) {
+        if ($partner->email !== $command->email) {
             $diffs[] = 'email';
         }
 
-        if ($partner->getLogoUrl() !== $command->logoUrl) {
+        if ($partner->logoUrl !== $command->logoUrl) {
             $diffs[] = 'logoUrl';
         }
 
