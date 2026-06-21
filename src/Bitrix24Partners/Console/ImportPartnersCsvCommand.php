@@ -42,7 +42,7 @@ class ImportPartnersCsvCommand extends Command
             ->addArgument(
                 'file',
                 InputArgument::REQUIRED,
-                'Path to CSV file (absolute or relative to project root)'
+                'Path to CSV file (absolute or relative to current working directory)'
             )
             ->addOption(
                 'sync-mode',
