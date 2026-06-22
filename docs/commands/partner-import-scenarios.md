@@ -35,7 +35,7 @@ CSV = патч только для указанных партнёров. Дей
 
 ```bash
 # Шаг 1: Скрейпить нужных партнёров
-php bin/console partners:scrape --partner-ids=3240,5859557
+php bin/console partners:scrape --output-dir=var/scraper --partner-ids=3240,5859557
 
 # Шаг 2: Импортировать результат (partial — не трогает остальных)
 php bin/console bitrix24:partners:import var/scraper/partners.csv --sync-mode=partial

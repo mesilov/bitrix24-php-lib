@@ -40,7 +40,7 @@ bitrix24_partner_number,title,site,phone,email,logo_url,detail_page_url,zone,scr
 
 ## Партнёры без детальной страницы
 
-Если детальная страница партнёра недоступна (нет ссылки на карточку), он пропускается — не записывается в CSV. ID пропущенных партнёров выводятся в лог. Подробнее см. [partner-scenarios.md](partner-scenarios.md).
+Если детальная страница партнёра недоступна (нет ссылки на карточку), он пропускается — не записывается в CSV. ID пропущенных партнёров выводятся в лог. Подробнее см. [partner-scraper-scenarios.md](partner-scraper-scenarios.md).
 
 ---
 

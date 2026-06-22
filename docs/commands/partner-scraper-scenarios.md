@@ -16,7 +16,7 @@
 | Опция | Описание | По умолчанию |
 |-------|----------|--------------|
 | `--zone` | Зона Bitrix24: `ru`, `kz` | `ru` |
-| `--output-dir` | Путь к директории для CSV файлов (абсолютный или относительный от корня проекта) | `var/scraper` |
+| `--output-dir` | Путь к директории для CSV файлов (абсолютный или относительный от корня проекта). **Обязательный** | — |
 | `--request-delay` | Задержка между HTTP-запросами (сек) | `2` |
 | `--partner-ids` | ID партнёров через запятую (режим обновления) | — |
 | `--resume` | Продолжить с места обрыва (из state.json) | `false` |
@@ -31,7 +31,7 @@
 Обходит все страницы каталога и скрейпит детальные карточки каждого партнёра.
 
 ```bash
-php bin/console partners:scrape
+php bin/console partners:scrape --output-dir=var/scraper
 ```
 
 ### Resume после обрыва
@@ -39,7 +39,7 @@ php bin/console partners:scrape
 При обрыве создаётся `state.json`. С `--resume` парсинг продолжится с последней обработанной страницы.
 
 ```bash
-php bin/console partners:scrape --resume
+php bin/console partners:scrape --output-dir=var/scraper --resume
 ```
 
 ### Обновление конкретных партнёров по ID
@@ -47,5 +47,5 @@ php bin/console partners:scrape --resume
 Скрейпит только указанных партнёров. Результат — отдельный CSV-файл. При импорте используйте `--sync-mode=partial` (см. [partner-import-scenarios.md](partner-import-scenarios.md)).
 
 ```bash
-php bin/console partners:scrape --partner-ids=3240,5859557
+php bin/console partners:scrape --output-dir=var/scraper --partner-ids=3240,5859557
 ```

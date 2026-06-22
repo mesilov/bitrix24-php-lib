@@ -25,8 +25,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ScrapePartnersCommand extends Command
 {
-    private const string DEFAULT_OUTPUT_DIR = 'var/scraper';
-
     private const int DEFAULT_REQUEST_DELAY = 2;
 
     private SymfonyStyle $io;
@@ -45,7 +43,7 @@ class ScrapePartnersCommand extends Command
     {
         $this
             ->addOption('zone', null, InputOption::VALUE_REQUIRED, 'Зона Bitrix24 (ru, kz)', 'ru')
-            ->addOption('output-dir', null, InputOption::VALUE_REQUIRED, 'Путь к папке для CSV файлов', self::DEFAULT_OUTPUT_DIR)
+            ->addOption('output-dir', null, InputOption::VALUE_REQUIRED, 'Путь к папке для CSV файлов (обязательный)')
             ->addOption('request-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между HTTP-запросами (сек)', (string) self::DEFAULT_REQUEST_DELAY)
             ->addOption('insecure', null, InputOption::VALUE_NONE, 'Отключить проверку SSL (для dev)')
             ->addOption('partner-ids', null, InputOption::VALUE_REQUIRED, 'ID партнёров через запятую (режим обновления)', '')
@@ -128,6 +126,12 @@ class ScrapePartnersCommand extends Command
         }
 
         $outputDir = $input->getOption('output-dir');
+        if (null === $outputDir) {
+            $this->io->error('Не указан обязательный параметр --output-dir');
+
+            return null;
+        }
+
         if (!is_dir($outputDir) && (!mkdir($outputDir, 0755, true) && !is_dir($outputDir))) {
             $this->io->error(sprintf('Не удалось создать директорию: %s', $outputDir));
 

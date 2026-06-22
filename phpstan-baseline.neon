@@ -61,12 +61,6 @@ parameters:
 			path: src/Bitrix24Partners/UseCase/Delete/Handler.php
 
 		-
-			message: '#^PHPDoc tag @var with type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Partners\\Entity\\Bitrix24PartnerInterface\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface is not subtype of native type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Partners\\Entity\\Bitrix24PartnerInterface\|null\.$#'
-			identifier: varTag.nativeType
-			count: 1
-			path: src/Bitrix24Partners/UseCase/Import/Handler.php
-
-		-
 			message: '#^PHPDoc tag @var with type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Partners\\Entity\\Bitrix24PartnerInterface\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface is not subtype of native type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Partners\\Entity\\Bitrix24PartnerInterface\.$#'
 			identifier: varTag.nativeType
 			count: 1

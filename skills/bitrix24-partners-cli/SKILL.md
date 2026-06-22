@@ -47,7 +47,7 @@ Database connection is resolved from `.env` variables (`DATABASE_HOST`, `DATABAS
 Scrapes the Bitrix24 partner directory and saves results as a CSV file.
 
 ```bash
-docker compose run --rm php-cli php bin/console partners:scrape --zone=ru
+docker compose run --rm php-cli php bin/console partners:scrape --zone=ru --output-dir=var/scraper
 ```
 
 Options:
@@ -55,12 +55,12 @@ Options:
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--zone` | `ru` | Bitrix24 zone: `ru` (Russia) or `kz` (Kazakhstan) |
-| `--output-dir` | `var/scraper` | Directory for CSV output and state files |
+| `--output-dir` | — *(required)* | Directory for CSV output and state files |
 | `--request-delay` | `2` | Delay between HTTP requests in seconds. Increase if ban detected |
 | `--insecure` | off | Disable SSL verification. Dev only, never use in production |
 | `--resume` | off | Resume scraping from the last saved state (`state.json`) |
 
-Output: `var/scraper/partners-YYYYMMDD-HHMMSS.csv`
+Output: `<output-dir>/partners-YYYYMMDD-HHMMSS.csv`
 
 The command first determines the total number of pages, then scrapes each page with a progress bar.
 
@@ -69,7 +69,7 @@ The command first determines the total number of pages, then scrapes each page w
 Scrapes only the given partner IDs and appends/updates them in the existing CSV.
 
 ```bash
-docker compose run --rm php-cli php bin/console partners:scrape --partner-ids=16592200,22521876 --zone=ru
+docker compose run --rm php-cli php bin/console partners:scrape --partner-ids=16592200,22521876 --zone=ru --output-dir=var/scraper
 ```
 
 `--partner-ids` accepts a comma-separated list of numeric partner IDs. When this option is provided, the command runs in update mode instead of a full scrape.
@@ -79,10 +79,10 @@ docker compose run --rm php-cli php bin/console partners:scrape --partner-ids=16
 If scraping was interrupted (ban, network error, manual stop), resume from the last checkpoint:
 
 ```bash
-docker compose run --rm php-cli php bin/console partners:scrape --zone=ru --resume
+docker compose run --rm php-cli php bin/console partners:scrape --zone=ru --output-dir=var/scraper --resume
 ```
 
-The resume state is stored in `var/scraper/state.json`. If the state file does not exist, the command will fail with an error — run without `--resume` to start fresh.
+The resume state is stored in `<output-dir>/state.json`. If the state file does not exist, the command will fail with an error — run without `--resume` to start fresh.
 
 ## Import: Load CSV into Database
 
@@ -115,7 +115,7 @@ The scrape → import pipeline for updating the partner database:
 **Step 1 — Scrape partners:**
 
 ```bash
-docker compose run --rm php-cli php bin/console partners:scrape --zone=ru
+docker compose run --rm php-cli php bin/console partners:scrape --zone=ru --output-dir=var/scraper
 ```
 
 Note the output CSV filename from the command output (e.g., `partners-20260527-094238.csv`).
@@ -135,7 +135,7 @@ docker compose run --rm php-cli php bin/console bitrix24:partners:import partner
 For partial updates of specific partners:
 
 ```bash
-docker compose run --rm php-cli php bin/console partners:scrape --partner-ids=12345,67890 --zone=ru
+docker compose run --rm php-cli php bin/console partners:scrape --partner-ids=12345,67890 --zone=ru --output-dir=var/scraper
 docker compose run --rm php-cli php bin/console bitrix24:partners:import partners-YYYYMMDD-HHMMSS.csv --sync-mode=partial
 ```
 
