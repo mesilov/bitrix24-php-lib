@@ -149,4 +149,18 @@ class Bitrix24PartnerRepository implements Bitrix24PartnerRepositoryInterface
             ->getArrayResult()
         ;
     }
+
+    /**
+     * @return list<Bitrix24Partner>
+     */
+    public function findAllActive(): array
+    {
+        return $this->repository
+            ->createQueryBuilder('p')
+            ->where('p.status != :status')
+            ->setParameter('status', Bitrix24PartnerStatus::deleted)
+            ->getQuery()
+            ->getResult()
+        ;
+    }
 }

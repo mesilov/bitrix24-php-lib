@@ -114,14 +114,20 @@ test-run-functional: debug-print-env
 	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:update --dump-sql
 	docker compose run --rm php-cli php vendor/bin/phpunit --testsuite=functional_tests --display-warnings --testdox
 
-test-run-partners:
-	docker compose run --rm php-cli php bin/console partners:scrape -v --zone=kz --request-delay=1
+test-run-scrape-partners:
+	docker compose run --rm php-cli php bin/console partners:scrape --output-dir=var/scraper -v
 
 test-run-update-partners:
 	docker compose run --rm php-cli php bin/console partners:scrape -v --partner-ids=16592200,22521876 --request-delay=1 --zone=kz
 
 test-run-partners-import:
 	docker compose run --rm php-cli php bin/console bitrix24:partners:import partners-20260527-094238.csv
+
+# Run repository benchmark (CSV load + findAllActiveAsArray / findAllActive)
+test-benchmark-repository: debug-print-env
+	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:drop --force
+	docker compose run --rm php-cli php bin/doctrine orm:schema-tool:create
+	docker compose run --rm php-cli php vendor/bin/phpunit --filter 'testBenchmarkFindAllActiveMethods' tests/Functional/Bitrix24Partners/Infrastructure/Doctrine/Bitrix24PartnerRepositoryBenchmarkTest.php --testdox
 
 # Run one functional test with debugger
 run-one-functional-test: debug-print-env
