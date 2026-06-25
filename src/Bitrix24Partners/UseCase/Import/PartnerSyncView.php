@@ -20,7 +20,7 @@ readonly class PartnerSyncView
     public static function fromArray(array $row): self
     {
         return new self(
-            id: Uuid::fromString($row['id']),
+            id: $row['id'],
             bitrix24PartnerNumber: $row['bitrix24PartnerNumber'],
             title: $row['title'],
             site: $row['site'],

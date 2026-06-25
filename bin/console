@@ -5,6 +5,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 (new Symfony\Component\Dotenv\Dotenv())->bootEnv(__DIR__ . '/../.env');
 
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerReadModel;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerRepository;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
@@ -47,11 +48,12 @@ $application->addCommand(new ScrapePartnersCommand($logger, $workflow));
 $entityManager = EntityManagerFactory::get();
 $eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
 $repository = new Bitrix24PartnerRepository($entityManager);
+$readModel = new Bitrix24PartnerReadModel($entityManager);
 $flusher = new Flusher($entityManager, $eventDispatcher);
 
 $importHandler = new ImportHandler($repository, $flusher, PhoneNumberUtil::getInstance(), new NullLogger());
 $deleteHandler = new DeleteHandler($repository, $flusher, new NullLogger());
-$importWorkflow = new ImportWorkflow($importHandler, $deleteHandler, $repository, PhoneNumberUtil::getInstance(), $eventDispatcher, new NullLogger());
+$importWorkflow = new ImportWorkflow($importHandler, $deleteHandler, $readModel, PhoneNumberUtil::getInstance(), $eventDispatcher, new NullLogger());
 
 $application->addCommand(new ImportPartnersCsvCommand($logger, $importWorkflow));
 

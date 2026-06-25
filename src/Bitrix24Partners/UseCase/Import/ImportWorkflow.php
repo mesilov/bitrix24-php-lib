@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Import;
 
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerRepository;
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerReadModel;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Delete\Command as DeleteCommand;
 use Bitrix24\Lib\Bitrix24Partners\UseCase\Delete\Handler as DeleteHandler;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerCreatedEvent;
@@ -41,7 +41,7 @@ class ImportWorkflow
     public function __construct(
         private readonly Handler $importHandler,
         private readonly DeleteHandler $deleteHandler,
-        private readonly Bitrix24PartnerRepository $repository,
+        private readonly Bitrix24PartnerReadModel $readModel,
         private readonly PhoneNumberUtil $phoneUtil,
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly LoggerInterface $logger,
@@ -213,7 +213,8 @@ class ImportWorkflow
      */
     private function loadDbMap(?\Closure $onVerbose = null): array
     {
-        $rows = $this->repository->findAllActiveAsArray();
+        $rows = $this->readModel->findAllActiveAsArray();
+
         $onVerbose?->__invoke(sprintf('Загрузка из БД: %d партнёров', count($rows)));
 
         $dbMap = [];
