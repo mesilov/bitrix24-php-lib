@@ -8,7 +8,7 @@ readonly class ImportResult
 {
     /**
      * @param array<int, array{action: string, partnerNumber: int, title: string, details?: string}> $plannedActions
-     * @param list<array{partnerNumber: int, error: string}>                                          $errorsDetail
+     * @param list<array{partnerNumber: int, error: string}>                                         $errorsDetail
      */
     public function __construct(
         public int $created,

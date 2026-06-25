@@ -43,7 +43,7 @@ class ImportWorkflow
      * При ~3000 партнёров в реестре 20 ≈ 0.7% — порог системного сбоя источника,
      * а не нормального шума данных (на текущем датасете реально битых строк < 10).
      */
-    private const CIRCUIT_BREAKER_ERROR_THRESHOLD = 20;
+    private const int CIRCUIT_BREAKER_ERROR_THRESHOLD = 20;
 
     public function __construct(
         private readonly Handler $importHandler,

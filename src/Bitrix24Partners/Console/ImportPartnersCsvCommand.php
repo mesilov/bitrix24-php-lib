@@ -25,7 +25,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class ImportPartnersCsvCommand extends Command
 {
     /** Сколько проваленных строк показывать в отчёте; остальные суммируются «…и ещё N». */
-    private const DISPLAY_ERROR_LIMIT = 20;
+    private const int DISPLAY_ERROR_LIMIT = 20;
 
     private ?SymfonyStyle $io = null;
 
@@ -208,11 +208,12 @@ class ImportPartnersCsvCommand extends Command
     private function printErrors(array $errorsDetail): void
     {
         $shown = 0;
-        foreach ($errorsDetail as $item) {
+        foreach ($errorsDetail as $errorDetail) {
             if ($shown >= self::DISPLAY_ERROR_LIMIT) {
                 break;
             }
-            $this->io->text(sprintf('  #%d — %s', $item['partnerNumber'], $item['error']));
+
+            $this->io->text(sprintf('  #%d — %s', $errorDetail['partnerNumber'], $errorDetail['error']));
             ++$shown;
         }
 
