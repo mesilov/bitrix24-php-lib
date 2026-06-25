@@ -27,6 +27,9 @@ class ImportStats
 
     public int $skipped = 0;
 
+    /** @var list<array{partnerNumber: int, error: string}> */
+    public array $errorsDetail = [];
+
     public array $plannedActions = [];
 
     private array $updatedPartnerIds = [];
@@ -91,6 +94,7 @@ class ImportStats
             errors: $this->errors,
             dryRun: $dryRun,
             plannedActions: $this->plannedActions,
+            errorsDetail: $this->errorsDetail,
         );
     }
 

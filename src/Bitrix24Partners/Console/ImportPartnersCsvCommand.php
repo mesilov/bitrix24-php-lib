@@ -24,6 +24,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ImportPartnersCsvCommand extends Command
 {
+    /** Сколько проваленных строк показывать в отчёте; остальные суммируются «…и ещё N». */
+    private const DISPLAY_ERROR_LIMIT = 20;
+
     private ?SymfonyStyle $io = null;
 
     private ?OutputInterface $output = null;
@@ -180,15 +183,42 @@ class ImportPartnersCsvCommand extends Command
             }
         }
 
-        $this->io->success(sprintf(
+        $summary = sprintf(
             'Created: %d | Updated: %d | Skipped: %d | Soft-deleted: %d | Errors: %d',
             $result->created,
             $result->updated,
             $result->skipped,
             $result->softDeleted,
             $result->errors,
-        ));
+        );
+
+        if ($result->errors > 0) {
+            $this->io->warning($summary);
+            $this->printErrors($result->errorsDetail);
+        } else {
+            $this->io->success($summary);
+        }
 
         return $result->errors > 0 ? Command::FAILURE : Command::SUCCESS;
+    }
+
+    /**
+     * @param list<array{partnerNumber: int, error: string}> $errorsDetail
+     */
+    private function printErrors(array $errorsDetail): void
+    {
+        $shown = 0;
+        foreach ($errorsDetail as $item) {
+            if ($shown >= self::DISPLAY_ERROR_LIMIT) {
+                break;
+            }
+            $this->io->text(sprintf('  #%d — %s', $item['partnerNumber'], $item['error']));
+            ++$shown;
+        }
+
+        $rest = count($errorsDetail) - $shown;
+        if ($rest > 0) {
+            $this->io->text(sprintf('  …и ещё %d', $rest));
+        }
     }
 }
