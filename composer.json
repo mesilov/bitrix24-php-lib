@@ -27,7 +27,6 @@
     "sort-packages": true,
     "allow-plugins": {
       "dealerdirect/phpcodesniffer-composer-installer": true,
-      "llm/skills": true,
       "php-http/discovery": true
     },
     "preferred-install": {
@@ -81,17 +80,11 @@
     "doctrine/migrations": "^3",
     "psalm/phar": "^5",
     "rector/rector": "^2",
-    "llm/skills": "^1.2",
     "roave/security-advisories": "dev-master",
     "symfony/debug-bundle": "^7",
     "symfony/stopwatch": "^7",
     "symfony/var-exporter": "^7",
     "symfony/http-kernel": "^7"
-  },
-  "extra": {
-    "skills": {
-      "source": "skills"
-    }
   },
   "suggest": {
     "php-http/guzzle7-adapter": "For Guzzle HTTP client",
