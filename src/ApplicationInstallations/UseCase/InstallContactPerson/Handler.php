@@ -37,18 +37,19 @@ readonly class Handler
         ]);
 
         $createdContactPersonId = '';
+        $mobilePhoneNumber = $command->mobilePhoneNumber;
+
+        if (null !== $mobilePhoneNumber) {
+            try {
+                $this->guardMobilePhoneNumber($mobilePhoneNumber);
+            } catch (InvalidArgumentException) {
+                // Ошибка уже залогирована внутри гарда.
+                // Отбрасываем невалидный номер: контакт создаётся без мобильного телефона.
+                $mobilePhoneNumber = null;
+            }
+        }
 
         try {
-            if (null !== $command->mobilePhoneNumber) {
-                try {
-                    $this->guardMobilePhoneNumber($command->mobilePhoneNumber);
-                } catch (InvalidArgumentException) {
-                    // Ошибка уже залогирована внутри гарда.
-                    // Прерываем создание контакта, но не останавливаем установку приложения.
-                    return;
-                }
-            }
-
             $applicationInstallation = $this->applicationInstallationRepository->getById($command->applicationInstallationId);
             assert($applicationInstallation instanceof AggregateRootEventsEmitterInterface);
 
@@ -61,7 +62,7 @@ readonly class Handler
                 $command->fullName,
                 $command->email,
                 null,
-                $command->mobilePhoneNumber,
+                $mobilePhoneNumber,
                 null,
                 $command->comment,
                 $command->externalId,
