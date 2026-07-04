@@ -40,17 +40,21 @@ readonly class Handler
         $createdContactPersonId = '';
 
         try {
+            $mobilePhoneNumber = null;
             if (null !== $command->mobilePhoneNumber) {
                 try {
                     $this->guardMobilePhoneNumber($command->mobilePhoneNumber);
+                    $mobilePhoneNumber = $command->mobilePhoneNumber;
                 } catch (InvalidArgumentException) {
-                    // Ошибка уже залогирована внутри гарда.
-                    // Прерываем создание контакта, но не останавливаем установку приложения.
-                    return;
+                    $this->logger->warning('ContactPerson.InstallContactPerson.InvalidMobilePhoneNumber', [
+                        'bitrix24UserId' => $command->bitrix24UserId,
+                    ]);
+
+                    // The error is already logged. Continuing to create a contact without a mobile phone.
                 }
             }
 
-            /** @var null|AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $applicationInstallation */
+            /** @var AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $applicationInstallation */
             $applicationInstallation = $this->applicationInstallationRepository->getById($command->applicationInstallationId);
 
             $uuidV7 = Uuid::v7();
@@ -62,7 +66,7 @@ readonly class Handler
                 $command->fullName,
                 $command->email,
                 null,
-                $command->mobilePhoneNumber,
+                $mobilePhoneNumber,
                 null,
                 $command->comment,
                 $command->externalId,

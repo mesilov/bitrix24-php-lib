@@ -233,6 +233,7 @@ class HandlerTest extends TestCase
         // Подготовка Bitrix24 аккаунта и установки приложения
         $applicationToken = Uuid::v7()->toRfc4122();
         $memberId = Uuid::v7()->toRfc4122();
+        $uuidV7 = Uuid::v7();
 
         $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withApplicationToken($applicationToken)
@@ -246,6 +247,8 @@ class HandlerTest extends TestCase
             ->withApplicationToken($applicationToken)
             ->withApplicationStatus(new ApplicationStatus('F'))
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
+            ->withContactPersonId(null)
+            ->withBitrix24PartnerContactPersonId(null)
             ->build()
         ;
         $this->applicationInstallationRepository->save($applicationInstallation);
@@ -256,6 +259,7 @@ class HandlerTest extends TestCase
         $contactPersonBuilder = new ContactPersonBuilder();
         $contactPerson = $contactPersonBuilder
             ->withEmail('john.doe@example.com')
+            ->withBitrix24PartnerId($uuidV7)
             ->withMobilePhoneNumber($invalidPhoneNumber)
             ->build()
         ;
@@ -274,9 +278,10 @@ class HandlerTest extends TestCase
             )
         );
 
-        // Проверяем, что контакт не был создан
+        // Проверяем, что партнёрский контакт привязан к установке, а регулярный — нет
         $foundInstallation = $this->applicationInstallationRepository->getById($applicationInstallation->getId());
-        $this->assertNull($foundInstallation->getBitrix24PartnerId());
+        $this->assertNotNull($foundInstallation->getBitrix24PartnerContactPersonId());
+        $this->assertNull($foundInstallation->getContactPersonId());
     }
 
     public static function invalidPhoneProvider(): array
