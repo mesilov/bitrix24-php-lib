@@ -6,7 +6,6 @@ namespace Bitrix24\Lib\ApplicationInstallations\UseCase\InstallContactPerson;
 
 use Bitrix24\Lib\ContactPersons\Entity\ContactPerson;
 use Bitrix24\Lib\Services\Flusher;
-use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Exceptions\ApplicationInstallationNotFoundException;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\ApplicationInstallationRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonStatus;
@@ -50,8 +49,8 @@ readonly class Handler
                 }
             }
 
-            /** @var null|AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $applicationInstallation */
             $applicationInstallation = $this->applicationInstallationRepository->getById($command->applicationInstallationId);
+            assert($applicationInstallation instanceof AggregateRootEventsEmitterInterface);
 
             $uuidV7 = Uuid::v7();
 

@@ -6,6 +6,7 @@ namespace Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall;
 
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Exceptions\ApplicationInstallationNotFoundException;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\ApplicationInstallationRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountInterface;
@@ -38,39 +39,81 @@ readonly class Handler
             'application_status' => $command->applicationStatus,
         ]);
 
-        /** @var null|AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $applicationInstallation */
-        // todo fix https://github.com/mesilov/bitrix24-php-lib/issues/59
         $applicationInstallation = $this->applicationInstallationRepository->findByBitrix24AccountMemberId($command->memberId);
 
         if (null === $applicationInstallation) {
-            throw new ApplicationInstallationNotFoundException(
-                sprintf('Application installation not found for member ID %s', $command->memberId)
-            );
+            throw $this->buildInstallationNotFoundException($command->memberId);
         }
 
-        $applicationInstallation->changeApplicationStatus($command->applicationStatus);
+        assert($applicationInstallation instanceof AggregateRootEventsEmitterInterface);
 
-        $applicationInstallation->setApplicationToken($command->applicationToken);
+        if (ApplicationInstallationStatus::new === $applicationInstallation->getStatus()) {
+            $this->finishPendingInstallation($command, $applicationInstallation);
+
+            $this->logger->info('ApplicationInstallation.OnAppInstall.finish');
+
+            return;
+        }
+
+        if (ApplicationInstallationStatus::active === $applicationInstallation->getStatus()) {
+            $this->handleRepeatedEvent($command, $applicationInstallation);
+
+            return;
+        }
+
+        throw $this->buildInstallationNotFoundException($command->memberId);
+    }
+
+    /**
+     * @throws Bitrix24AccountNotFoundException|InvalidArgumentException|MultipleBitrix24AccountsFoundException
+     */
+    private function finishPendingInstallation(
+        Command $command,
+        AggregateRootEventsEmitterInterface&ApplicationInstallationInterface $applicationInstallation
+    ): void {
+        $bitrix24Account = $this->findMasterAccountByMemberId($command->memberId, Bitrix24AccountStatus::new);
+
+        $applicationInstallation->changeApplicationStatus($command->applicationStatus);
+        $bitrix24Account->applicationInstalled($command->applicationToken);
+        $applicationInstallation->applicationInstalled($command->applicationToken);
 
         $this->applicationInstallationRepository->save($applicationInstallation);
-
-        /** @var AggregateRootEventsEmitterInterface|Bitrix24AccountInterface $bitrix24Account */
-        $bitrix24Account = $this->findMasterAccountByMemberId($command->memberId);
-
-        $bitrix24Account->setApplicationToken($command->applicationToken);
-
         $this->bitrix24AccountRepository->save($bitrix24Account);
 
         $this->flusher->flush($applicationInstallation, $bitrix24Account);
-
-        $this->logger->info('ApplicationInstallation.OnAppInstall.finish');
     }
 
-    private function findMasterAccountByMemberId(string $memberId): Bitrix24AccountInterface
-    {
+    /**
+     * @throws Bitrix24AccountNotFoundException|MultipleBitrix24AccountsFoundException
+     */
+    private function handleRepeatedEvent(
+        Command $command,
+        AggregateRootEventsEmitterInterface&ApplicationInstallationInterface $applicationInstallation
+    ): void {
+        $bitrix24Account = $this->findMasterAccountByMemberId($command->memberId, Bitrix24AccountStatus::active);
+
+        $sameToken = $applicationInstallation->isApplicationTokenValid($command->applicationToken)
+            && $bitrix24Account->isApplicationTokenValid($command->applicationToken);
+
+        $this->logger->warning('ApplicationInstallation.OnAppInstall.duplicate', [
+            'memberId' => $command->memberId,
+            'domain' => $command->domainUrl->value,
+            'applicationToken' => $command->applicationToken,
+            'tokenMatch' => $sameToken,
+        ]);
+    }
+
+    /**
+     * @throws Bitrix24AccountNotFoundException
+     * @throws MultipleBitrix24AccountsFoundException
+     */
+    private function findMasterAccountByMemberId(
+        string $memberId,
+        Bitrix24AccountStatus $bitrix24AccountStatus
+    ): AggregateRootEventsEmitterInterface&Bitrix24AccountInterface {
         $bitrix24Accounts = $this->bitrix24AccountRepository->findByMemberId(
             $memberId,
-            Bitrix24AccountStatus::active
+            $bitrix24AccountStatus
         );
 
         // Filter for master accounts only
@@ -80,13 +123,27 @@ readonly class Handler
         );
 
         if ([] === $masterAccounts) {
-            throw new Bitrix24AccountNotFoundException('Bitrix24 account not found for member ID '.$memberId);
+            throw new Bitrix24AccountNotFoundException(
+                sprintf('Bitrix24 account with status %s not found for member ID %s', $bitrix24AccountStatus->value, $memberId)
+            );
         }
 
         if (1 !== count($masterAccounts)) {
-            throw new MultipleBitrix24AccountsFoundException('Multiple Bitrix24 accounts found for member ID '.$memberId);
+            throw new MultipleBitrix24AccountsFoundException(
+                sprintf('Multiple Bitrix24 accounts with status %s found for member ID %s', $bitrix24AccountStatus->value, $memberId)
+            );
         }
 
-        return reset($masterAccounts);
+        $masterAccount = reset($masterAccounts);
+        assert($masterAccount instanceof AggregateRootEventsEmitterInterface);
+
+        return $masterAccount;
+    }
+
+    private function buildInstallationNotFoundException(string $memberId): ApplicationInstallationNotFoundException
+    {
+        return new ApplicationInstallationNotFoundException(
+            sprintf('Pending application installation not found for member ID %s', $memberId)
+        );
     }
 }

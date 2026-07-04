@@ -31,7 +31,7 @@ class ApplicationInstallationBuilder
 
     private PortalLicenseFamily $portalLicenseFamily;
 
-    private readonly ?int $portalUsersCount;
+    private readonly int $portalUsersCount;
 
     private ?string $comment = null;
 
@@ -56,6 +56,13 @@ class ApplicationInstallationBuilder
     public function withApplicationToken(string $applicationToken): self
     {
         $this->applicationToken = $applicationToken;
+
+        return $this;
+    }
+
+    public function withComment(?string $comment): self
+    {
+        $this->comment = $comment;
 
         return $this;
     }
@@ -134,6 +141,4 @@ class ApplicationInstallationBuilder
 
         return $applicationInstallation;
     }
-
-
 }

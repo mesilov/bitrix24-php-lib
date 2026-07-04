@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\ApplicationInstallations\UseCase\UnlinkContactPerson;
 
 use Bitrix24\Lib\Services\Flusher;
-use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Exceptions\ApplicationInstallationNotFoundException;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\ApplicationInstallationRepositoryInterface;
-use Bitrix24\SDK\Application\Contracts\ContactPersons\Entity\ContactPersonInterface;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Exceptions\ContactPersonNotFoundException;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Repository\ContactPersonRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
@@ -31,11 +29,11 @@ readonly class Handler
         ]);
 
         try {
-            /** @var AggregateRootEventsEmitterInterface|ContactPersonInterface $contactPerson */
             $contactPerson = $this->contactPersonRepository->getById($command->contactPersonId);
+            assert($contactPerson instanceof AggregateRootEventsEmitterInterface);
 
-            /** @var AggregateRootEventsEmitterInterface|ApplicationInstallationInterface $applicationInstallation */
             $applicationInstallation = $this->applicationInstallationRepository->getById($command->applicationInstallationId);
+            assert($applicationInstallation instanceof AggregateRootEventsEmitterInterface);
 
             $entitiesToFlush = [];
 

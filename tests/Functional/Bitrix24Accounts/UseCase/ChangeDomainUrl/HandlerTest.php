@@ -29,7 +29,7 @@ use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+use Bitrix24\Lib\Common\ValueObjects\Domain;
 
 /**
  * @internal

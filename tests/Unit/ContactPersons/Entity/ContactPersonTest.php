@@ -13,13 +13,10 @@ use Bitrix24\SDK\Tests\Application\Contracts\ContactPersons\Entity\ContactPerson
 use Carbon\CarbonImmutable;
 use Darsyn\IP\Version\Multi as IP;
 use libphonenumber\PhoneNumber;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use Symfony\Component\Uid\Uuid;
 
-/**
- * @internal
- *
- * @coversNothing
- */
+#[CoversNothing]
 class ContactPersonTest extends ContactPersonInterfaceTest
 {
     #[\Override]

@@ -130,13 +130,13 @@ HELP
         $allSettings = $this->applicationSettingRepository->findAllForInstallation($installationId);
 
         if ($globalOnly || (null === $userId && null === $departmentId)) {
-            $settings = array_filter($allSettings, fn (\Bitrix24\Lib\ApplicationSettings\Entity\ApplicationSettingsItemInterface $applicationSettingsItem): bool => $applicationSettingsItem->isGlobal());
+            $settings = array_filter($allSettings, fn ($setting): bool => $setting->isGlobal());
             $scope = 'Global';
         } elseif (null !== $userId) {
-            $settings = array_filter($allSettings, fn (\Bitrix24\Lib\ApplicationSettings\Entity\ApplicationSettingsItemInterface $applicationSettingsItem): bool => $applicationSettingsItem->isPersonal() && $applicationSettingsItem->getB24UserId() === $userId);
+            $settings = array_filter($allSettings, fn ($setting): bool => $setting->isPersonal() && $setting->getB24UserId() === $userId);
             $scope = sprintf('Personal (User ID: %d)', $userId);
         } else {
-            $settings = array_filter($allSettings, fn (\Bitrix24\Lib\ApplicationSettings\Entity\ApplicationSettingsItemInterface $applicationSettingsItem): bool => $applicationSettingsItem->isDepartmental() && $applicationSettingsItem->getB24DepartmentId() === $departmentId);
+            $settings = array_filter($allSettings, fn ($setting): bool => $setting->isDepartmental() && $setting->getB24DepartmentId() === $departmentId);
             $scope = sprintf('Departmental (Department ID: %d)', $departmentId);
         }
 

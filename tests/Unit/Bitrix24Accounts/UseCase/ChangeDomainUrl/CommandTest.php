@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\Tests\Unit\Bitrix24Accounts\UseCase\ChangeDomainUrl;
 
 use Bitrix24\Lib\Bitrix24Accounts\UseCase\ChangeDomainUrl\Command;
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+use Bitrix24\Lib\Common\ValueObjects\Domain;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -26,7 +26,7 @@ class CommandTest extends TestCase
     ): void {
         new Domain($oldDomain);
         new Domain($newDomain);
-        $this->assertTrue(true);
+        $this->expectNotToPerformAssertions();
     }
 
     #[Test]
@@ -37,7 +37,6 @@ class CommandTest extends TestCase
         ?string $expectedException,
         ?string $expectedExceptionMessage
     ): void {
-
         if ($expectedException !== null) {
             $this->expectException($expectedException);
         }
@@ -48,7 +47,6 @@ class CommandTest extends TestCase
 
         new Domain($oldDomain);
         new Domain($newDomain);
-
     }
 
     public static function dataForValidateValidDomain(): \Generator

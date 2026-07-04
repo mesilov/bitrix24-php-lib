@@ -30,7 +30,7 @@ use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Uid\Uuid;
-use Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain;
+use Bitrix24\Lib\Common\ValueObjects\Domain;
 
 /**
  * @internal
@@ -64,8 +64,8 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    #[TestDox('test finish installation application')]
-    public function testFinishInstallationApplication(): void
+    #[TestDox('test installFinish changes only account state and stays separate from OnAppInstall flow')]
+    public function testInstallFinishActivatesPendingAccountOnly(): void
     {
         $bitrix24Account = (new Bitrix24AccountBuilder())
             ->withStatus(Bitrix24AccountStatus::new)

@@ -1,5 +1,12 @@
 # Claude Code Knowledge Base - bitrix24-php-lib
 
+## Local Skills
+- Repository-local skills live in `.claude/skills/`.
+- Before starting issue-driven, maintainer, or repository workflow tasks, always check whether `.claude/skills/**/SKILL.md` exists and load the relevant local skill first.
+- When both a local repository skill and a generic built-in skill apply, prefer the local repository skill.
+- Default maintainer workflow for this repository: `.claude/skills/bitrix24-php-lib-maintainer/SKILL.md`.
+- If a local skill defines a stricter workflow than this file, follow the local skill.
+
 ## Project Overview
 PHP library for rapid Bitrix24 application development using PostgreSQL and Doctrine ORM.
 
@@ -118,6 +125,13 @@ src/
 
 ## Environment Variables
 Located in `.env` and `.env.local` files for database configuration.
+
+## MCP Servers
+- Project-level MCP configuration is stored in `.mcp.json`.
+- Developers using Claude Code or Codex must verify the MCP configuration before starting work in this repository.
+- Configured servers:
+  - `bitrix24-dev` - HTTP MCP server at `https://mcp-dev.bitrix24.tech/mcp`
+- If `.mcp.json` changes, restart the client so the updated project MCP configuration is reloaded.
 
 ### Default Configuration for Functional Tests
 The `.env` file contains default values that work out-of-the-box with Docker Compose:

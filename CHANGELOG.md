@@ -1,4 +1,123 @@
-## Unreleased
+## 0.5.2
+
+### BC
+
+- **Journal table namespacing fix** — [#102](https://github.com/mesilov/bitrix24-php-lib/issues/102)
+    - Table renamed:
+        - `journal` -> `b24lib_journal`
+    - Explicit schema object names renamed:
+        - `idx_journal_composite` -> `b24lib_journal_idx_composite`
+        - `idx_journal_created_at` -> `b24lib_journal_idx_created_at`
+        - `idx_journal_member_id` -> `b24lib_journal_idx_member_id`
+    - Existing PostgreSQL installations created from `0.5.0` or `0.5.1` must rename the existing journal table and indexes before the first run on `0.5.2`
+    - Example SQL:
+```sql
+ALTER TABLE journal RENAME TO b24lib_journal;
+
+ALTER INDEX idx_journal_composite RENAME TO b24lib_journal_idx_composite;
+ALTER INDEX idx_journal_created_at RENAME TO b24lib_journal_idx_created_at;
+ALTER INDEX idx_journal_member_id RENAME TO b24lib_journal_idx_member_id;
+```
+
+### Changed
+
+- **Symfony 8 boot compatibility for consumer applications** — [#106](https://github.com/mesilov/bitrix24-php-lib/issues/106)
+    - Relaxed `doctrine/doctrine-bundle` from `3.2.2` to `^3.2.2 || ^3.3@dev`
+    - Keeps stable installs on `3.2.2` while allowing Symfony 8 consumer applications to opt into the `3.3.x-dev` line
+    - Documents explicit compatibility with Symfony `8.0.*` consumer applications
+    - Removes the previously observed Doctrine bundle bootstrap blocker during kernel boot
+- **Repository-local maintainer workflow for agents**
+    - Added `.claude/skills/bitrix24-php-lib-maintainer/SKILL.md` as the default local skill for issue-driven and maintainer tasks
+    - Documented local-skill precedence and project MCP checks in `AGENTS.md` and `CLAUDE.md`
+
+## 0.5.1
+
+### Changed
+
+- **Dependency refresh for PHP 8.5 and current QA toolchain**
+    - Raised root PHP constraint from `8.3.* || 8.4.*` to `8.4.* || 8.5.*`
+    - Allowed `giggsey/libphonenumber-for-php` `^9` in addition to `^8`
+    - Updated dev tooling to current major versions: `phpstan` `^2`, `phpunit` `^13`, `psalm` `^6`, `rector` `^2`
+    - Expanded Symfony dev constraints to support both `^7` and `^8` for `debug-bundle`, `property-access`, `stopwatch`, and `var-exporter`
+- **Static-analysis compatibility cleanups**
+    - Narrowed install/account handler internals with explicit assertions and intersection types for aggregate roots that emit domain events
+    - Added explicit callback parameter types in `ApplicationSettingsListCommand`
+    - Removed deprecated `strictBooleans` prepared set from `rector.php`
+
+### Fixed
+
+- **Functional test bootstrap compatibility with Doctrine ORM 3 on PHP 8.4+**
+    - Enabled Doctrine native lazy objects in test `EntityManager` configuration
+    - Restored successful `make test-functional` runs with current Symfony `var-exporter`
+- **PHPUnit 13 test-suite compatibility**
+    - Reworked unit and functional tests to stop using no-expectation mocks where stubs/fakes are more appropriate
+    - Removed PHPUnit notices from `make test-unit` and `make test-functional`
+- **ApplicationSettings repository functional coverage**
+    - Replaced the previously skipped PostgreSQL unique-constraint test with an assertion of the actual database behavior for duplicate global settings with `NULL` scope values
+
+## 0.5.0
+
+### Added
+
+- **Journal bounded context (main feature of 0.5.0)** — [#72](https://github.com/mesilov/bitrix24-php-lib/issues/72)
+    - Added `JournalItem` aggregate and `Context` value object for portal technical logs
+    - Added `Bitrix24\Lib\Journal\Entity\LogLevel` enum with PSR-3 compatible levels
+    - Added `JournalItemRepositoryInterface`, `DoctrineDbalJournalItemRepository`, and `JournalLogger`
+    - Added pagination-aware journal queries by `memberId` and `applicationInstallationId`
+- **Install-flow documentation**
+    - Added `src/ApplicationInstallations/Docs/application-installations.md` with one-step / two-step install contracts, canonical finish-step rules, and corner cases
+
+### Changed
+
+- **Application installation flow** — [#90](https://github.com/mesilov/bitrix24-php-lib/issues/90)
+    - `Install` now distinguishes one-step installs with `applicationToken` from UI/two-step installs without token
+    - `OnAppInstall` is now the canonical finish-step for pending installations created without a token
+    - Duplicate `ONAPPINSTALL` events for already active installations are handled as warning `no-op` calls
+- **Domain value object namespace**
+    - `Bitrix24\Lib\Bitrix24Accounts\ValueObjects\Domain` moved to `Bitrix24\Lib\Common\ValueObjects\Domain`
+    - Updated install-related commands and tests to use the shared namespace
+- **Developer workflow docs**
+    - Added project-level MCP configuration in `.mcp.json`
+    - Documented MCP checks and mandatory `Makefile` entrypoints for tests and linters in `README.md` and `AGENTS.md`
+
+### BC
+
+- **Doctrine schema naming normalization** — [#93](https://github.com/mesilov/bitrix24-php-lib/issues/93)
+    - Tables renamed:
+        - `application_installation` -> `b24lib_application_installations`
+        - `application_settings` -> `b24lib_application_settings`
+        - `bitrix24account` -> `b24lib_bitrix24_accounts`
+        - `contact_person` -> `b24lib_contact_persons`
+    - Explicit schema object names renamed for `b24lib_application_settings`:
+        - `unique_app_setting_scope` -> `b24lib_application_settings_unique_scope`
+        - `idx_application_installation_id` -> `b24lib_application_settings_idx_application_installation_id`
+        - `idx_b24_user_id` -> `b24lib_application_settings_idx_b24_user_id`
+        - `idx_b24_department_id` -> `b24lib_application_settings_idx_b24_department_id`
+        - `idx_key` -> `b24lib_application_settings_idx_key`
+        - `idx_status` -> `b24lib_application_settings_idx_status`
+    - Existing PostgreSQL installations must rename the existing tables and explicitly named indexes before the first run on `0.5.0`
+    - Example SQL:
+```sql
+ALTER TABLE application_installation RENAME TO b24lib_application_installations;
+ALTER TABLE application_settings RENAME TO b24lib_application_settings;
+ALTER TABLE bitrix24account RENAME TO b24lib_bitrix24_accounts;
+ALTER TABLE contact_person RENAME TO b24lib_contact_persons;
+
+ALTER INDEX unique_app_setting_scope RENAME TO b24lib_application_settings_unique_scope;
+ALTER INDEX idx_application_installation_id RENAME TO b24lib_application_settings_idx_application_installation_id;
+ALTER INDEX idx_b24_user_id RENAME TO b24lib_application_settings_idx_b24_user_id;
+ALTER INDEX idx_b24_department_id RENAME TO b24lib_application_settings_idx_b24_department_id;
+ALTER INDEX idx_key RENAME TO b24lib_application_settings_idx_key;
+ALTER INDEX idx_status RENAME TO b24lib_application_settings_idx_status;
+```
+
+### Fixed
+
+- **Premature activation during install** — [#90](https://github.com/mesilov/bitrix24-php-lib/issues/90)
+    - `Bitrix24Account` and `ApplicationInstallation` no longer switch to `active` when `Install` is called without `applicationToken`
+    - Finish events are no longer emitted before Bitrix24 sends the token-bearing finish step
+- **Reinstall handling**
+    - Reinstall over pending installations now blocks and archives the previous installation pair before creating a new one
 
 ## 0.4.0
 
