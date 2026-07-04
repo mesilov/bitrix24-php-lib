@@ -96,7 +96,7 @@ class SettingsFetcherTest extends TestCase
     private SerializerInterface $serializer;
 
     /** @var LoggerInterface&\PHPUnit\Framework\MockObject\MockObject */
-    private LoggerInterface $logger;
+    private \PHPUnit\Framework\MockObject\MockObject $logger;
 
     #[\Override]
     protected function setUp(): void

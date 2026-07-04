@@ -374,7 +374,7 @@ abstract class ApplicationSettingsItemRepositoryInterfaceContractTest extends Te
         $this->assertCount(3, $results);
 
         // Verify each scope is present
-        $values = array_map(fn($s): string => $s->getValue(), $results);
+        $values = array_map(fn(\Bitrix24\Lib\ApplicationSettings\Entity\ApplicationSettingsItemInterface $applicationSettingsItem): string => $applicationSettingsItem->getValue(), $results);
         $this->assertContains('global', $values);
         $this->assertContains('personal', $values);
         $this->assertContains('departmental', $values);

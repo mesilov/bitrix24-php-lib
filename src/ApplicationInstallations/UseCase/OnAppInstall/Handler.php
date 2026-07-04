@@ -70,9 +70,7 @@ readonly class Handler
     {
         $bitrix24Accounts = $this->bitrix24AccountRepository->findByMemberId(
             $memberId,
-            Bitrix24AccountStatus::active,
-            null,
-            null
+            Bitrix24AccountStatus::active
         );
 
         // Filter for master accounts only

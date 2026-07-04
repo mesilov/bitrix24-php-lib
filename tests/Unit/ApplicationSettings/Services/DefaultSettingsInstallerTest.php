@@ -19,10 +19,10 @@ use Symfony\Component\Uid\Uuid;
 class DefaultSettingsInstallerTest extends TestCase
 {
     /** @var Handler&\PHPUnit\Framework\MockObject\MockObject */
-    private Handler $createHandler;
+    private \PHPUnit\Framework\MockObject\MockObject $createHandler;
 
     /** @var LoggerInterface&\PHPUnit\Framework\MockObject\MockObject */
-    private LoggerInterface $logger;
+    private \PHPUnit\Framework\MockObject\MockObject $logger;
 
     private DefaultSettingsInstaller $service;
 

@@ -51,10 +51,7 @@ class HandlerTest extends TestCase
             $uuidV7,
             'update.test',
             'initial_value',
-            false,
-            null,
-            null,
-            null
+            false
         );
         $this->repository->save($applicationSettingsItem);
         EntityManagerFactory::get()->flush();
@@ -112,9 +109,7 @@ class HandlerTest extends TestCase
             'personal.test',
             'user_value',
             false,
-            123,
-            null,
-            null
+            123
         );
         $this->repository->save($applicationSettingsItem);
         EntityManagerFactory::get()->flush();
@@ -126,7 +121,6 @@ class HandlerTest extends TestCase
             key: 'personal.test',
             value: 'new_user_value',
             b24UserId: 123,
-            b24DepartmentId: null,
             changedByBitrix24UserId: 456
         );
         $this->handler->handle($updateCommand);
@@ -157,8 +151,7 @@ class HandlerTest extends TestCase
             'dept_value',
             false,
             null,
-            456,
-            null
+            456
         );
         $this->repository->save($applicationSettingsItem);
         EntityManagerFactory::get()->flush();
@@ -169,7 +162,6 @@ class HandlerTest extends TestCase
             applicationInstallationId: $uuidV7,
             key: 'dept.test',
             value: 'new_dept_value',
-            b24UserId: null,
             b24DepartmentId: 456,
             changedByBitrix24UserId: 789
         );
