@@ -43,7 +43,7 @@ $stateManager = new ScrapeStateManager();
 $banDetector = new BanDetector($logger);
 $workflow = new ScrapeWorkflow($scraper, $stateManager, $banDetector, $logger);
 
-$application->addCommand(new ScrapePartnersCommand($logger, $workflow));
+$application->addCommand(new ScrapePartnersCommand($logger, $workflow, realpath(dirname(__DIR__))));
 
 $entityManager = EntityManagerFactory::get();
 $eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
@@ -55,6 +55,6 @@ $importHandler = new ImportHandler($repository, $flusher, PhoneNumberUtil::getIn
 $deleteHandler = new DeleteHandler($repository, $flusher, new NullLogger());
 $importWorkflow = new ImportWorkflow($importHandler, $deleteHandler, $readModel, PhoneNumberUtil::getInstance(), $eventDispatcher, new NullLogger());
 
-$application->addCommand(new ImportPartnersCsvCommand($logger, $importWorkflow));
+$application->addCommand(new ImportPartnersCsvCommand($logger, $importWorkflow, realpath(dirname(__DIR__))));
 
 $application->run();

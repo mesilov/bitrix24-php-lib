@@ -121,7 +121,7 @@ test-run-update-partners:
 	docker compose run --rm php-cli php bin/console partners:scrape -v --partner-ids=16592200,22521876 --request-delay=1 --zone=kz
 
 test-run-partners-import:
-	docker compose run --rm php-cli php bin/console bitrix24:partners:import var/scraper/partners-20260623-150402.csv
+	docker compose run --rm php-cli php bin/console bitrix24:partners:import var/scraper/partners-20260623-150402.csv -v
 
 # Run one functional test with debugger
 run-one-functional-test: debug-print-env

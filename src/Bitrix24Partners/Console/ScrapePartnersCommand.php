@@ -34,6 +34,7 @@ class ScrapePartnersCommand extends Command
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly ScrapeWorkflow $scrapeWorkflow,
+        private readonly string $projectRoot,
     ) {
         parent::__construct();
     }
@@ -43,7 +44,7 @@ class ScrapePartnersCommand extends Command
     {
         $this
             ->addOption('zone', null, InputOption::VALUE_REQUIRED, 'Зона Bitrix24 (ru, kz)', 'ru')
-            ->addOption('output-dir', null, InputOption::VALUE_REQUIRED, 'Путь к папке для CSV файлов (обязательный)')
+            ->addOption('output-dir', null, InputOption::VALUE_REQUIRED, 'Относительный путь к папке для CSV файлов от корня проекта, например: var/scraper (обязательный)')
             ->addOption('request-delay', null, InputOption::VALUE_REQUIRED, 'Задержка между HTTP-запросами (сек)', (string) self::DEFAULT_REQUEST_DELAY)
             ->addOption('insecure', null, InputOption::VALUE_NONE, 'Отключить проверку SSL (для dev)')
             ->addOption('partner-ids', null, InputOption::VALUE_REQUIRED, 'ID партнёров через запятую (режим обновления)', '')
@@ -132,20 +133,55 @@ class ScrapePartnersCommand extends Command
             return null;
         }
 
-        if (!is_dir($outputDir) && (!mkdir($outputDir, 0755, true) && !is_dir($outputDir))) {
-            $this->io->error(sprintf('Не удалось создать директорию: %s', $outputDir));
-
+        $resolvedDir = $this->resolveOutputDir($outputDir);
+        if (null === $resolvedDir) {
             return null;
         }
 
         return new ScrapeOptions(
             zone: $zone,
-            outputDir: $outputDir,
+            outputDir: $resolvedDir,
             requestDelay: $requestDelay,
             insecure: (bool) $input->getOption('insecure'),
             resume: (bool) $input->getOption('resume'),
             partnerIds: $partnerIds,
         );
+    }
+
+    /**
+     * Резолвит относительный путь от корня проекта; абсолютные пути не поддерживаются
+     * (они привязаны к окружению и по-разному выглядят в Docker и на хосте).
+     * Создаёт директорию при необходимости и канонизирует через realpath().
+     *
+     * @return null|string Абсолютный канонизированный путь или null при ошибке
+     */
+    private function resolveOutputDir(string $outputDir): ?string
+    {
+        if (str_starts_with($outputDir, '/')) {
+            $this->io->error(sprintf(
+                'Абсолютные пути не поддерживаются — используйте относительный путь от корня проекта, например: var/scraper (получено: %s)',
+                $outputDir,
+            ));
+
+            return null;
+        }
+
+        $resolvedPath = $this->projectRoot.'/'.$outputDir;
+
+        if (!is_dir($resolvedPath) && !mkdir($resolvedPath, 0755, true) && !is_dir($resolvedPath)) {
+            $this->io->error(sprintf('Не удалось создать директорию: %s', $resolvedPath));
+
+            return null;
+        }
+
+        $realPath = realpath($resolvedPath);
+        if (false === $realPath) {
+            $this->io->error(sprintf('Не удалось определить путь к директории: %s', $resolvedPath));
+
+            return null;
+        }
+
+        return $realPath;
     }
 
     private function executeUpdate(ScrapeConfig $config): int

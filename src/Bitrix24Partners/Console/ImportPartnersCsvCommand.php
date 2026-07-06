@@ -25,7 +25,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class ImportPartnersCsvCommand extends Command
 {
     /** Сколько проваленных строк показывать в отчёте; остальные суммируются «…и ещё N». */
-    private const int DISPLAY_ERROR_LIMIT = 20;
+    private const int DISPLAY_ERROR_LIMIT = 10;
 
     private ?SymfonyStyle $io = null;
 
@@ -34,6 +34,7 @@ class ImportPartnersCsvCommand extends Command
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly ImportWorkflow $workflow,
+        private readonly string $projectRoot,
     ) {
         parent::__construct();
     }
@@ -45,7 +46,7 @@ class ImportPartnersCsvCommand extends Command
             ->addArgument(
                 'file',
                 InputArgument::REQUIRED,
-                'Path to CSV file (absolute or relative to current working directory)'
+                'Relative path to CSV file from project root, e.g. var/scraper/partners.csv'
             )
             ->addOption(
                 'sync-mode',
@@ -94,9 +95,8 @@ class ImportPartnersCsvCommand extends Command
     {
         $file = $input->getArgument('file');
 
-        if (!file_exists($file)) {
-            $this->io->error(sprintf('File not found: %s', $file));
-
+        $resolvedFile = $this->resolveFilePath($file);
+        if (null === $resolvedFile) {
             return null;
         }
 
@@ -113,10 +113,41 @@ class ImportPartnersCsvCommand extends Command
         }
 
         return new ImportConfig(
-            file: $file,
+            file: $resolvedFile,
             syncMode: $syncMode,
             dryRun: (bool) $input->getOption('dry-run'),
         );
+    }
+
+    /**
+     * Резолвит относительный путь от корня проекта; абсолютные пути не поддерживаются
+     * (они привязаны к окружению и по-разному выглядят в Docker и на хосте).
+     *
+     * @return null|string Канонизированный абсолютный путь или null, если файл не найден
+     */
+    private function resolveFilePath(string $file): ?string
+    {
+        if (str_starts_with($file, '/')) {
+            $this->io->error(sprintf(
+                'Абсолютные пути не поддерживаются — используйте относительный путь от корня проекта, например: var/scraper/partners.csv (получено: %s)',
+                $file,
+            ));
+
+            return null;
+        }
+
+        $resolvedPath = realpath($this->projectRoot.'/'.$file);
+        if (false === $resolvedPath) {
+            $this->io->error(sprintf(
+                'File not found: %s (resolved to %s)',
+                $file,
+                $this->projectRoot.'/'.$file,
+            ));
+
+            return null;
+        }
+
+        return $resolvedPath;
     }
 
     private function executeImport(ImportConfig $config): int
@@ -194,12 +225,16 @@ class ImportPartnersCsvCommand extends Command
 
         if ($result->errors > 0) {
             $this->io->warning($summary);
-            $this->printErrors($result->errorsDetail);
+            if ($this->io->isVerbose()) {
+                $this->printErrors($result->errorsDetail);
+            } else {
+                $this->io->text('  подробности в логах или запустите с -v');
+            }
         } else {
             $this->io->success($summary);
         }
 
-        return $result->errors > 0 ? Command::FAILURE : Command::SUCCESS;
+        return Command::SUCCESS;
     }
 
     /**

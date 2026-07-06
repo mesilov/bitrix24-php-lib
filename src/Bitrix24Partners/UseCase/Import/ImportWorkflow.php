@@ -38,13 +38,6 @@ class ImportWorkflow
         Bitrix24PartnerDeletedEvent::class => 'onPartnerDeleted',
     ];
 
-    /**
-     * Прерывает импорт, когда накопится столько ошибок валидации данных.
-     * При ~3000 партнёров в реестре 20 ≈ 0.7% — порог системного сбоя источника,
-     * а не нормального шума данных (на текущем датасете реально битых строк < 10).
-     */
-    private const int CIRCUIT_BREAKER_ERROR_THRESHOLD = 20;
-
     public function __construct(
         private readonly Handler $importHandler,
         private readonly DeleteHandler $deleteHandler,
@@ -100,11 +93,8 @@ class ImportWorkflow
         ?\Closure $onProgress = null,
         ?\Closure $onVerbose = null,
     ): void {
-        $processed = 0;
-
         foreach ($csvMap as $partnerNumber => $row) {
             $onProgress?->__invoke('row_advance', 0);
-            ++$processed;
 
             try {
                 $command = $this->buildCommand($row);
@@ -112,20 +102,6 @@ class ImportWorkflow
                 $this->logger->warning(sprintf('Ошибка в строке партнёра #%d: %s', $partnerNumber, $e->getMessage()));
                 ++$collector->errors;
                 $collector->errorsDetail[] = ['partnerNumber' => $partnerNumber, 'error' => $e->getMessage()];
-
-                if ($collector->errors >= self::CIRCUIT_BREAKER_ERROR_THRESHOLD) {
-                    throw new \RuntimeException(sprintf(
-                        'Circuit breaker: импорт прерван — достигнут порог ошибок валидации данных (%d). '
-                        .'Обработано %d из %d строк (создано: %d, обновлено: %d, ошибок: %d). '
-                        .'Проверьте источник данных и запустите повторно — уже импортированные строки обновятся, недостающие добавятся.',
-                        self::CIRCUIT_BREAKER_ERROR_THRESHOLD,
-                        $processed,
-                        count($csvMap),
-                        $collector->created,
-                        $collector->updated,
-                        $collector->errors,
-                    ), 0, $e);
-                }
 
                 continue;
             }
