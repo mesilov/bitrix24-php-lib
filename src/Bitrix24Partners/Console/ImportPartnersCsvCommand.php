@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\Console;
 
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Import\ImportConfig;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Import\ImportResult;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Import\ImportWorkflow;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Import\SyncMode;
+use Bitrix24\Lib\Bitrix24Partners\Import\ImportConfig;
+use Bitrix24\Lib\Bitrix24Partners\Import\ImportResult;
+use Bitrix24\Lib\Bitrix24Partners\Import\ImportWorkflow;
+use Bitrix24\Lib\Bitrix24Partners\Import\SyncMode;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;

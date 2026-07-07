@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\Console;
 
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeConfig;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeOptions;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeProgress;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeResult;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeWorkflow;
+use Bitrix24\Lib\Bitrix24Partners\Scrape\ScrapeConfig;
+use Bitrix24\Lib\Bitrix24Partners\Scrape\ScrapeOptions;
+use Bitrix24\Lib\Bitrix24Partners\Scrape\ScrapeProgress;
+use Bitrix24\Lib\Bitrix24Partners\Scrape\ScrapeResult;
+use Bitrix24\Lib\Bitrix24Partners\Scrape\ScrapeWorkflow;
 use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;

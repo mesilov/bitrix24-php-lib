@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper;
+namespace Bitrix24\Lib\Bitrix24Partners\Services\Scraper;
 
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\PartnerData;
+use Bitrix24\Lib\Bitrix24Partners\Scrape\PartnerData;
 use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
 use Carbon\CarbonImmutable;
 use Http\Discovery\Psr17FactoryDiscovery;

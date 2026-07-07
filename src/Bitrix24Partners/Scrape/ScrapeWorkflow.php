@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape;
+namespace Bitrix24\Lib\Bitrix24Partners\Scrape;
 
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\BanDetector;
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeStateManager;
+use Bitrix24\Lib\Bitrix24Partners\Services\Scraper\BanDetector;
+use Bitrix24\Lib\Bitrix24Partners\Services\Scraper\PartnerPageScraper;
+use Bitrix24\Lib\Bitrix24Partners\Services\Scraper\ScrapeStateManager;
 use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
 use League\Csv\Writer;
 use Psr\Log\LoggerInterface;

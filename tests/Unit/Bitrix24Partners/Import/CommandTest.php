@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Tests\Unit\Bitrix24Partners\UseCase\Import;
+namespace Bitrix24\Lib\Tests\Unit\Bitrix24Partners\Import;
 
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Import\Command;
+use Bitrix24\Lib\Bitrix24Partners\Import\Command;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;

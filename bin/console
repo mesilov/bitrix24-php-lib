@@ -5,32 +5,30 @@ require __DIR__ . '/../vendor/autoload.php';
 
 (new Symfony\Component\Dotenv\Dotenv())->bootEnv(__DIR__ . '/../.env');
 
+use Bitrix24\Lib\Bitrix24Partners\Console\ImportPartnersCsvCommand;
+use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommand;
+use Bitrix24\Lib\Bitrix24Partners\Console\UpdatePartnersCommand;
+use Bitrix24\Lib\Bitrix24Partners\Import\Handler as ImportHandler;
+use Bitrix24\Lib\Bitrix24Partners\Import\ImportWorkflow;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerReadModel;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerRepository;
+use Bitrix24\Lib\Bitrix24Partners\Scrape\ScrapeWorkflow;
+use Bitrix24\Lib\Bitrix24Partners\Service\Scraper\BanDetector;
+use Bitrix24\Lib\Bitrix24Partners\Services\Scraper\PartnerHtmlParser;
+use Bitrix24\Lib\Bitrix24Partners\Services\Scraper\PartnerPageScraper;
+use Bitrix24\Lib\Bitrix24Partners\Services\Scraper\ScrapeStateManager;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Delete\Handler as DeleteHandler;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\UpdateWorkflow;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use libphonenumber\PhoneNumberUtil;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 use Psr\Log\NullLogger;
 use Symfony\Component\Console\Application;
-use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommand;
-use Bitrix24\Lib\Bitrix24Partners\Console\UpdatePartnersCommand;
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\BanDetector;
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerHtmlParser;
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\PartnerPageScraper;
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeStateManager;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\ScrapeWorkflow;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape\UpdateWorkflow;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
-
-use Bitrix24\Lib\Bitrix24Partners\Console\ImportPartnersCsvCommand;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Delete\Handler as DeleteHandler;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Import\Handler as ImportHandler;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Import\ImportWorkflow;
-
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
 
 $application = new Application();
 

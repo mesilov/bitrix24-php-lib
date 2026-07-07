@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Tests\Unit\Bitrix24Partners\Infrastructure\Scraper;
+namespace Bitrix24\Lib\Tests\Unit\Bitrix24Partners\Services\Scraper;
 
-use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Scraper\ScrapeStateManager;
+use Bitrix24\Lib\Bitrix24Partners\Services\Scraper\ScrapeStateManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;

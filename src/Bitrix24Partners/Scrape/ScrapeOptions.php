@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Scrape;
+namespace Bitrix24\Lib\Bitrix24Partners\Scrape;
 
 use Bitrix24\Lib\Bitrix24Partners\ValueObjects\Bitrix24Zone;
 

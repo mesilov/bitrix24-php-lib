@@ -25,12 +25,12 @@ use Symfony\Component\Stopwatch\Stopwatch;
 /**
  * @internal
  */
-#[CoversClass(Bitrix24Partners\UseCase\Import\Handler::class)]
+#[CoversClass(Bitrix24Partners\Import\Handler::class)]
 class HandlerTest extends TestCase
 {
     use FunctionalTestTrait;
 
-    private Bitrix24Partners\UseCase\Import\Handler $handler;
+    private Bitrix24Partners\Import\Handler $handler;
 
     private Flusher $flusher;
 
@@ -48,7 +48,7 @@ class HandlerTest extends TestCase
         $this->eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
         $this->repository = new Bitrix24PartnerRepository($this->entityManager);
         $this->flusher = new Flusher($this->entityManager, $this->eventDispatcher);
-        $this->handler = new Bitrix24Partners\UseCase\Import\Handler(
+        $this->handler = new Bitrix24Partners\Import\Handler(
             $this->repository,
             $this->flusher,
             PhoneNumberUtil::getInstance(),
@@ -65,7 +65,7 @@ class HandlerTest extends TestCase
         $email = 'new@example.com';
         $logoUrl = 'https://new.com/logo.png';
 
-        $command = new Bitrix24Partners\UseCase\Import\Command(
+        $command = new Bitrix24Partners\Import\Command(
             $title,
             $partnerNumber,
             $site,
@@ -115,7 +115,7 @@ class HandlerTest extends TestCase
         $this->flusher->flush($existing);
         $this->entityManager->clear();
 
-        $command = new Bitrix24Partners\UseCase\Import\Command(
+        $command = new Bitrix24Partners\Import\Command(
             $title,
             $partnerNumber,
             $site,
@@ -163,7 +163,7 @@ class HandlerTest extends TestCase
         $this->flusher->flush($existing);
         $this->entityManager->clear();
 
-        $command = new Bitrix24Partners\UseCase\Import\Command(
+        $command = new Bitrix24Partners\Import\Command(
             $newTitle,
             $partnerNumber,
             $site,
@@ -204,7 +204,7 @@ class HandlerTest extends TestCase
         $this->flusher->flush($existing);
         $this->entityManager->clear();
 
-        $command = new Bitrix24Partners\UseCase\Import\Command(
+        $command = new Bitrix24Partners\Import\Command(
             $title,
             $partnerNumber
         );
@@ -229,7 +229,7 @@ class HandlerTest extends TestCase
     {
         $partnerNumber = random_int(1000, 9999);
 
-        $command = new Bitrix24Partners\UseCase\Import\Command(
+        $command = new Bitrix24Partners\Import\Command(
             'Bad Phone Partner',
             $partnerNumber,
             null,

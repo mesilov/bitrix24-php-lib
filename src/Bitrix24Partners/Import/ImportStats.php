@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Import;
+namespace Bitrix24\Lib\Bitrix24Partners\Import;
 
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Partners\Events\Bitrix24PartnerDeletedEvent;

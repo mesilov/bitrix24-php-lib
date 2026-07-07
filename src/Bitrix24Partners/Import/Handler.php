@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Bitrix24Partners\UseCase\Import;
+namespace Bitrix24\Lib\Bitrix24Partners\Import;
 
 use Bitrix24\Lib\Bitrix24Partners\Entity\Bitrix24Partner;
 use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerRepository;
