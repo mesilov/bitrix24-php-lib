@@ -37,6 +37,7 @@ readonly class Handler
         ]);
 
         $createdContactPersonId = '';
+        $mobilePhoneNumber = $command->mobilePhoneNumber;
 
         try {
             if (null !== $command->mobilePhoneNumber) {
@@ -44,8 +45,8 @@ readonly class Handler
                     $this->guardMobilePhoneNumber($command->mobilePhoneNumber);
                 } catch (InvalidArgumentException) {
                     // Ошибка уже залогирована внутри гарда.
-                    // Прерываем создание контакта, но не останавливаем установку приложения.
-                    return;
+                    // Отбрасываем невалидный номер: контакт создаётся без мобильного телефона.
+                    $mobilePhoneNumber = null;
                 }
             }
 
@@ -61,7 +62,7 @@ readonly class Handler
                 $command->fullName,
                 $command->email,
                 null,
-                $command->mobilePhoneNumber,
+                $mobilePhoneNumber,
                 null,
                 $command->comment,
                 $command->externalId,
