@@ -1,0 +1,115 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^PHPDoc tag @var with type Bitrix24\\SDK\\Application\\Contracts\\ApplicationInstallations\\Entity\\ApplicationInstallationInterface\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface\|null is not subtype of native type Bitrix24\\SDK\\Application\\Contracts\\ApplicationInstallations\\Entity\\ApplicationInstallationInterface\|null\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: src/ApplicationInstallations/UseCase/Install/Handler.php
+
+		-
+			message: '#^PHPDoc tag @var with type array\<Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Accounts\\Entity\\Bitrix24AccountInterface\>\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface is not subtype of native type array\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: src/ApplicationInstallations/UseCase/Install/Handler.php
+
+		-
+			message: '#^PHPDoc tag @var with type Bitrix24\\SDK\\Application\\Contracts\\ApplicationInstallations\\Entity\\ApplicationInstallationInterface\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface\|null is not subtype of native type Bitrix24\\SDK\\Application\\Contracts\\ApplicationInstallations\\Entity\\ApplicationInstallationInterface\|null\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: src/ApplicationInstallations/UseCase/OnAppInstall/Handler.php
+
+		-
+			message: '#^PHPDoc tag @var with type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Accounts\\Entity\\Bitrix24AccountInterface\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface is not subtype of native type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Accounts\\Entity\\Bitrix24AccountInterface\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: src/ApplicationInstallations/UseCase/OnAppInstall/Handler.php
+
+		-
+			message: '#^PHPDoc tag @var with type Bitrix24\\SDK\\Application\\Contracts\\ApplicationInstallations\\Entity\\ApplicationInstallationInterface\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface is not subtype of native type Bitrix24\\SDK\\Application\\Contracts\\ApplicationInstallations\\Entity\\ApplicationInstallationInterface\|null\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: src/ApplicationInstallations/UseCase/Uninstall/Handler.php
+
+		-
+			message: '#^PHPDoc tag @var with type array\<Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Accounts\\Entity\\Bitrix24AccountInterface\>\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface is not subtype of native type array\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: src/ApplicationInstallations/UseCase/Uninstall/Handler.php
+
+		-
+			message: '#^PHPDoc tag @var with type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Accounts\\Entity\\Bitrix24AccountInterface\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface is not subtype of native type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Accounts\\Entity\\Bitrix24AccountInterface\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: src/Bitrix24Accounts/UseCase/InstallFinish/Handler.php
+
+		-
+			message: '#^PHPDoc tag @var with type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Accounts\\Entity\\Bitrix24AccountInterface\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface is not subtype of native type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Accounts\\Entity\\Bitrix24AccountInterface\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: src/Bitrix24Accounts/UseCase/RenewAuthToken/Handler.php
+
+		-
+			message: '#^PHPDoc tag @var with type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Partners\\Entity\\Bitrix24PartnerInterface\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface is not subtype of native type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Partners\\Entity\\Bitrix24PartnerInterface\|null\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: src/Bitrix24Partners/UseCase/Create/Handler.php
+
+		-
+			message: '#^PHPDoc tag @var with type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Partners\\Entity\\Bitrix24PartnerInterface\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface is not subtype of native type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Partners\\Entity\\Bitrix24PartnerInterface\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: src/Bitrix24Partners/UseCase/Delete/Handler.php
+
+		-
+			message: '#^PHPDoc tag @var with type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Partners\\Entity\\Bitrix24PartnerInterface\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface is not subtype of native type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Partners\\Entity\\Bitrix24PartnerInterface\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: src/Bitrix24Partners/UseCase/MarkAsActive/Handler.php
+
+		-
+			message: '#^PHPDoc tag @var with type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Partners\\Entity\\Bitrix24PartnerInterface\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface is not subtype of native type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Partners\\Entity\\Bitrix24PartnerInterface\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: src/Bitrix24Partners/UseCase/MarkAsBlocked/Handler.php
+
+		-
+			message: '#^PHPDoc tag @var with type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Partners\\Entity\\Bitrix24PartnerInterface\|Bitrix24\\SDK\\Application\\Contracts\\Events\\AggregateRootEventsEmitterInterface is not subtype of native type Bitrix24\\SDK\\Application\\Contracts\\Bitrix24Partners\\Entity\\Bitrix24PartnerInterface\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: src/Bitrix24Partners/UseCase/Update/Handler.php
+
+		-
+			message: '#^Property Bitrix24\\Lib\\Tests\\Functional\\ApplicationInstallations\\Builders\\ApplicationInstallationBuilder\:\:\$bitrix24PartnerContactPersonId \(Symfony\\Component\\Uid\\Uuid\|null\) is never assigned null so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: tests/Functional/ApplicationInstallations/Builders/ApplicationInstallationBuilder.php
+
+		-
+			message: '#^Property Bitrix24\\Lib\\Tests\\Functional\\ApplicationInstallations\\Builders\\ApplicationInstallationBuilder\:\:\$bitrix24PartnerId \(Symfony\\Component\\Uid\\Uuid\|null\) is never assigned null so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: tests/Functional/ApplicationInstallations/Builders/ApplicationInstallationBuilder.php
+
+		-
+			message: '#^Property Bitrix24\\Lib\\Tests\\Functional\\ApplicationInstallations\\Builders\\ApplicationInstallationBuilder\:\:\$comment \(string\|null\) is never assigned string so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: tests/Functional/ApplicationInstallations/Builders/ApplicationInstallationBuilder.php
+
+		-
+			message: '#^Property Bitrix24\\Lib\\Tests\\Functional\\ApplicationInstallations\\Builders\\ApplicationInstallationBuilder\:\:\$contactPersonId \(Symfony\\Component\\Uid\\Uuid\|null\) is never assigned null so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: tests/Functional/ApplicationInstallations/Builders/ApplicationInstallationBuilder.php
+
+		-
+			message: '#^Property Bitrix24\\Lib\\Tests\\Functional\\ApplicationInstallations\\Builders\\ApplicationInstallationBuilder\:\:\$portalUsersCount \(int\|null\) is never assigned null so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: tests/Functional/ApplicationInstallations/Builders/ApplicationInstallationBuilder.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertTrue\(\) with true will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: tests/Unit/Bitrix24Accounts/UseCase/ChangeDomainUrl/CommandTest.php

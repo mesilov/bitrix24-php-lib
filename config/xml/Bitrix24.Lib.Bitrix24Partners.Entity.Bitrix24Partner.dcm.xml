@@ -1,7 +1,7 @@
 <doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
                   xmlns:xs="https://www.w3.org/2001/XMLSchema"
                   xmlns:orm="https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
-    <entity name="Bitrix24\Lib\Bitrix24Partners\Entity\Bitrix24Partner" table="bitrix24_partners">
+    <entity name="Bitrix24\Lib\Bitrix24Partners\Entity\Bitrix24Partner" table="b24lib_bitrix24_partners">
         <id name="id" type="uuid" column="id">
 
         </id>
@@ -14,15 +14,13 @@
 
         <field name="email" type="string" column="email" nullable="true"/>
 
-        <field name="bitrix24PartnerId" type="integer" column="b24_partner_id" nullable="false">
-            <options>
-                <option name="unique">true</option>
-            </options>
-        </field>
+        <field name="bitrix24PartnerNumber" type="integer" column="b24_partner_number" nullable="false" unique="true"/>
 
         <field name="openLineId" type="string" column="open_line_id" nullable="true"/>
 
         <field name="externalId" type="string" column="external_id" nullable="true"/>
+
+        <field name="logoUrl" type="string" column="logo_url" nullable="true"/>
 
         <field name="status" enum-type="string" column="status" nullable="false"/>
 

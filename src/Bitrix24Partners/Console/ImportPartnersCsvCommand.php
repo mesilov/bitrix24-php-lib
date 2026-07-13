@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\Bitrix24Partners\Console;
 
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Create\Command as CreateCommand;
-use Bitrix24\Lib\Bitrix24Partners\UseCase\Create\Handler as CreateHandler;
-use League\Csv\Reader;
-use League\Csv\Statement;
-use libphonenumber\NumberParseException;
-use libphonenumber\PhoneNumberUtil;
+use Bitrix24\Lib\Bitrix24Partners\Import\ImportConfig;
+use Bitrix24\Lib\Bitrix24Partners\Import\ImportResult;
+use Bitrix24\Lib\Bitrix24Partners\Import\ImportWorkflow;
+use Bitrix24\Lib\Bitrix24Partners\Import\SyncMode;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -25,8 +24,17 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ImportPartnersCsvCommand extends Command
 {
+    /** Сколько проваленных строк показывать в отчёте; остальные суммируются «…и ещё N». */
+    private const int DISPLAY_ERROR_LIMIT = 10;
+
+    private ?SymfonyStyle $io = null;
+
+    private ?OutputInterface $output = null;
+
     public function __construct(
-        private readonly CreateHandler $createHandler
+        private readonly LoggerInterface $logger,
+        private readonly ImportWorkflow $workflow,
+        private readonly string $projectRoot,
     ) {
         parent::__construct();
     }
@@ -38,171 +46,215 @@ class ImportPartnersCsvCommand extends Command
             ->addArgument(
                 'file',
                 InputArgument::REQUIRED,
-                'Path to CSV file to import'
+                'Relative path to CSV file from project root, e.g. var/scraper/partners.csv'
             )
             ->addOption(
-                'skip-errors',
-                's',
+                'sync-mode',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Sync mode: full (CSV = complete dataset) or partial (CSV = patch only)',
+                'full'
+            )
+            ->addOption(
+                'dry-run',
+                null,
                 InputOption::VALUE_NONE,
-                'Skip rows with errors and continue processing'
-            );
+                'Show what would be done without making changes'
+            )
+        ;
     }
 
     #[\Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $this->io = new SymfonyStyle($input, $output);
+        $this->output = $output;
 
-        $file = $input->getArgument('file');
-        $skipErrors = $input->getOption('skip-errors');
-
-        if (!file_exists($file)) {
-            $io->error(sprintf('File not found: %s', $file));
-
+        $config = $this->resolveConfig($input);
+        if (null === $config) {
             return Command::FAILURE;
         }
 
-        $io->title('Importing Bitrix24 Partners from CSV');
-        $io->info(sprintf('Reading file: %s', $file));
+        if ($this->io->isVerbose()) {
+            $this->io->text(sprintf('File: %s', $config->file));
+            $this->io->text(sprintf('Sync mode: %s', $config->syncMode->value));
+            $this->io->text(sprintf('Dry run: %s', $config->dryRun ? 'yes' : 'no'));
+        }
 
         try {
-            $imported = $this->importFromCsv($file, $skipErrors, $io, $output);
-
-            $io->success(sprintf('Successfully imported %d partners', $imported));
-
-            return Command::SUCCESS;
-        } catch (\Exception $e) {
-            $io->error(sprintf('Error: %s', $e->getMessage()));
+            return $this->executeImport($config);
+        } catch (\Throwable $throwable) {
+            $this->logger->error('Ошибка: '.$throwable->getMessage());
+            $this->io->error('Ошибка: '.$throwable->getMessage());
 
             return Command::FAILURE;
         }
     }
 
-    private function importFromCsv(string $file, bool $skipErrors, SymfonyStyle $io, OutputInterface $output): int
+    private function resolveConfig(InputInterface $input): ?ImportConfig
     {
-        $csv = Reader::createFromPath($file, 'r');
-        $csv->setHeaderOffset(0);
+        $file = $input->getArgument('file');
 
-        $phoneUtil = PhoneNumberUtil::getInstance();
-        $imported = 0;
-        $skipped = 0;
+        $resolvedFile = $this->resolveFilePath($file);
+        if (null === $resolvedFile) {
+            return null;
+        }
 
-        // Validate header
-        $expectedHeaders = ['title', 'site', 'phone', 'email', 'bitrix24_partner_id', 'open_line_id', 'external_id'];
-        $actualHeaders = $csv->getHeader();
-        if ($actualHeaders !== $expectedHeaders) {
-            $io->warning(sprintf(
-                'CSV header mismatch. Expected: %s, Got: %s',
-                implode(', ', $expectedHeaders),
-                implode(', ', $actualHeaders)
+        try {
+            $syncMode = SyncMode::from($input->getOption('sync-mode'));
+        } catch (\ValueError) {
+            $this->io->error(sprintf(
+                'Invalid sync-mode "%s". Allowed values: %s',
+                $input->getOption('sync-mode'),
+                implode(', ', array_map(static fn (SyncMode $m) => $m->value, SyncMode::cases())),
             ));
+
+            return null;
         }
 
-        // Get records
-        $records = Statement::create()->process($csv);
-        $totalRecords = iterator_count($records);
+        return new ImportConfig(
+            file: $resolvedFile,
+            syncMode: $syncMode,
+            dryRun: (bool) $input->getOption('dry-run'),
+        );
+    }
 
-        if (0 === $totalRecords) {
-            $io->warning('No records found in CSV file');
+    /**
+     * Резолвит относительный путь от корня проекта; абсолютные пути не поддерживаются
+     * (они привязаны к окружению и по-разному выглядят в Docker и на хосте).
+     *
+     * @return null|string Канонизированный абсолютный путь или null, если файл не найден
+     */
+    private function resolveFilePath(string $file): ?string
+    {
+        if (str_starts_with($file, '/')) {
+            $this->io->error(sprintf(
+                'Абсолютные пути не поддерживаются — используйте относительный путь от корня проекта, например: var/scraper/partners.csv (получено: %s)',
+                $file,
+            ));
 
-            return 0;
+            return null;
         }
 
-        // Reset iterator
-        $records = Statement::create()->process($csv);
+        $resolvedPath = realpath($this->projectRoot.'/'.$file);
+        if (false === $resolvedPath) {
+            $this->io->error(sprintf(
+                'File not found: %s (resolved to %s)',
+                $file,
+                $this->projectRoot.'/'.$file,
+            ));
 
-        // Create progress bar
-        $progressBar = new ProgressBar($output, $totalRecords);
-        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+            return null;
+        }
+
+        return $resolvedPath;
+    }
+
+    private function executeImport(ImportConfig $config): int
+    {
+        $this->io->title('Importing Bitrix24 Partners from CSV');
+
+        $onVerbose = $this->io->isVerbose()
+            ? fn (string $message) => $this->io->text($message)
+            : null;
+
+        $progressBar = $this->createProgressBar();
+
+        $onProgress = function (string $event, int $value) use ($progressBar): void {
+            match ($event) {
+                'csv_total' => (function () use ($progressBar, $value): void {
+                    $progressBar?->setMaxSteps($value);
+                    $progressBar?->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+                })(),
+                'delete_total' => (function () use ($progressBar, $value): void {
+                    if (null !== $progressBar) {
+                        $progressBar->setMaxSteps($progressBar->getMaxSteps() + $value);
+                    }
+                })(),
+                'row_advance', 'delete_advance' => $progressBar?->advance(),
+                default => null,
+            };
+        };
+
+        $result = $this->workflow->run($config, $onProgress, $onVerbose);
+
+        return $this->finishImport($progressBar, $result);
+    }
+
+    private function createProgressBar(): ?ProgressBar
+    {
+        if ($this->output->getVerbosity() < OutputInterface::VERBOSITY_NORMAL) {
+            return null;
+        }
+
+        $progressBar = new ProgressBar($this->output);
+        $progressBar->setFormat(' %current% [%bar%] %elapsed:6s% %memory:6s%');
         $progressBar->start();
 
-        $lineNumber = 1; // Header is line 1
+        return $progressBar;
+    }
 
-        foreach ($records as $record) {
-            $lineNumber++;
-            $progressBar->advance();
+    private function finishImport(?ProgressBar $progressBar, ImportResult $result): int
+    {
+        $progressBar?->finish();
+        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
+            $this->io->newLine(2);
+        }
 
-            try {
-                // Skip empty rows
-                if (empty(array_filter($record))) {
-                    continue;
-                }
-
-                // Parse row data
-                $title = isset($record['title']) ? trim($record['title']) : '';
-                $siteRaw = isset($record['site']) ? trim($record['site']) : '';
-                $site = '' !== $siteRaw ? $siteRaw : null;
-                $phoneStringRaw = isset($record['phone']) ? trim($record['phone']) : '';
-                $phoneString = '' !== $phoneStringRaw ? $phoneStringRaw : null;
-                $emailRaw = isset($record['email']) ? trim($record['email']) : '';
-                $email = '' !== $emailRaw ? $emailRaw : null;
-                $bitrix24PartnerIdRaw = isset($record['bitrix24_partner_id']) ? trim($record['bitrix24_partner_id']) : '';
-                $bitrix24PartnerId = '' !== $bitrix24PartnerIdRaw ? (int) $bitrix24PartnerIdRaw : null;
-                $openLineIdRaw = isset($record['open_line_id']) ? trim($record['open_line_id']) : '';
-                $openLineId = '' !== $openLineIdRaw ? $openLineIdRaw : null;
-                $externalIdRaw = isset($record['external_id']) ? trim($record['external_id']) : '';
-                $externalId = '' !== $externalIdRaw ? $externalIdRaw : null;
-
-                // Validate required fields
-                if ('' === $title) {
-                    throw new \InvalidArgumentException('Title is required');
-                }
-
-                if (null === $bitrix24PartnerId) {
-                    throw new \InvalidArgumentException('Bitrix24 Partner ID is required');
-                }
-
-                // Parse phone number
-                $phone = null;
-                if (null !== $phoneString) {
-                    try {
-                        $phone = $phoneUtil->parse($phoneString, 'RU');
-                    } catch (NumberParseException $e) {
-                        if (!$skipErrors) {
-                            throw new \InvalidArgumentException(
-                                sprintf('Invalid phone number: %s', $phoneString),
-                                0,
-                                $e
-                            );
-                        }
-                        $phone = null;
-                    }
-                }
-
-                // Create partner
-                $command = new CreateCommand(
-                    $title,
-                    $bitrix24PartnerId,
-                    $site,
-                    $phone,
-                    $email,
-                    $openLineId,
-                    $externalId
-                );
-
-                $this->createHandler->handle($command);
-                $imported++;
-            } catch (\Exception $e) {
-                if (!$skipErrors) {
-                    $progressBar->finish();
-                    throw new \RuntimeException(
-                        sprintf('Error on line %d: %s', $lineNumber, $e->getMessage()),
-                        0,
-                        $e
-                    );
-                }
-
-                $skipped++;
+        if ($result->dryRun) {
+            $this->io->note('DRY RUN — изменения не применены');
+            foreach ($result->plannedActions as $action) {
+                $this->io->text(sprintf(
+                    '  %s #%d %s%s',
+                    $action['action'],
+                    $action['partnerNumber'],
+                    $action['title'],
+                    isset($action['details']) ? ' ('.$action['details'].')' : ''
+                ));
             }
         }
 
-        $progressBar->finish();
-        $io->newLine(2);
+        $summary = sprintf(
+            'Created: %d | Updated: %d | Skipped: %d | Soft-deleted: %d | Errors: %d',
+            $result->created,
+            $result->updated,
+            $result->skipped,
+            $result->softDeleted,
+            $result->errors,
+        );
 
-        if ($skipped > 0) {
-            $io->note(sprintf('Skipped %d rows due to errors', $skipped));
+        if ($result->errors > 0) {
+            $this->io->warning($summary);
+            if ($this->io->isVerbose()) {
+                $this->printErrors($result->errorsDetail);
+            } else {
+                $this->io->text('  подробности в логах или запустите с -v');
+            }
+        } else {
+            $this->io->success($summary);
         }
 
-        return $imported;
+        return Command::SUCCESS;
+    }
+
+    /**
+     * @param list<array{partnerNumber: int, error: string}> $errorsDetail
+     */
+    private function printErrors(array $errorsDetail): void
+    {
+        $shown = 0;
+        foreach ($errorsDetail as $errorDetail) {
+            if ($shown >= self::DISPLAY_ERROR_LIMIT) {
+                break;
+            }
+
+            $this->io->text(sprintf('  #%d — %s', $errorDetail['partnerNumber'], $errorDetail['error']));
+            ++$shown;
+        }
+
+        $rest = count($errorsDetail) - $shown;
+        if ($rest > 0) {
+            $this->io->text(sprintf('  …и ещё %d', $rest));
+        }
     }
 }

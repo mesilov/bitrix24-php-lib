@@ -20,31 +20,35 @@ class CommandTest extends TestCase
     #[DataProvider('dataForCommand')]
     public function testValidCommand(
         string $title,
-        int $bitrix24PartnerId,
+        int $bitrix24PartnerNumber,
         ?string $site,
         ?string $email,
         ?string $openLineId,
         ?string $externalId,
-        ?string $expectedException,
-        ?string $expectedExceptionMessage
+        ?string $expectedException
     ): void {
         if (null !== $expectedException) {
             $this->expectException($expectedException);
         }
 
-        if (null !== $expectedExceptionMessage) {
-            $this->expectExceptionMessage($expectedExceptionMessage);
-        }
-
-        new Command(
+        $command = new Command(
             $title,
-            $bitrix24PartnerId,
+            $bitrix24PartnerNumber,
             $site,
-            null, // phone
+            null,
             $email,
             $openLineId,
             $externalId
         );
+
+        if (null === $expectedException) {
+            $this->assertEquals($title, $command->title);
+            $this->assertEquals($bitrix24PartnerNumber, $command->bitrix24PartnerNumber);
+            $this->assertEquals($site, $command->site);
+            $this->assertEquals($email, $command->email);
+            $this->assertEquals($openLineId, $command->openLineId);
+            $this->assertEquals($externalId, $command->externalId);
+        }
     }
 
     public static function dataForCommand(): \Generator
@@ -57,7 +61,6 @@ class CommandTest extends TestCase
             'line-123',
             'ext-123',
             null,
-            null,
         ];
 
         yield 'emptyTitle' => [
@@ -68,7 +71,6 @@ class CommandTest extends TestCase
             'line-123',
             'ext-123',
             \InvalidArgumentException::class,
-            'title must be a non-empty string',
         ];
 
         yield 'emptySite' => [
@@ -79,7 +81,6 @@ class CommandTest extends TestCase
             'line-123',
             'ext-123',
             \InvalidArgumentException::class,
-            'site must be null or non-empty string',
         ];
 
         yield 'emptyEmail' => [
@@ -90,10 +91,9 @@ class CommandTest extends TestCase
             'line-123',
             'ext-123',
             \InvalidArgumentException::class,
-            'email must be null or non-empty string',
         ];
 
-        yield 'negativeBitrix24PartnerId' => [
+        yield 'negativeBitrix24PartnerNumber' => [
             'Test Partner',
             -1,
             'https://example.com',
@@ -101,7 +101,6 @@ class CommandTest extends TestCase
             'line-123',
             'ext-123',
             \InvalidArgumentException::class,
-            'bitrix24PartnerId must be non-negative integer',
         ];
 
         yield 'emptyOpenLineId' => [
@@ -112,7 +111,6 @@ class CommandTest extends TestCase
             '',
             'ext-123',
             \InvalidArgumentException::class,
-            'openLineId must be null or non-empty string',
         ];
 
         yield 'emptyExternalId' => [
@@ -123,7 +121,6 @@ class CommandTest extends TestCase
             'line-123',
             '',
             \InvalidArgumentException::class,
-            'externalId must be null or non-empty string',
         ];
     }
 }

@@ -42,8 +42,7 @@ class ApplicationInstallationTest extends ApplicationInstallationInterfaceTest
             $clientContactPersonUuid,
             $partnerContactPersonUuid,
             $partnerUuid,
-            $externalId,
-            null
+            $externalId
         );
     }
 }

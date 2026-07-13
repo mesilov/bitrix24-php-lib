@@ -1,0 +1,56 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__ . '/../vendor/autoload.php';
+
+(new Symfony\Component\Dotenv\Dotenv())->bootEnv(__DIR__ . '/../.env');
+
+use Bitrix24\Lib\Bitrix24Partners\Console\ImportPartnersCsvCommand;
+use Bitrix24\Lib\Bitrix24Partners\Console\ScrapePartnersCommand;
+use Bitrix24\Lib\Bitrix24Partners\Import\Handler as ImportHandler;
+use Bitrix24\Lib\Bitrix24Partners\Import\ImportWorkflow;
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerReadModel;
+use Bitrix24\Lib\Bitrix24Partners\Infrastructure\Doctrine\Bitrix24PartnerRepository;
+use Bitrix24\Lib\Bitrix24Partners\Scrape\ScrapeWorkflow;
+use Bitrix24\Lib\Bitrix24Partners\Services\Scraper\BanDetector;
+use Bitrix24\Lib\Bitrix24Partners\Services\Scraper\PartnerHtmlParser;
+use Bitrix24\Lib\Bitrix24Partners\Services\Scraper\PartnerPageScraper;
+use Bitrix24\Lib\Bitrix24Partners\Services\Scraper\ScrapeStateManager;
+use Bitrix24\Lib\Bitrix24Partners\UseCase\Delete\Handler as DeleteHandler;
+use Bitrix24\Lib\Services\Flusher;
+use Bitrix24\Lib\Tests\EntityManagerFactory;
+use libphonenumber\PhoneNumberUtil;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Psr\Log\NullLogger;
+use Symfony\Component\Console\Application;
+use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Stopwatch\Stopwatch;
+
+$application = new Application();
+
+$logger = new Logger('bitrix24-lib');
+$logger->pushHandler(new StreamHandler(__DIR__ . '/../app.log', Logger::DEBUG));
+
+$parser = new PartnerHtmlParser($logger);
+$scraper = new PartnerPageScraper($logger, $parser);
+$stateManager = new ScrapeStateManager();
+$banDetector = new BanDetector($logger);
+$workflow = new ScrapeWorkflow($scraper, $stateManager, $banDetector, $logger);
+
+$application->addCommand(new ScrapePartnersCommand($logger, $workflow, realpath(dirname(__DIR__))));
+
+$entityManager = EntityManagerFactory::get();
+$eventDispatcher = new TraceableEventDispatcher(new EventDispatcher(), new Stopwatch());
+$repository = new Bitrix24PartnerRepository($entityManager);
+$readModel = new Bitrix24PartnerReadModel($entityManager);
+$flusher = new Flusher($entityManager, $eventDispatcher);
+
+$importHandler = new ImportHandler($repository, $flusher, PhoneNumberUtil::getInstance(), new NullLogger());
+$deleteHandler = new DeleteHandler($repository, $flusher, new NullLogger());
+$importWorkflow = new ImportWorkflow($importHandler, $deleteHandler, $readModel, PhoneNumberUtil::getInstance(), $eventDispatcher, new NullLogger());
+
+$application->addCommand(new ImportPartnersCsvCommand($logger, $importWorkflow, realpath(dirname(__DIR__))));
+
+$application->run();
