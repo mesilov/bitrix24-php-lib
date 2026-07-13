@@ -8,10 +8,15 @@ use League\Csv\Reader;
 
 class ScrapeStateManager
 {
+    /**
+     * Fallback for state.json files created before partners_per_page was stored.
+     */
+    private const int DEFAULT_PARTNERS_PER_PAGE = 12;
+
     private ?array $state = null;
 
     /**
-     * @return null|array{lastPage: int, startPage: int, processedNumbers: array<int, true>, outputFile: string, zone: string}
+     * @return null|array{lastPage: int, startPage: int, processedNumbers: array<int, true>, outputFile: string, zone: string, partnersPerPage: int}
      */
     public function resume(string $outputDir, string $zone): ?array
     {
@@ -45,10 +50,11 @@ class ScrapeStateManager
             'processedNumbers' => $processedNumbers,
             'outputFile' => $outputFile,
             'zone' => $state['zone'],
+            'partnersPerPage' => $state['partners_per_page'] ?? self::DEFAULT_PARTNERS_PER_PAGE,
         ];
     }
 
-    public function initState(string $outputDir, string $outputFile, string $baseUrl, int $lastPage, string $zone): void
+    public function initState(string $outputDir, string $outputFile, string $baseUrl, int $lastPage, int $partnersPerPage, string $zone): void
     {
         $statePath = $this->getStateFilePath($outputDir);
         if (file_exists($statePath)) {
@@ -59,6 +65,7 @@ class ScrapeStateManager
             'mode' => 'full_scrape',
             'base_url' => $baseUrl,
             'total_pages' => $lastPage,
+            'partners_per_page' => $partnersPerPage,
             'last_completed_page' => 0,
             'output_dir' => rtrim($outputDir, '/'),
             'output_file' => $outputFile,

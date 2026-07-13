@@ -42,6 +42,7 @@ class ScrapeStateManagerTest extends TestCase
             outputFile: $this->tmpDir.'/partners-20260526-120000.csv',
             baseUrl: 'https://partners.bitrix24.ru',
             lastPage: 42,
+            partnersPerPage: 12,
             zone: 'ru',
         );
 
@@ -53,6 +54,7 @@ class ScrapeStateManagerTest extends TestCase
         $this->assertSame($this->tmpDir.'/partners-20260526-120000.csv', $state['output_file']);
         $this->assertSame(42, $state['total_pages']);
         $this->assertSame(0, $state['last_completed_page']);
+        $this->assertSame(12, $state['partners_per_page']);
         $this->assertSame('ru', $state['zone']);
     }
 
@@ -60,7 +62,7 @@ class ScrapeStateManagerTest extends TestCase
     public function updateProgressUpdatesCompletedPage(): void
     {
         $manager = new ScrapeStateManager();
-        $manager->initState($this->tmpDir, $this->tmpDir.'/partners-test.csv', 'https://example.com', 10, 'ru');
+        $manager->initState($this->tmpDir, $this->tmpDir.'/partners-test.csv', 'https://example.com', 10, 12, 'ru');
 
         $manager->updateProgress($this->tmpDir, 5);
 
@@ -86,14 +88,14 @@ class ScrapeStateManagerTest extends TestCase
         $outputFile = $this->tmpDir.'/partners-test.csv';
         file_put_contents($outputFile, "bitrix24_partner_number,title\n");
 
-        $manager->initState($this->tmpDir, $outputFile, 'https://example.com', 20, 'ru');
+        $manager->initState($this->tmpDir, $outputFile, 'https://example.com', 20, 12, 'ru');
         $manager->updateProgress($this->tmpDir, 9);
 
         $result = $manager->resume($this->tmpDir, 'ru');
 
-        $this->assertNotNull($result);
         $this->assertSame(10, $result['startPage']);
         $this->assertSame(20, $result['lastPage']);
+        $this->assertSame(12, $result['partnersPerPage']);
         $this->assertSame($outputFile, $result['outputFile']);
         $this->assertIsArray($result['processedNumbers']);
     }
@@ -105,7 +107,7 @@ class ScrapeStateManagerTest extends TestCase
         $outputFile = $this->tmpDir.'/partners-test.csv';
         file_put_contents($outputFile, "bitrix24_partner_number,title\n");
 
-        $manager->initState($this->tmpDir, $outputFile, 'https://example.com', 20, 'ru');
+        $manager->initState($this->tmpDir, $outputFile, 'https://example.com', 20, 12, 'ru');
 
         $otherDir = sys_get_temp_dir().'/scrape-state-test-other-'.uniqid();
         mkdir($otherDir, 0755, true);
@@ -128,7 +130,7 @@ class ScrapeStateManagerTest extends TestCase
         $outputFile = $this->tmpDir.'/partners-test.csv';
         file_put_contents($outputFile, "bitrix24_partner_number,title\n");
 
-        $manager->initState($this->tmpDir, $outputFile, 'https://example.com', 20, 'ru');
+        $manager->initState($this->tmpDir, $outputFile, 'https://example.com', 20, 12, 'ru');
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessageMatches('/zone не совпадает/');
@@ -139,7 +141,7 @@ class ScrapeStateManagerTest extends TestCase
     public function completeRemovesStateFile(): void
     {
         $manager = new ScrapeStateManager();
-        $manager->initState($this->tmpDir, $this->tmpDir.'/partners-test.csv', 'https://example.com', 10, 'ru');
+        $manager->initState($this->tmpDir, $this->tmpDir.'/partners-test.csv', 'https://example.com', 10, 12, 'ru');
 
         $this->assertFileExists($this->tmpDir.'/state.json');
 
@@ -152,9 +154,9 @@ class ScrapeStateManagerTest extends TestCase
     public function initStateOverwritesExistingState(): void
     {
         $manager = new ScrapeStateManager();
-        $manager->initState($this->tmpDir, $this->tmpDir.'/partners-old.csv', 'https://example.com', 10, 'ru');
+        $manager->initState($this->tmpDir, $this->tmpDir.'/partners-old.csv', 'https://example.com', 10, 12, 'ru');
 
-        $manager->initState($this->tmpDir, $this->tmpDir.'/partners-new.csv', 'https://example.com', 30, 'ru');
+        $manager->initState($this->tmpDir, $this->tmpDir.'/partners-new.csv', 'https://example.com', 30, 12, 'ru');
 
         $stateJson = file_get_contents($this->tmpDir.'/state.json');
         $state = json_decode($stateJson, true);
@@ -169,12 +171,11 @@ class ScrapeStateManagerTest extends TestCase
         $outputFile = $this->tmpDir.'/partners-test.csv';
         file_put_contents($outputFile, "bitrix24_partner_number,title\n101,\"A\"\n202,\"B\"\n");
 
-        $manager->initState($this->tmpDir, $outputFile, 'https://example.com', 20, 'ru');
+        $manager->initState($this->tmpDir, $outputFile, 'https://example.com', 20, 12, 'ru');
         $manager->updateProgress($this->tmpDir, 5);
 
         $result = $manager->resume($this->tmpDir, 'ru');
 
-        $this->assertNotNull($result);
         $this->assertArrayHasKey(101, $result['processedNumbers']);
         $this->assertArrayHasKey(202, $result['processedNumbers']);
         $this->assertTrue($result['processedNumbers'][101]);

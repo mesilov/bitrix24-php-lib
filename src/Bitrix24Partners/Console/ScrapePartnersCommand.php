@@ -168,6 +168,9 @@ class ScrapePartnersCommand extends Command
 
         $resolvedPath = $this->projectRoot.'/'.$outputDir;
 
+        // Triple check — canonical PHP idiom for safe mkdir (race-condition guard):
+        // if another process creates the directory between is_dir and mkdir,
+        // mkdir returns false, but the directory actually exists.
         if (!is_dir($resolvedPath) && !mkdir($resolvedPath, 0755, true) && !is_dir($resolvedPath)) {
             $this->io->error(sprintf('Не удалось создать директорию: %s', $resolvedPath));
 
@@ -215,7 +218,6 @@ class ScrapePartnersCommand extends Command
         $startPage = 1;
         $lastPage = 0;
         $progress = new ScrapeProgress();
-        $partnersPerPage = 12;
 
         if ($options->resume) {
             $resumeState = $this->scrapeWorkflow->resolveResumeContext($options->outputDir, $options->zone->value);
@@ -228,6 +230,7 @@ class ScrapePartnersCommand extends Command
             $outputFile = $resumeState['outputFile'];
             $startPage = $resumeState['startPage'];
             $lastPage = $resumeState['lastPage'];
+            $partnersPerPage = $resumeState['partnersPerPage'];
             $progress = new ScrapeProgress($resumeState['processedNumbers']);
         } else {
             $outputFile = ScrapeConfig::getOutputPath($options->outputDir);
@@ -291,6 +294,7 @@ class ScrapePartnersCommand extends Command
             $config,
             $startPage,
             $lastPage,
+            $partnersPerPage,
             $progress,
             $onProgress,
         );

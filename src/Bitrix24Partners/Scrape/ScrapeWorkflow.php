@@ -21,7 +21,7 @@ class ScrapeWorkflow
     ) {}
 
     /**
-     * @return null|array{startPage: int, lastPage: int, processedNumbers: array<int, true>, outputFile: string, zone: string}
+     * @return null|array{startPage: int, lastPage: int, processedNumbers: array<int, true>, outputFile: string, zone: string, partnersPerPage: int}
      */
     public function resolveResumeContext(string $outputDir, string $zone): ?array
     {
@@ -110,6 +110,7 @@ class ScrapeWorkflow
         ScrapeConfig $config,
         int $startPage,
         int $lastPage,
+        int $partnersPerPage,
         ScrapeProgress $progress,
         ?\Closure $onProgress = null,
     ): ScrapeResult {
@@ -117,7 +118,7 @@ class ScrapeWorkflow
             throw new \LogicException('outputFile must be set before running scrape.');
         }
 
-        $this->stateManager->initState($config->outputDir, $config->outputFile, $config->baseUrl, $lastPage, $config->zone->value);
+        $this->stateManager->initState($config->outputDir, $config->outputFile, $config->baseUrl, $lastPage, $partnersPerPage, $config->zone->value);
         $this->banDetector->reset();
 
         $csvWriter = $this->initCsvWriter($config);

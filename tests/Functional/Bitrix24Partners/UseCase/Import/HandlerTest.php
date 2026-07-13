@@ -57,7 +57,7 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    public function testCreatePartnerWhenNotExists(): void
+    public function testCreateNewPartner(): void
     {
         $title = 'New Partner';
         $partnerNumber = 99999;
@@ -84,7 +84,6 @@ class HandlerTest extends TestCase
         );
 
         $created = $this->repository->findByBitrix24PartnerNumber($partnerNumber);
-        $this->assertNotNull($created);
         $this->assertEquals($title, $created->getTitle());
         $this->assertEquals($site, $created->getSite());
         $this->assertEquals($email, $created->getEmail());
@@ -129,7 +128,6 @@ class HandlerTest extends TestCase
         $this->entityManager->clear();
 
         $partner = $this->repository->findByBitrix24PartnerNumber($partnerNumber);
-        $this->assertNotNull($partner);
         $this->assertEquals($title, $partner->getTitle());
         $this->assertEquals(
             $existing->getUpdatedAt()->toIso8601String(),
@@ -177,7 +175,6 @@ class HandlerTest extends TestCase
         $this->entityManager->clear();
 
         $partner = $this->repository->findByBitrix24PartnerNumber($partnerNumber);
-        $this->assertNotNull($partner);
         $this->assertEquals($newTitle, $partner->getTitle());
         $this->assertEquals($newEmail, $partner->getEmail());
         $this->assertEquals($newLogoUrl, $partner->getLogoUrl());
@@ -214,7 +211,6 @@ class HandlerTest extends TestCase
         $this->entityManager->clear();
 
         $partner = $this->repository->findByBitrix24PartnerNumber($partnerNumber);
-        $this->assertNotNull($partner);
         $this->assertEquals($openLineId, $partner->getOpenLineId());
         $this->assertEquals($externalId, $partner->getExternalId());
         $this->assertEquals(
@@ -241,7 +237,6 @@ class HandlerTest extends TestCase
         $this->entityManager->clear();
 
         $partner = $this->repository->findByBitrix24PartnerNumber($partnerNumber);
-        $this->assertNotNull($partner);
         $this->assertNull($partner->getPhone());
     }
 }
