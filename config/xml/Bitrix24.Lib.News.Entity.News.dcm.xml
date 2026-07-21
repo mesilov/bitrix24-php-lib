@@ -1,0 +1,19 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xs="https://www.w3.org/2001/XMLSchema"
+                  xmlns:orm="https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="Bitrix24\Lib\News\Entity\News" table="b24lib_news">
+        <id name="id" type="uuid" column="id">
+
+        </id>
+
+        <field name="title" type="string" column="title" nullable="false"/>
+
+        <field name="text" type="text" column="text" nullable="false"/>
+
+        <field name="status" enum-type="Bitrix24\Lib\News\Entity\NewsStatus" column="status" nullable="false"/>
+
+        <field name="createdAt" type="carbon_immutable" column="created_at_utc" precision="3" nullable="false"/>
+
+        <field name="updatedAt" type="carbon_immutable" column="updated_at_utc" precision="3" nullable="false"/>
+    </entity>
+</doctrine-mapping>
