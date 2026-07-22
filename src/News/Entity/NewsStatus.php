@@ -18,4 +18,5 @@ enum NewsStatus: string
     case draft = 'draft';
     case published = 'published';
     case archived = 'archived';
+    case deleted = 'deleted';
 }

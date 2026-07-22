@@ -16,6 +16,7 @@ namespace Bitrix24\Lib\News\Entity;
 use Bitrix24\Lib\AggregateRoot;
 use Bitrix24\Lib\News\Events\NewsArchivedEvent;
 use Bitrix24\Lib\News\Events\NewsCreatedEvent;
+use Bitrix24\Lib\News\Events\NewsDeletedEvent;
 use Bitrix24\Lib\News\Events\NewsPublishedEvent;
 use Bitrix24\Lib\News\Events\NewsRevertedToDraftEvent;
 use Bitrix24\Lib\News\Events\NewsTextChangedEvent;
@@ -25,7 +26,7 @@ use Bitrix24\SDK\Core\Exceptions\LogicException;
 use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
 
-class News extends AggregateRoot
+class News extends AggregateRoot implements NewsInterface
 {
     private readonly CarbonImmutable $createdAt;
 
@@ -45,36 +46,43 @@ class News extends AggregateRoot
         $this->events[] = new NewsCreatedEvent($this->id, $this->createdAt);
     }
 
+    #[\Override]
     public function getId(): Uuid
     {
         return $this->id;
     }
 
+    #[\Override]
     public function getTitle(): string
     {
         return $this->title;
     }
 
+    #[\Override]
     public function getText(): string
     {
         return $this->text;
     }
 
+    #[\Override]
     public function getStatus(): NewsStatus
     {
         return $this->status;
     }
 
+    #[\Override]
     public function getCreatedAt(): CarbonImmutable
     {
         return $this->createdAt;
     }
 
+    #[\Override]
     public function getUpdatedAt(): CarbonImmutable
     {
         return $this->updatedAt;
     }
 
+    #[\Override]
     public function changeTitle(string $title): void
     {
         $this->guardTitle($title);
@@ -95,6 +103,7 @@ class News extends AggregateRoot
         );
     }
 
+    #[\Override]
     public function changeText(string $text): void
     {
         $this->guardText($text);
@@ -115,6 +124,7 @@ class News extends AggregateRoot
         );
     }
 
+    #[\Override]
     public function publish(): void
     {
         if (NewsStatus::draft !== $this->status) {
@@ -132,6 +142,7 @@ class News extends AggregateRoot
         $this->events[] = new NewsPublishedEvent($this->id, $this->updatedAt);
     }
 
+    #[\Override]
     public function revertToDraft(): void
     {
         if (NewsStatus::published !== $this->status) {
@@ -149,6 +160,7 @@ class News extends AggregateRoot
         $this->events[] = new NewsRevertedToDraftEvent($this->id, $this->updatedAt);
     }
 
+    #[\Override]
     public function archive(): void
     {
         if (NewsStatus::archived === $this->status) {
@@ -159,6 +171,19 @@ class News extends AggregateRoot
         $this->updatedAt = new CarbonImmutable();
 
         $this->events[] = new NewsArchivedEvent($this->id, $this->updatedAt);
+    }
+
+    #[\Override]
+    public function markAsDeleted(): void
+    {
+        if (NewsStatus::deleted === $this->status) {
+            throw new LogicException('news already in status «deleted»');
+        }
+
+        $this->status = NewsStatus::deleted;
+        $this->updatedAt = new CarbonImmutable();
+
+        $this->events[] = new NewsDeletedEvent($this->id, $this->updatedAt);
     }
 
     private function guardTitle(string $title): void
