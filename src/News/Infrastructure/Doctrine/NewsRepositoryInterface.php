@@ -27,9 +27,9 @@ interface NewsRepositoryInterface
     public function save(NewsInterface $news): void;
 
     /**
-     * Find news by ID (any status).
+     * Get news by ID (any status).
      */
-    public function findById(Uuid $uuid): ?NewsInterface;
+    public function getById(Uuid $uuid): NewsInterface;
 
     /**
      * Find published news for the in-app feed (newest first), paginated.

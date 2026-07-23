@@ -16,6 +16,7 @@ namespace Bitrix24\Lib\News\Infrastructure\Doctrine;
 use Bitrix24\Lib\News\Entity\News;
 use Bitrix24\Lib\News\Entity\NewsInterface;
 use Bitrix24\Lib\News\Entity\NewsStatus;
+use Bitrix24\Lib\News\Exceptions\NewsNotFoundException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Component\Uid\Uuid;
@@ -35,18 +36,29 @@ class NewsRepository implements NewsRepositoryInterface
         $this->entityManager->persist($news);
     }
 
+    /**
+     * @throws NewsNotFoundException
+     */
     #[\Override]
-    public function findById(Uuid $uuid): ?NewsInterface
+    public function getById(Uuid $uuid): NewsInterface
     {
-        return $this->repository
-            ->createQueryBuilder('news')
-            ->where('news.id = :id')
-            ->andWhere('news.status != :deletedStatus')
+        $news = $this->repository
+            ->createQueryBuilder('b24')
+            ->where('b24.id = :id')
+            ->andWhere('b24.status != :status')
             ->setParameter('id', $uuid)
-            ->setParameter('deletedStatus', NewsStatus::deleted)
+            ->setParameter('status', NewsStatus::deleted)
             ->getQuery()
             ->getOneOrNullResult()
         ;
+
+        if (null === $news) {
+            throw new NewsNotFoundException(
+                sprintf('news not found by id %s', $uuid->toRfc4122())
+            );
+        }
+
+        return $news;
     }
 
     #[\Override]
