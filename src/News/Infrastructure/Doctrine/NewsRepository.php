@@ -19,14 +19,18 @@ use Bitrix24\Lib\News\Entity\NewsStatus;
 use Bitrix24\Lib\News\Exceptions\NewsNotFoundException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
+use Knp\Component\Pager\Pagination\PaginationInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Component\Uid\Uuid;
 
 class NewsRepository implements NewsRepositoryInterface
 {
     private readonly EntityRepository $repository;
 
-    public function __construct(private readonly EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly PaginatorInterface $paginator
+    ) {
         $this->repository = $this->entityManager->getRepository(News::class);
     }
 
@@ -61,20 +65,26 @@ class NewsRepository implements NewsRepositoryInterface
         return $news;
     }
 
+    /**
+     * @return PaginationInterface<NewsInterface>
+     */
     #[\Override]
-    public function findPublished(int $page = 1, int $perPage = 20): array
+    public function findPublished(int $page = 1, int $limit = 20): PaginationInterface
     {
-        $page = max(1, $page);
-
-        return $this->repository
+        $queryBuilder = $this->repository
             ->createQueryBuilder('news')
             ->where('news.status = :status')
             ->setParameter('status', NewsStatus::published)
-            ->orderBy('news.createdAt', 'DESC')
-            ->setFirstResult(($page - 1) * $perPage)
-            ->setMaxResults($perPage)
-            ->getQuery()
-            ->getResult()
         ;
+
+        return $this->paginator->paginate(
+            $queryBuilder,
+            $page,
+            $limit,
+            [
+                'defaultSortFieldName' => 'news.createdAt',
+                'defaultSortDirection' => 'desc',
+            ]
+        );
     }
 }

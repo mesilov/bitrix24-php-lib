@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\News\Infrastructure\Doctrine;
 
 use Bitrix24\Lib\News\Entity\NewsInterface;
+use Knp\Component\Pager\Pagination\PaginationInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -34,7 +35,7 @@ interface NewsRepositoryInterface
     /**
      * Find published news for the in-app feed (newest first), paginated.
      *
-     * @return NewsInterface[]
+     * @return PaginationInterface<NewsInterface>
      */
-    public function findPublished(int $page = 1, int $perPage = 20): array;
+    public function findPublished(int $page = 1, int $limit = 20): PaginationInterface;
 }
