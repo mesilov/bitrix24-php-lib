@@ -17,6 +17,7 @@ use Bitrix24\Lib\News\Entity\News;
 use Bitrix24\Lib\News\Entity\NewsInterface;
 use Bitrix24\Lib\News\Entity\NewsStatus;
 use Bitrix24\Lib\News\Exceptions\NewsNotFoundException;
+use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Knp\Component\Pager\Pagination\PaginationInterface;
@@ -63,6 +64,19 @@ class NewsRepository implements NewsRepositoryInterface
         }
 
         return $news;
+    }
+
+    /**
+     * @return NewsInterface[]
+     */
+    #[\Override]
+    public function findByTitle(string $title): array
+    {
+        if ('' === trim($title)) {
+            throw new InvalidArgumentException('news title cannot be empty');
+        }
+
+        return $this->repository->findBy(['title' => $title]);
     }
 
     /**

@@ -27,7 +27,8 @@ readonly class Handler
         $news = new News(
             Uuid::v7(),
             $command->title,
-            $command->text
+            $command->text,
+            isEmitNewsCreatedEvent: true,
         );
 
         $this->newsRepository->save($news);

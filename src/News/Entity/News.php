@@ -37,13 +37,14 @@ class News extends AggregateRoot implements NewsInterface
     public function __construct(
         private readonly Uuid $id,
         private string $title,
-        private string $text
+        private string $text,
+        private readonly bool $isEmitNewsCreatedEvent = false,
     ) {
         $this->validate();
         $this->createdAt = new CarbonImmutable();
         $this->updatedAt = new CarbonImmutable();
 
-        $this->events[] = new NewsCreatedEvent($this->id, $this->createdAt);
+        $this->addNewsCreatedEventIfNeeded($this->isEmitNewsCreatedEvent);
     }
 
     #[\Override]
@@ -204,5 +205,12 @@ class News extends AggregateRoot implements NewsInterface
     {
         $this->guardTitle($this->title);
         $this->guardText($this->text);
+    }
+
+    private function addNewsCreatedEventIfNeeded(bool $isEmitCreatedEvent): void
+    {
+        if ($isEmitCreatedEvent) {
+            $this->events[] = new NewsCreatedEvent($this->id, $this->createdAt);
+        }
     }
 }

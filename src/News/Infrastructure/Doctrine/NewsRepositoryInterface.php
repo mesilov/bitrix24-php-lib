@@ -33,6 +33,13 @@ interface NewsRepositoryInterface
     public function getById(Uuid $uuid): NewsInterface;
 
     /**
+     * Find news by title.
+     *
+     * @return NewsInterface[]
+     */
+    public function findByTitle(string $title): array;
+
+    /**
      * Find published news for the in-app feed (newest first), paginated.
      *
      * @return PaginationInterface<NewsInterface>
