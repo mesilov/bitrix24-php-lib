@@ -6,7 +6,6 @@ namespace Bitrix24\Lib\Tests\Unit\News\Entity;
 
 use Bitrix24\Lib\News\Entity\News;
 use Bitrix24\Lib\News\Entity\NewsStatus;
-use Bitrix24\Lib\News\Events\NewsArchivedEvent;
 use Bitrix24\Lib\News\Events\NewsCreatedEvent;
 use Bitrix24\Lib\News\Events\NewsDeletedEvent;
 use Bitrix24\Lib\News\Events\NewsPublishedEvent;
@@ -140,30 +139,6 @@ final class NewsTest extends TestCase
         $this->expectException(LogicException::class);
 
         $news->revertToDraft();
-    }
-
-    #[Test]
-    public function archiveChangesStatusToArchived(): void
-    {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
-
-        $news->archive();
-
-        self::assertSame(NewsStatus::archived, $news->getStatus());
-        $events = $news->emitEvents();
-        self::assertCount(1, $events);
-        self::assertInstanceOf(NewsArchivedEvent::class, $events[0]);
-    }
-
-    #[Test]
-    public function archiveThrowsWhenAlreadyArchived(): void
-    {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
-        $news->archive();
-
-        $this->expectException(LogicException::class);
-
-        $news->archive();
     }
 
     #[Test]

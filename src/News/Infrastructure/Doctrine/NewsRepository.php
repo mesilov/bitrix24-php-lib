@@ -1,22 +1,13 @@
 <?php
 
-/**
- * This file is part of the bitrix24-php-lib package.
- *
- * © Maksim Mesilov <mesilov.maxim@gmail.com>
- *
- * For the full copyright and license information, please view the MIT-LICENSE.txt
- * file that was distributed with this source code.
- */
-
 declare(strict_types=1);
 
 namespace Bitrix24\Lib\News\Infrastructure\Doctrine;
 
 use Bitrix24\Lib\News\Entity\News;
-use Bitrix24\Lib\News\Entity\NewsInterface;
 use Bitrix24\Lib\News\Entity\NewsStatus;
 use Bitrix24\Lib\News\Exceptions\NewsNotFoundException;
+use Bitrix24\Lib\News\Infrastructure\NewsRepositoryInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
@@ -36,7 +27,7 @@ class NewsRepository implements NewsRepositoryInterface
     }
 
     #[\Override]
-    public function save(NewsInterface $news): void
+    public function save(News $news): void
     {
         $this->entityManager->persist($news);
     }
@@ -45,7 +36,7 @@ class NewsRepository implements NewsRepositoryInterface
      * @throws NewsNotFoundException
      */
     #[\Override]
-    public function getById(Uuid $uuid): NewsInterface
+    public function getById(Uuid $uuid): News
     {
         $news = $this->repository
             ->createQueryBuilder('b24')
@@ -67,7 +58,7 @@ class NewsRepository implements NewsRepositoryInterface
     }
 
     /**
-     * @return NewsInterface[]
+     * @return News[]
      */
     #[\Override]
     public function findByTitle(string $title): array
@@ -80,7 +71,7 @@ class NewsRepository implements NewsRepositoryInterface
     }
 
     /**
-     * @return PaginationInterface<NewsInterface>
+     * @return PaginationInterface<News>
      */
     #[\Override]
     public function findPublished(int $page = 1, int $limit = 20): PaginationInterface
@@ -89,6 +80,29 @@ class NewsRepository implements NewsRepositoryInterface
             ->createQueryBuilder('news')
             ->where('news.status = :status')
             ->setParameter('status', NewsStatus::published)
+        ;
+
+        return $this->paginator->paginate(
+            $queryBuilder,
+            $page,
+            $limit,
+            [
+                'defaultSortFieldName' => 'news.createdAt',
+                'defaultSortDirection' => 'desc',
+            ]
+        );
+    }
+
+    /**
+     * @return PaginationInterface<News>
+     */
+    #[\Override]
+    public function findDrafts(int $page = 1, int $limit = 20): PaginationInterface
+    {
+        $queryBuilder = $this->repository
+            ->createQueryBuilder('news')
+            ->where('news.status = :status')
+            ->setParameter('status', NewsStatus::draft)
         ;
 
         return $this->paginator->paginate(

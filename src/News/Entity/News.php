@@ -1,20 +1,10 @@
 <?php
 
-/**
- * This file is part of the bitrix24-php-lib package.
- *
- * © Maksim Mesilov <mesilov.maxim@gmail.com>
- *
- * For the full copyright and license information, please view the MIT-LICENSE.txt
- * file that was distributed with this source code.
- */
-
 declare(strict_types=1);
 
 namespace Bitrix24\Lib\News\Entity;
 
 use Bitrix24\Lib\AggregateRoot;
-use Bitrix24\Lib\News\Events\NewsArchivedEvent;
 use Bitrix24\Lib\News\Events\NewsCreatedEvent;
 use Bitrix24\Lib\News\Events\NewsDeletedEvent;
 use Bitrix24\Lib\News\Events\NewsPublishedEvent;
@@ -26,7 +16,7 @@ use Bitrix24\SDK\Core\Exceptions\LogicException;
 use Carbon\CarbonImmutable;
 use Symfony\Component\Uid\Uuid;
 
-class News extends AggregateRoot implements NewsInterface
+class News extends AggregateRoot
 {
     private readonly CarbonImmutable $createdAt;
 
@@ -47,43 +37,36 @@ class News extends AggregateRoot implements NewsInterface
         $this->addNewsCreatedEventIfNeeded($this->isEmitNewsCreatedEvent);
     }
 
-    #[\Override]
     public function getId(): Uuid
     {
         return $this->id;
     }
 
-    #[\Override]
     public function getTitle(): string
     {
         return $this->title;
     }
 
-    #[\Override]
     public function getText(): string
     {
         return $this->text;
     }
 
-    #[\Override]
     public function getStatus(): NewsStatus
     {
         return $this->status;
     }
 
-    #[\Override]
     public function getCreatedAt(): CarbonImmutable
     {
         return $this->createdAt;
     }
 
-    #[\Override]
     public function getUpdatedAt(): CarbonImmutable
     {
         return $this->updatedAt;
     }
 
-    #[\Override]
     public function changeTitle(string $title): void
     {
         $this->guardTitle($title);
@@ -104,7 +87,6 @@ class News extends AggregateRoot implements NewsInterface
         );
     }
 
-    #[\Override]
     public function changeText(string $text): void
     {
         $this->guardText($text);
@@ -125,7 +107,6 @@ class News extends AggregateRoot implements NewsInterface
         );
     }
 
-    #[\Override]
     public function publish(): void
     {
         if (NewsStatus::draft !== $this->status) {
@@ -143,7 +124,6 @@ class News extends AggregateRoot implements NewsInterface
         $this->events[] = new NewsPublishedEvent($this->id, $this->updatedAt);
     }
 
-    #[\Override]
     public function revertToDraft(): void
     {
         if (NewsStatus::published !== $this->status) {
@@ -161,20 +141,6 @@ class News extends AggregateRoot implements NewsInterface
         $this->events[] = new NewsRevertedToDraftEvent($this->id, $this->updatedAt);
     }
 
-    #[\Override]
-    public function archive(): void
-    {
-        if (NewsStatus::archived === $this->status) {
-            throw new LogicException('news already in status «archived»');
-        }
-
-        $this->status = NewsStatus::archived;
-        $this->updatedAt = new CarbonImmutable();
-
-        $this->events[] = new NewsArchivedEvent($this->id, $this->updatedAt);
-    }
-
-    #[\Override]
     public function markAsDeleted(): void
     {
         if (NewsStatus::deleted === $this->status) {

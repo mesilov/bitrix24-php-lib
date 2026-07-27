@@ -69,7 +69,6 @@ class NewsBuilder
         match ($this->status) {
             NewsStatus::draft => null,
             NewsStatus::published => $news->publish(),
-            NewsStatus::archived => $news->archive(),
             NewsStatus::deleted => $news->markAsDeleted(),
         };
 

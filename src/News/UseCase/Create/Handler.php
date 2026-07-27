@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\News\UseCase\Create;
 
 use Bitrix24\Lib\News\Entity\News;
-use Bitrix24\Lib\News\Infrastructure\Doctrine\NewsRepositoryInterface;
+use Bitrix24\Lib\News\Infrastructure\NewsRepositoryInterface;
 use Bitrix24\Lib\Services\Flusher;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
