@@ -12,7 +12,8 @@ readonly class Command
     public function __construct(
         public Uuid $id,
         public string $title,
-        public string $text
+        public string $text,
+        public ?string $imageUrl = null
     ) {
         $this->validate();
     }
@@ -28,6 +29,10 @@ readonly class Command
 
         if ('' === trim($this->text)) {
             throw new InvalidArgumentException('news text cannot be empty');
+        }
+
+        if (null !== $this->imageUrl && '' === trim($this->imageUrl)) {
+            throw new InvalidArgumentException('news image url cannot be empty');
         }
     }
 }

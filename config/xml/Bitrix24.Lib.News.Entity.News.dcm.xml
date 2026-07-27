@@ -10,6 +10,8 @@
 
         <field name="text" type="text" column="text" nullable="false"/>
 
+        <field name="imageUrl" type="string" column="image_url" length="2048" nullable="true"/>
+
         <field name="status" enum-type="Bitrix24\Lib\News\Entity\NewsStatus" column="status" nullable="false"/>
 
         <field name="createdAt" type="carbon_immutable" column="created_at_utc" precision="3" nullable="false"/>

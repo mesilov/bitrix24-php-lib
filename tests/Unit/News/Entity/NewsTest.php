@@ -8,6 +8,7 @@ use Bitrix24\Lib\News\Entity\News;
 use Bitrix24\Lib\News\Entity\NewsStatus;
 use Bitrix24\Lib\News\Events\NewsCreatedEvent;
 use Bitrix24\Lib\News\Events\NewsDeletedEvent;
+use Bitrix24\Lib\News\Events\NewsImageChangedEvent;
 use Bitrix24\Lib\News\Events\NewsPublishedEvent;
 use Bitrix24\Lib\News\Events\NewsRevertedToDraftEvent;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
@@ -163,6 +164,67 @@ final class NewsTest extends TestCase
         $this->expectException(LogicException::class);
 
         $news->markAsDeleted();
+    }
+
+    #[Test]
+    public function attachImageSetsImageUrl(): void
+    {
+        $news = new News(Uuid::v7(), 'Title', 'Text');
+
+        $news->attachImage('https://example.com/image.png');
+
+        self::assertSame('https://example.com/image.png', $news->getImageUrl());
+        $events = $news->emitEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(NewsImageChangedEvent::class, $events[0]);
+    }
+
+    #[Test]
+    public function attachImageIsNoOpWhenSameUrl(): void
+    {
+        $news = new News(Uuid::v7(), 'Title', 'Text');
+        $news->attachImage('https://example.com/image.png');
+        $news->emitEvents();
+
+        $news->attachImage('https://example.com/image.png');
+
+        self::assertSame([], $news->emitEvents());
+    }
+
+    #[Test]
+    public function attachImageThrowsOnEmptyUrl(): void
+    {
+        $news = new News(Uuid::v7(), 'Title', 'Text');
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $news->attachImage('  ');
+    }
+
+    #[Test]
+    public function detachImageSetsNull(): void
+    {
+        $news = new News(Uuid::v7(), 'Title', 'Text');
+        $news->attachImage('https://example.com/image.png');
+        $news->emitEvents();
+
+        $news->detachImage();
+
+        self::assertNull($news->getImageUrl());
+        $events = $news->emitEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(NewsImageChangedEvent::class, $events[0]);
+        self::assertNull($events[0]->imageUrl);
+    }
+
+    #[Test]
+    public function detachImageIsNoOpWhenAlreadyNull(): void
+    {
+        $news = new News(Uuid::v7(), 'Title', 'Text');
+
+        $news->detachImage();
+
+        self::assertSame([], $news->emitEvents());
     }
 
     #[Test]

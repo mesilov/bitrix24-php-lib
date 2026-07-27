@@ -21,6 +21,8 @@ class NewsBuilder
 
     private bool $isEmitNewsCreatedEvent = false;
 
+    private ?string $imageUrl = null;
+
     public function __construct()
     {
         $faker = Factory::create();
@@ -57,6 +59,13 @@ class NewsBuilder
         return $this;
     }
 
+    public function withImageUrl(?string $url): self
+    {
+        $this->imageUrl = $url;
+
+        return $this;
+    }
+
     public function build(): News
     {
         $news = new News(
@@ -65,6 +74,10 @@ class NewsBuilder
             $this->text,
             $this->isEmitNewsCreatedEvent,
         );
+
+        if ($this->imageUrl !== null) {
+            $news->attachImage($this->imageUrl);
+        }
 
         match ($this->status) {
             NewsStatus::draft => null,

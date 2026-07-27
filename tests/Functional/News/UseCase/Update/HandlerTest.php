@@ -67,6 +67,36 @@ class HandlerTest extends TestCase
         self::assertSame('New text', $loaded->getText());
     }
 
+    public function testCanAttachAndDetachImage(): void
+    {
+        $news = (new NewsBuilder())
+            ->withImageUrl('https://example.com/old-image.png')
+            ->build()
+        ;
+        $this->repository->save($news);
+        $this->flusher->flush();
+        EntityManagerFactory::get()->clear();
+
+        $this->handler->handle(
+            new Command($news->getId(), $news->getTitle(), $news->getText(), 'https://example.com/new-image.png')
+        );
+
+        EntityManagerFactory::get()->clear();
+
+        $loaded = $this->repository->getById($news->getId());
+        self::assertSame('https://example.com/new-image.png', $loaded->getImageUrl());
+
+        // detach
+        $this->handler->handle(
+            new Command($news->getId(), $news->getTitle(), $news->getText(), null)
+        );
+
+        EntityManagerFactory::get()->clear();
+
+        $loaded = $this->repository->getById($news->getId());
+        self::assertNull($loaded->getImageUrl());
+    }
+
     public function testThrowsExceptionForNonExistentNews(): void
     {
         $this->expectException(NewsNotFoundException::class);

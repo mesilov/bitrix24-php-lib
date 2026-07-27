@@ -14,6 +14,9 @@ Simple content aggregate for in-app news feed. Admin creates news entries
 | `changeTitle()`     | `void`            | Changes news title                   | `InvalidArgumentException` |
 | `getText()`         | `string`          | Returns news body (markdown)         |                            |
 | `changeText()`      | `void`            | Changes news body                    | `InvalidArgumentException` |
+| `getImageUrl()`     | `?string`         | Returns news image URL               |                            |
+| `attachImage()`     | `void`            | Attaches image URL                   | `InvalidArgumentException` |
+| `detachImage()`     | `void`            | Removes image URL                    |                            |
 | `getStatus()`       | `NewsStatus`      | Returns news status                  |                            |
 | `publish()`         | `void`            | Changes status draft → published     | `LogicException`           |
 | `revertToDraft()`   | `void`            | Changes status published → draft     | `LogicException`           |
@@ -63,3 +66,4 @@ stateDiagram-v2
 - `NewsDeletedEvent` – Event triggered when news was soft-deleted.
 - `NewsTitleChangedEvent` – Event triggered when news title was changed.
 - `NewsTextChangedEvent` – Event triggered when news body text was changed.
+- `NewsImageChangedEvent` – Event triggered when news image URL was attached, changed, or detached.

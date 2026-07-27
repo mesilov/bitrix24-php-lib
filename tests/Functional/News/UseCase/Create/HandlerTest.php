@@ -60,5 +60,21 @@ class HandlerTest extends TestCase
         self::assertSame($news->getTitle(), $created[0]->getTitle());
         self::assertSame($news->getText(), $created[0]->getText());
         self::assertSame(NewsStatus::draft, $created[0]->getStatus());
+        self::assertNull($created[0]->getImageUrl());
+    }
+
+    public function testCanCreateDraftNewsWithImage(): void
+    {
+        $news = (new NewsBuilder())->build();
+        $imageUrl = 'https://example.com/news-photo.png';
+
+        $this->handler->handle(new Command($news->getTitle(), $news->getText(), $imageUrl));
+
+        EntityManagerFactory::get()->clear();
+
+        $created = $this->repository->findByTitle($news->getTitle());
+
+        self::assertCount(1, $created);
+        self::assertSame($imageUrl, $created[0]->getImageUrl());
     }
 }

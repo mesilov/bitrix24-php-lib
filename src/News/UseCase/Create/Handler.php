@@ -31,6 +31,10 @@ readonly class Handler
             isEmitNewsCreatedEvent: true,
         );
 
+        if (null !== $command->imageUrl) {
+            $news->attachImage($command->imageUrl);
+        }
+
         $this->newsRepository->save($news);
 
         $this->logger->debug('News.Create.created', [

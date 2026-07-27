@@ -30,6 +30,12 @@ readonly class Handler
         $news->changeTitle($command->title);
         $news->changeText($command->text);
 
+        if (null !== $command->imageUrl) {
+            $news->attachImage($command->imageUrl);
+        } else {
+            $news->detachImage();
+        }
+
         $this->newsRepository->save($news);
 
         $this->flusher->flush($news);

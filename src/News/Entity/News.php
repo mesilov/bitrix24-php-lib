@@ -7,6 +7,7 @@ namespace Bitrix24\Lib\News\Entity;
 use Bitrix24\Lib\AggregateRoot;
 use Bitrix24\Lib\News\Events\NewsCreatedEvent;
 use Bitrix24\Lib\News\Events\NewsDeletedEvent;
+use Bitrix24\Lib\News\Events\NewsImageChangedEvent;
 use Bitrix24\Lib\News\Events\NewsPublishedEvent;
 use Bitrix24\Lib\News\Events\NewsRevertedToDraftEvent;
 use Bitrix24\Lib\News\Events\NewsTextChangedEvent;
@@ -23,6 +24,8 @@ class News extends AggregateRoot
     private CarbonImmutable $updatedAt;
 
     private NewsStatus $status = NewsStatus::draft;
+
+    private ?string $imageUrl = null;
 
     public function __construct(
         private readonly Uuid $id,
@@ -65,6 +68,45 @@ class News extends AggregateRoot
     public function getUpdatedAt(): CarbonImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function getImageUrl(): ?string
+    {
+        return $this->imageUrl;
+    }
+
+    public function attachImage(string $url): void
+    {
+        $this->guardImageUrl($url);
+
+        if ($this->imageUrl === $url) {
+            return;
+        }
+
+        $this->imageUrl = $url;
+        $this->updatedAt = new CarbonImmutable();
+
+        $this->events[] = new NewsImageChangedEvent(
+            $this->id,
+            $this->updatedAt,
+            $this->imageUrl
+        );
+    }
+
+    public function detachImage(): void
+    {
+        if (null === $this->imageUrl) {
+            return;
+        }
+
+        $this->imageUrl = null;
+        $this->updatedAt = new CarbonImmutable();
+
+        $this->events[] = new NewsImageChangedEvent(
+            $this->id,
+            $this->updatedAt,
+            null
+        );
     }
 
     public function changeTitle(string $title): void
@@ -164,6 +206,13 @@ class News extends AggregateRoot
     {
         if ('' === trim($text)) {
             throw new InvalidArgumentException('news text cannot be empty');
+        }
+    }
+
+    private function guardImageUrl(string $url): void
+    {
+        if ('' === trim($url)) {
+            throw new InvalidArgumentException('news image url cannot be empty');
         }
     }
 
