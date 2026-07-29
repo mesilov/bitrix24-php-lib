@@ -27,9 +27,9 @@ class NewsRepository implements NewsRepositoryInterface
     }
 
     #[\Override]
-    public function save(News $news): void
+    public function save(News $newsItem): void
     {
-        $this->entityManager->persist($news);
+        $this->entityManager->persist($newsItem);
     }
 
     /**
@@ -38,7 +38,7 @@ class NewsRepository implements NewsRepositoryInterface
     #[\Override]
     public function getById(Uuid $uuid): News
     {
-        $news = $this->repository
+        $newsItem = $this->repository
             ->createQueryBuilder('b24')
             ->where('b24.id = :id')
             ->andWhere('b24.status != :status')
@@ -48,13 +48,13 @@ class NewsRepository implements NewsRepositoryInterface
             ->getOneOrNullResult()
         ;
 
-        if (null === $news) {
+        if (null === $newsItem) {
             throw new NewsNotFoundException(
                 sprintf('news not found by id %s', $uuid->toRfc4122())
             );
         }
 
-        return $news;
+        return $newsItem;
     }
 
     /**

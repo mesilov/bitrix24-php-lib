@@ -63,13 +63,7 @@ class HandlerTest extends TestCase
 
         // Setting should not be found by regular find methods (soft-deleted)
         $allSettings = $this->repository->findAllForInstallation($uuidV7);
-        $deletedSetting = null;
-        foreach ($allSettings as $allSetting) {
-            if ($allSetting->getKey() === 'delete.test' && $allSetting->isGlobal()) {
-                $deletedSetting = $allSetting;
-                break;
-            }
-        }
+        $deletedSetting = array_find($allSettings, fn($allSetting): bool => $allSetting->getKey() === 'delete.test' && $allSetting->isGlobal());
 
         $this->assertNull($deletedSetting);
 

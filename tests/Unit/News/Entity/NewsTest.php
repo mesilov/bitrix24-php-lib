@@ -28,27 +28,27 @@ final class NewsTest extends TestCase
     #[Test]
     public function constructorCreatesDraftNewsWithProvidedFields(): void
     {
-        $news = new News(Uuid::v7(), 'Test title', 'Test text');
+        $newsItem = new News(Uuid::v7(), 'Test title', 'Test text');
 
-        self::assertSame(NewsStatus::draft, $news->getStatus());
-        self::assertSame('Test title', $news->getTitle());
-        self::assertSame('Test text', $news->getText());
+        self::assertSame(NewsStatus::draft, $newsItem->getStatus());
+        self::assertSame('Test title', $newsItem->getTitle());
+        self::assertSame('Test text', $newsItem->getText());
     }
 
     #[Test]
     public function constructorWithoutEventFlagDoesNotEmitCreatedEvent(): void
     {
-        $news = new News(Uuid::v7(), 'Test title', 'Test text');
+        $newsItem = new News(Uuid::v7(), 'Test title', 'Test text');
 
-        self::assertSame([], $news->emitEvents());
+        self::assertSame([], $newsItem->emitEvents());
     }
 
     #[Test]
     public function constructorWithEventFlagEmitsCreatedEvent(): void
     {
-        $news = new News(Uuid::v7(), 'Test title', 'Test text', isEmitNewsCreatedEvent: true);
+        $newsItem = new News(Uuid::v7(), 'Test title', 'Test text', isEmitNewsCreatedEvent: true);
 
-        $events = $news->emitEvents();
+        $events = $newsItem->emitEvents();
         self::assertCount(1, $events);
         self::assertInstanceOf(NewsCreatedEvent::class, $events[0]);
     }
@@ -56,52 +56,52 @@ final class NewsTest extends TestCase
     #[Test]
     public function changeTitleUpdatesTitle(): void
     {
-        $news = new News(Uuid::v7(), 'Old title', 'Test text');
+        $newsItem = new News(Uuid::v7(), 'Old title', 'Test text');
 
-        $news->changeTitle('New title');
+        $newsItem->changeTitle('New title');
 
-        self::assertSame('New title', $news->getTitle());
+        self::assertSame('New title', $newsItem->getTitle());
     }
 
     #[Test]
     public function changeTitleThrowsOnEmptyTitle(): void
     {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
 
         $this->expectException(InvalidArgumentException::class);
 
-        $news->changeTitle('  ');
+        $newsItem->changeTitle('  ');
     }
 
     #[Test]
     public function changeTextUpdatesText(): void
     {
-        $news = new News(Uuid::v7(), 'Test title', 'Old text');
+        $newsItem = new News(Uuid::v7(), 'Test title', 'Old text');
 
-        $news->changeText('New text');
+        $newsItem->changeText('New text');
 
-        self::assertSame('New text', $news->getText());
+        self::assertSame('New text', $newsItem->getText());
     }
 
     #[Test]
     public function changeTextThrowsOnEmptyText(): void
     {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
 
         $this->expectException(InvalidArgumentException::class);
 
-        $news->changeText('');
+        $newsItem->changeText('');
     }
 
     #[Test]
     public function publishChangesStatusToPublished(): void
     {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
 
-        $news->publish();
+        $newsItem->publish();
 
-        self::assertSame(NewsStatus::published, $news->getStatus());
-        $events = $news->emitEvents();
+        self::assertSame(NewsStatus::published, $newsItem->getStatus());
+        $events = $newsItem->emitEvents();
         self::assertCount(1, $events);
         self::assertInstanceOf(NewsPublishedEvent::class, $events[0]);
     }
@@ -109,25 +109,25 @@ final class NewsTest extends TestCase
     #[Test]
     public function publishThrowsWhenNotInDraftStatus(): void
     {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
-        $news->publish();
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem->publish();
 
         $this->expectException(LogicException::class);
 
-        $news->publish();
+        $newsItem->publish();
     }
 
     #[Test]
     public function revertToDraftChangesStatusToDraft(): void
     {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
-        $news->publish();
-        $news->emitEvents();
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem->publish();
+        $newsItem->emitEvents();
 
-        $news->revertToDraft();
+        $newsItem->revertToDraft();
 
-        self::assertSame(NewsStatus::draft, $news->getStatus());
-        $events = $news->emitEvents();
+        self::assertSame(NewsStatus::draft, $newsItem->getStatus());
+        $events = $newsItem->emitEvents();
         self::assertCount(1, $events);
         self::assertInstanceOf(NewsRevertedToDraftEvent::class, $events[0]);
     }
@@ -135,22 +135,22 @@ final class NewsTest extends TestCase
     #[Test]
     public function revertToDraftThrowsWhenNotPublished(): void
     {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
 
         $this->expectException(LogicException::class);
 
-        $news->revertToDraft();
+        $newsItem->revertToDraft();
     }
 
     #[Test]
     public function markAsDeletedChangesStatusToDeleted(): void
     {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
 
-        $news->markAsDeleted();
+        $newsItem->markAsDeleted();
 
-        self::assertSame(NewsStatus::deleted, $news->getStatus());
-        $events = $news->emitEvents();
+        self::assertSame(NewsStatus::deleted, $newsItem->getStatus());
+        $events = $newsItem->emitEvents();
         self::assertCount(1, $events);
         self::assertInstanceOf(NewsDeletedEvent::class, $events[0]);
     }
@@ -158,23 +158,23 @@ final class NewsTest extends TestCase
     #[Test]
     public function markAsDeletedThrowsWhenAlreadyDeleted(): void
     {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
-        $news->markAsDeleted();
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem->markAsDeleted();
 
         $this->expectException(LogicException::class);
 
-        $news->markAsDeleted();
+        $newsItem->markAsDeleted();
     }
 
     #[Test]
     public function attachImageSetsImageUrl(): void
     {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
 
-        $news->attachImage('https://example.com/image.png');
+        $newsItem->attachImage('https://example.com/image.png');
 
-        self::assertSame('https://example.com/image.png', $news->getImageUrl());
-        $events = $news->emitEvents();
+        self::assertSame('https://example.com/image.png', $newsItem->getImageUrl());
+        $events = $newsItem->emitEvents();
         self::assertCount(1, $events);
         self::assertInstanceOf(NewsImageChangedEvent::class, $events[0]);
     }
@@ -182,36 +182,36 @@ final class NewsTest extends TestCase
     #[Test]
     public function attachImageIsNoOpWhenSameUrl(): void
     {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
-        $news->attachImage('https://example.com/image.png');
-        $news->emitEvents();
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem->attachImage('https://example.com/image.png');
+        $newsItem->emitEvents();
 
-        $news->attachImage('https://example.com/image.png');
+        $newsItem->attachImage('https://example.com/image.png');
 
-        self::assertSame([], $news->emitEvents());
+        self::assertSame([], $newsItem->emitEvents());
     }
 
     #[Test]
     public function attachImageThrowsOnEmptyUrl(): void
     {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
 
         $this->expectException(InvalidArgumentException::class);
 
-        $news->attachImage('  ');
+        $newsItem->attachImage('  ');
     }
 
     #[Test]
     public function detachImageSetsNull(): void
     {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
-        $news->attachImage('https://example.com/image.png');
-        $news->emitEvents();
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem->attachImage('https://example.com/image.png');
+        $newsItem->emitEvents();
 
-        $news->detachImage();
+        $newsItem->detachImage();
 
-        self::assertNull($news->getImageUrl());
-        $events = $news->emitEvents();
+        self::assertNull($newsItem->getImageUrl());
+        $events = $newsItem->emitEvents();
         self::assertCount(1, $events);
         self::assertInstanceOf(NewsImageChangedEvent::class, $events[0]);
         self::assertNull($events[0]->imageUrl);
@@ -220,11 +220,11 @@ final class NewsTest extends TestCase
     #[Test]
     public function detachImageIsNoOpWhenAlreadyNull(): void
     {
-        $news = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
 
-        $news->detachImage();
+        $newsItem->detachImage();
 
-        self::assertSame([], $news->emitEvents());
+        self::assertSame([], $newsItem->emitEvents());
     }
 
     #[Test]

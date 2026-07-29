@@ -128,15 +128,7 @@ class HandlerTest extends TestCase
         $activeInstallation = $this->applicationInstallationRepository->findByBitrix24AccountMemberId($command->memberId);
         self::assertNotNull($activeInstallation);
         self::assertSame(ApplicationInstallationStatus::new, $activeInstallation->getStatus());
-
-        $newBitrix24Account = null;
-        foreach ($bitrix24Accounts as $bitrix24Account) {
-            if (Bitrix24AccountStatus::new === $bitrix24Account->getStatus()) {
-                $newBitrix24Account = $bitrix24Account;
-
-                break;
-            }
-        }
+        $newBitrix24Account = array_find($bitrix24Accounts, fn($bitrix24Account): bool => Bitrix24AccountStatus::new === $bitrix24Account->getStatus());
 
         self::assertInstanceOf(Bitrix24AccountInterface::class, $newBitrix24Account);
         self::assertSame(Bitrix24AccountStatus::new, $newBitrix24Account->getStatus());

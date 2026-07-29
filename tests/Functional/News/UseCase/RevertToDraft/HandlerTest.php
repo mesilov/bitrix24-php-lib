@@ -50,19 +50,19 @@ class HandlerTest extends TestCase
 
     public function testCanRevertPublishedNewsToDraft(): void
     {
-        $news = (new NewsBuilder())
+        $newsItem = (new NewsBuilder())
             ->withStatus(NewsStatus::published)
             ->build()
         ;
-        $this->repository->save($news);
+        $this->repository->save($newsItem);
         $this->flusher->flush();
         EntityManagerFactory::get()->clear();
 
-        $this->handler->handle(new Command($news->getId()));
+        $this->handler->handle(new Command($newsItem->getId()));
 
         EntityManagerFactory::get()->clear();
 
-        $loaded = $this->repository->getById($news->getId());
+        $loaded = $this->repository->getById($newsItem->getId());
         self::assertSame(NewsStatus::draft, $loaded->getStatus());
     }
 

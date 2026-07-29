@@ -68,7 +68,7 @@ class NewsBuilder
 
     public function build(): News
     {
-        $news = new News(
+        $newsItem = new News(
             $this->id,
             $this->title,
             $this->text,
@@ -76,15 +76,15 @@ class NewsBuilder
         );
 
         if ($this->imageUrl !== null) {
-            $news->attachImage($this->imageUrl);
+            $newsItem->attachImage($this->imageUrl);
         }
 
         match ($this->status) {
             NewsStatus::draft => null,
-            NewsStatus::published => $news->publish(),
-            NewsStatus::deleted => $news->markAsDeleted(),
+            NewsStatus::published => $newsItem->publish(),
+            NewsStatus::deleted => $newsItem->markAsDeleted(),
         };
 
-        return $news;
+        return $newsItem;
     }
 }

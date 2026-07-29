@@ -24,7 +24,7 @@ readonly class Handler
             'title' => $command->title,
         ]);
 
-        $news = new News(
+        $newsItem = new News(
             Uuid::v7(),
             $command->title,
             $command->text,
@@ -32,19 +32,19 @@ readonly class Handler
         );
 
         if (null !== $command->imageUrl) {
-            $news->attachImage($command->imageUrl);
+            $newsItem->attachImage($command->imageUrl);
         }
 
-        $this->newsRepository->save($news);
+        $this->newsRepository->save($newsItem);
 
         $this->logger->debug('News.Create.created', [
-            'newsId' => $news->getId()->toRfc4122(),
+            'newsId' => $newsItem->getId()->toRfc4122(),
         ]);
 
-        $this->flusher->flush($news);
+        $this->flusher->flush($newsItem);
 
         $this->logger->info('News.Create.finish', [
-            'newsId' => $news->getId()->toRfc4122(),
+            'newsId' => $newsItem->getId()->toRfc4122(),
         ]);
     }
 }

@@ -7,6 +7,10 @@ namespace Bitrix24\Lib\News\UseCase\Update;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * When calling the update use case, you must always pass all newsItem data,
+ * including new changes; otherwise, the data will be overwritten with null.
+ */
 readonly class Command
 {
     public function __construct(

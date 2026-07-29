@@ -49,51 +49,51 @@ class HandlerTest extends TestCase
 
     public function testCanUpdateTitleAndText(): void
     {
-        $news = (new NewsBuilder())
+        $newsItem = (new NewsBuilder())
             ->withTitle('Old title')
             ->withText('Old text')
             ->build()
         ;
-        $this->repository->save($news);
+        $this->repository->save($newsItem);
         $this->flusher->flush();
         EntityManagerFactory::get()->clear();
 
-        $this->handler->handle(new Command($news->getId(), 'New title', 'New text'));
+        $this->handler->handle(new Command($newsItem->getId(), 'New title', 'New text'));
 
         EntityManagerFactory::get()->clear();
 
-        $loaded = $this->repository->getById($news->getId());
+        $loaded = $this->repository->getById($newsItem->getId());
         self::assertSame('New title', $loaded->getTitle());
         self::assertSame('New text', $loaded->getText());
     }
 
     public function testCanAttachAndDetachImage(): void
     {
-        $news = (new NewsBuilder())
+        $newsItem = (new NewsBuilder())
             ->withImageUrl('https://example.com/old-image.png')
             ->build()
         ;
-        $this->repository->save($news);
+        $this->repository->save($newsItem);
         $this->flusher->flush();
         EntityManagerFactory::get()->clear();
 
         $this->handler->handle(
-            new Command($news->getId(), $news->getTitle(), $news->getText(), 'https://example.com/new-image.png')
+            new Command($newsItem->getId(), $newsItem->getTitle(), $newsItem->getText(), 'https://example.com/new-image.png')
         );
 
         EntityManagerFactory::get()->clear();
 
-        $loaded = $this->repository->getById($news->getId());
+        $loaded = $this->repository->getById($newsItem->getId());
         self::assertSame('https://example.com/new-image.png', $loaded->getImageUrl());
 
         // detach
         $this->handler->handle(
-            new Command($news->getId(), $news->getTitle(), $news->getText(), null)
+            new Command($newsItem->getId(), $newsItem->getTitle(), $newsItem->getText())
         );
 
         EntityManagerFactory::get()->clear();
 
-        $loaded = $this->repository->getById($news->getId());
+        $loaded = $this->repository->getById($newsItem->getId());
         self::assertNull($loaded->getImageUrl());
     }
 

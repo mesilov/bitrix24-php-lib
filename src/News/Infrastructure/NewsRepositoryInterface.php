@@ -14,7 +14,7 @@ interface NewsRepositoryInterface
     /**
      * Save news.
      */
-    public function save(News $news): void;
+    public function save(News $newsItem): void;
 
     /**
      * Get news by ID (excludes deleted).

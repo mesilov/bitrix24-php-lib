@@ -49,17 +49,17 @@ class HandlerTest extends TestCase
 
     public function testCanDeleteNews(): void
     {
-        $news = (new NewsBuilder())->build();
-        $this->repository->save($news);
+        $newsItem = (new NewsBuilder())->build();
+        $this->repository->save($newsItem);
         $this->flusher->flush();
         EntityManagerFactory::get()->clear();
 
-        $this->handler->handle(new Command($news->getId()));
+        $this->handler->handle(new Command($newsItem->getId()));
 
         EntityManagerFactory::get()->clear();
 
         $this->expectException(NewsNotFoundException::class);
-        $this->repository->getById($news->getId());
+        $this->repository->getById($newsItem->getId());
     }
 
     public function testThrowsExceptionForNonExistentNews(): void

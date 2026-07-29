@@ -48,31 +48,31 @@ class HandlerTest extends TestCase
 
     public function testCanCreateDraftNews(): void
     {
-        $news = (new NewsBuilder())->build();
+        $newsItem = (new NewsBuilder())->build();
 
-        $this->handler->handle(new Command($news->getTitle(), $news->getText()));
+        $this->handler->handle(new Command($newsItem->getTitle(), $newsItem->getText()));
 
         EntityManagerFactory::get()->clear();
 
-        $created = $this->repository->findByTitle($news->getTitle());
+        $created = $this->repository->findByTitle($newsItem->getTitle());
 
         self::assertCount(1, $created);
-        self::assertSame($news->getTitle(), $created[0]->getTitle());
-        self::assertSame($news->getText(), $created[0]->getText());
+        self::assertSame($newsItem->getTitle(), $created[0]->getTitle());
+        self::assertSame($newsItem->getText(), $created[0]->getText());
         self::assertSame(NewsStatus::draft, $created[0]->getStatus());
         self::assertNull($created[0]->getImageUrl());
     }
 
     public function testCanCreateDraftNewsWithImage(): void
     {
-        $news = (new NewsBuilder())->build();
+        $newsItem = (new NewsBuilder())->build();
         $imageUrl = 'https://example.com/news-photo.png';
 
-        $this->handler->handle(new Command($news->getTitle(), $news->getText(), $imageUrl));
+        $this->handler->handle(new Command($newsItem->getTitle(), $newsItem->getText(), $imageUrl));
 
         EntityManagerFactory::get()->clear();
 
-        $created = $this->repository->findByTitle($news->getTitle());
+        $created = $this->repository->findByTitle($newsItem->getTitle());
 
         self::assertCount(1, $created);
         self::assertSame($imageUrl, $created[0]->getImageUrl());
