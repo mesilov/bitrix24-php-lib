@@ -67,7 +67,15 @@ class NewsRepository implements NewsRepositoryInterface
             throw new InvalidArgumentException('news title cannot be empty');
         }
 
-        return $this->repository->findBy(['title' => $title]);
+        return $this->repository
+            ->createQueryBuilder('news')
+            ->where('news.title = :title')
+            ->andWhere('news.status != :status')
+            ->setParameter('title', $title)
+            ->setParameter('status', NewsStatus::deleted)
+            ->getQuery()
+            ->getResult()
+        ;
     }
 
     /**

@@ -24,7 +24,7 @@ interface NewsRepositoryInterface
     public function getById(Uuid $uuid): News;
 
     /**
-     * Find news by exact title match.
+     * Find news by exact title match (excludes deleted).
      *
      * @return News[]
      */

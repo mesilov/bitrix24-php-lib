@@ -50,7 +50,7 @@ stateDiagram-v2
     - use case RevertToDraft
     - use case Delete
 - `findByTitle(string $title): News[]`
-    - exact title match
+    - exact title match (excludes deleted)
 - `findPublished(int $page = 1, int $limit = 20): PaginationInterface<News>`
     - KNP-paginated feed, sorted by `createdAt DESC`
     - returns only `published` news

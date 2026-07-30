@@ -11,6 +11,7 @@ use Bitrix24\Lib\News\UseCase\Delete\Handler;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\Lib\Tests\Functional\News\Builders\NewsBuilder;
+use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\ArgumentAccess\ArgumentAccessInterface;
 use Knp\Component\Pager\Paginator;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -31,14 +32,16 @@ class HandlerTest extends TestCase
 
     private Flusher $flusher;
 
+    private EntityManagerInterface $entityManager;
+
     #[\Override]
     protected function setUp(): void
     {
-        $entityManager = EntityManagerFactory::get();
+        $this->entityManager = EntityManagerFactory::get();
         $eventDispatcher = new EventDispatcher();
         $paginator = new Paginator($eventDispatcher, $this->createStub(ArgumentAccessInterface::class));
-        $this->repository = new NewsRepository($entityManager, $paginator);
-        $this->flusher = new Flusher($entityManager, $eventDispatcher);
+        $this->repository = new NewsRepository($this->entityManager, $paginator);
+        $this->flusher = new Flusher($this->entityManager, $eventDispatcher);
 
         $this->handler = new Handler(
             $this->repository,
@@ -52,11 +55,11 @@ class HandlerTest extends TestCase
         $newsItem = (new NewsBuilder())->build();
         $this->repository->save($newsItem);
         $this->flusher->flush();
-        EntityManagerFactory::get()->clear();
+        $this->entityManager->clear();
 
         $this->handler->handle(new Command($newsItem->getId()));
 
-        EntityManagerFactory::get()->clear();
+        $this->entityManager->clear();
 
         $this->expectException(NewsNotFoundException::class);
         $this->repository->getById($newsItem->getId());
