@@ -24,27 +24,31 @@ readonly class Handler
             'title' => $command->title,
         ]);
 
-        $newsItem = new News(
-            Uuid::v7(),
-            $command->title,
-            $command->text,
-            isEmitNewsCreatedEvent: true,
-        );
+        $newsId = Uuid::v7();
 
-        if (null !== $command->imageUrl) {
-            $newsItem->attachImage($command->imageUrl);
+        try {
+            $newsItem = new News(
+                $newsId,
+                $command->title,
+                $command->text,
+                isEmitNewsCreatedEvent: true,
+            );
+
+            if (null !== $command->imageUrl) {
+                $newsItem->attachImage($command->imageUrl);
+            }
+
+            $this->newsRepository->save($newsItem);
+
+            $this->flusher->flush($newsItem);
+
+            $this->logger->info('News.Create.success', [
+                'newsId' => $newsId->toRfc4122(),
+            ]);
+        } finally {
+            $this->logger->info('News.Create.finish', [
+                'newsId' => $newsId->toRfc4122(),
+            ]);
         }
-
-        $this->newsRepository->save($newsItem);
-
-        $this->logger->debug('News.Create.created', [
-            'newsId' => $newsItem->getId()->toRfc4122(),
-        ]);
-
-        $this->flusher->flush($newsItem);
-
-        $this->logger->info('News.Create.finish', [
-            'newsId' => $newsItem->getId()->toRfc4122(),
-        ]);
     }
 }

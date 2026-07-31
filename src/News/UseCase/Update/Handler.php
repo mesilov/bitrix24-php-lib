@@ -11,6 +11,10 @@ use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
 use Psr\Log\LoggerInterface;
 
+/**
+ * When calling the update use case, you must always pass all newsItem data,
+ * including new changes; otherwise, the data will be overwritten with null.
+ */
 readonly class Handler
 {
     public function __construct(
