@@ -31,12 +31,9 @@ readonly class Handler
                 $newsId,
                 $command->title,
                 $command->text,
+                imageUrl: $command->imageUrl,
                 isEmitNewsCreatedEvent: true,
             );
-
-            if (null !== $command->imageUrl) {
-                $newsItem->attachImage($command->imageUrl);
-            }
 
             $this->newsRepository->save($newsItem);
 

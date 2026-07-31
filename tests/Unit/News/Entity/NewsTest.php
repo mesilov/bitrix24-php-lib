@@ -33,6 +33,15 @@ final class NewsTest extends TestCase
         self::assertSame(NewsStatus::draft, $newsItem->getStatus());
         self::assertSame('Test title', $newsItem->getTitle());
         self::assertSame('Test text', $newsItem->getText());
+        self::assertNull($newsItem->getImageUrl());
+    }
+
+    #[Test]
+    public function constructorAcceptsImageUrl(): void
+    {
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text', 'https://example.com/image.png');
+
+        self::assertSame('https://example.com/image.png', $newsItem->getImageUrl());
     }
 
     #[Test]

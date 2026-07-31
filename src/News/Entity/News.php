@@ -25,15 +25,15 @@ class News extends AggregateRoot
 
     private NewsStatus $status = NewsStatus::draft;
 
-    private ?string $imageUrl = null;
-
     public function __construct(
         private readonly Uuid $id,
         private string $title,
         private string $text,
+        private ?string $imageUrl = null,
         private readonly bool $isEmitNewsCreatedEvent = false,
     ) {
         $this->validate();
+
         $this->createdAt = new CarbonImmutable();
         $this->updatedAt = new CarbonImmutable();
 
@@ -220,6 +220,10 @@ class News extends AggregateRoot
     {
         $this->guardTitle($this->title);
         $this->guardText($this->text);
+
+        if (null !== $this->imageUrl) {
+            $this->guardImageUrl($this->imageUrl);
+        }
     }
 
     private function addNewsCreatedEventIfNeeded(bool $isEmitCreatedEvent): void

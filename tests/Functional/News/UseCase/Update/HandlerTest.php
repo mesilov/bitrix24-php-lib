@@ -70,7 +70,7 @@ class HandlerTest extends TestCase
         self::assertSame('New text', $loaded->getText());
     }
 
-    public function testCanAttachAndDetachImage(): void
+    public function testCanChangeImage(): void
     {
         $newsItem = (new NewsBuilder())
             ->withImageUrl('https://example.com/old-image.png')
@@ -88,8 +88,18 @@ class HandlerTest extends TestCase
 
         $loaded = $this->repository->getById($newsItem->getId());
         self::assertSame('https://example.com/new-image.png', $loaded->getImageUrl());
+    }
 
-        // detach
+    public function testCanDetachImage(): void
+    {
+        $newsItem = (new NewsBuilder())
+            ->withImageUrl('https://example.com/image.png')
+            ->build()
+        ;
+        $this->repository->save($newsItem);
+        $this->flusher->flush();
+        $this->entityManager->clear();
+
         $this->handler->handle(
             new Command($newsItem->getId(), $newsItem->getTitle(), $newsItem->getText())
         );

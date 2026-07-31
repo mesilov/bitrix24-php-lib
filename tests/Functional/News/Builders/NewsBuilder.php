@@ -72,12 +72,9 @@ class NewsBuilder
             $this->id,
             $this->title,
             $this->text,
-            $this->isEmitNewsCreatedEvent,
+            imageUrl: $this->imageUrl,
+            isEmitNewsCreatedEvent: $this->isEmitNewsCreatedEvent,
         );
-
-        if ($this->imageUrl !== null) {
-            $newsItem->attachImage($this->imageUrl);
-        }
 
         match ($this->status) {
             NewsStatus::draft => null,

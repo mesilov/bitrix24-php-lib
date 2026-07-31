@@ -50,7 +50,7 @@ class HandlerTest extends TestCase
         );
     }
 
-    public function testCanDeleteNews(): void
+    public function testDeleteNews(): void
     {
         $newsItem = (new NewsBuilder())->build();
         $this->repository->save($newsItem);
