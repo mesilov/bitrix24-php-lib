@@ -12,6 +12,7 @@ use Bitrix24\Lib\News\UseCase\RevertToDraft\Handler;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\Lib\Tests\Functional\News\Builders\NewsBuilder;
+use Carbon\CarbonImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\ArgumentAccess\ArgumentAccessInterface;
 use Knp\Component\Pager\Paginator;
@@ -74,5 +75,24 @@ class HandlerTest extends TestCase
         $this->expectException(NewsNotFoundException::class);
 
         $this->handler->handle(new Command(Uuid::v7()));
+    }
+
+    public function testRevertToDraftWithProvidedTimestamp(): void
+    {
+        $newsItem = (new NewsBuilder())
+            ->withStatus(NewsStatus::published)
+            ->build()
+        ;
+        $this->repository->save($newsItem);
+        $this->flusher->flush();
+        $this->entityManager->clear();
+
+        $frozenTime = CarbonImmutable::parse('2025-01-15 10:30:00');
+        $this->handler->handle(new Command($newsItem->getId(), $frozenTime));
+
+        $this->entityManager->clear();
+
+        $loaded = $this->repository->getById($newsItem->getId());
+        self::assertEquals($frozenTime, $loaded->getUpdatedAt());
     }
 }

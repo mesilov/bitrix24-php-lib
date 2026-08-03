@@ -75,6 +75,11 @@ class News extends AggregateRoot
         return $this->imageUrl;
     }
 
+    /**
+     * Attach or replace the news image.
+     * Idempotent: no-op if the same URL is already set.
+     * Emits NewsImageChangedEvent with old and new URL on actual change.
+     */
     public function attachImage(string $url): void
     {
         $this->guardImageUrl($url);
@@ -83,29 +88,38 @@ class News extends AggregateRoot
             return;
         }
 
+        $oldImageUrl = $this->imageUrl;
         $this->imageUrl = $url;
         $this->updatedAt = new CarbonImmutable();
 
         $this->events[] = new NewsImageChangedEvent(
             $this->id,
             $this->updatedAt,
-            $this->imageUrl
+            $this->imageUrl,
+            $oldImageUrl
         );
     }
 
+    /**
+     * Detach the news image.
+     * Idempotent: no-op if there is no image.
+     * Emits NewsImageChangedEvent with old URL and null new URL.
+     */
     public function detachImage(): void
     {
         if (null === $this->imageUrl) {
             return;
         }
 
+        $oldImageUrl = $this->imageUrl;
         $this->imageUrl = null;
         $this->updatedAt = new CarbonImmutable();
 
         $this->events[] = new NewsImageChangedEvent(
             $this->id,
             $this->updatedAt,
-            null
+            null,
+            $oldImageUrl
         );
     }
 
@@ -149,7 +163,7 @@ class News extends AggregateRoot
         );
     }
 
-    public function publish(): void
+    public function publish(?CarbonImmutable $publishedAt = null): void
     {
         if (NewsStatus::draft !== $this->status) {
             throw new LogicException(
@@ -161,12 +175,12 @@ class News extends AggregateRoot
         }
 
         $this->status = NewsStatus::published;
-        $this->updatedAt = new CarbonImmutable();
+        $this->updatedAt = $publishedAt ?? new CarbonImmutable();
 
         $this->events[] = new NewsPublishedEvent($this->id, $this->updatedAt);
     }
 
-    public function revertToDraft(): void
+    public function revertToDraft(?CarbonImmutable $revertedAt = null): void
     {
         if (NewsStatus::published !== $this->status) {
             throw new LogicException(
@@ -178,19 +192,19 @@ class News extends AggregateRoot
         }
 
         $this->status = NewsStatus::draft;
-        $this->updatedAt = new CarbonImmutable();
+        $this->updatedAt = $revertedAt ?? new CarbonImmutable();
 
         $this->events[] = new NewsRevertedToDraftEvent($this->id, $this->updatedAt);
     }
 
-    public function markAsDeleted(): void
+    public function markAsDeleted(?CarbonImmutable $deletedAt = null): void
     {
         if (NewsStatus::deleted === $this->status) {
             throw new LogicException('news already in status «deleted»');
         }
 
         $this->status = NewsStatus::deleted;
-        $this->updatedAt = new CarbonImmutable();
+        $this->updatedAt = $deletedAt ?? new CarbonImmutable();
 
         $this->events[] = new NewsDeletedEvent($this->id, $this->updatedAt);
     }

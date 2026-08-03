@@ -13,6 +13,7 @@ use Bitrix24\Lib\News\Events\NewsPublishedEvent;
 use Bitrix24\Lib\News\Events\NewsRevertedToDraftEvent;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 use Bitrix24\SDK\Core\Exceptions\LogicException;
+use Carbon\CarbonImmutable;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -127,6 +128,21 @@ final class NewsTest extends TestCase
     }
 
     #[Test]
+    public function publishUsesProvidedTimestamp(): void
+    {
+        $frozenTime = CarbonImmutable::parse('2025-01-15 10:30:00');
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
+
+        $newsItem->publish($frozenTime);
+
+        self::assertSame($frozenTime, $newsItem->getUpdatedAt());
+        $events = $newsItem->emitEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(NewsPublishedEvent::class, $events[0]);
+        self::assertSame($frozenTime, $events[0]->timestamp);
+    }
+
+    #[Test]
     public function revertToDraftChangesStatusToDraft(): void
     {
         $newsItem = new News(Uuid::v7(), 'Title', 'Text');
@@ -149,6 +165,23 @@ final class NewsTest extends TestCase
         $this->expectException(LogicException::class);
 
         $newsItem->revertToDraft();
+    }
+
+    #[Test]
+    public function revertToDraftUsesProvidedTimestamp(): void
+    {
+        $frozenTime = CarbonImmutable::parse('2025-01-15 10:30:00');
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem->publish();
+        $newsItem->emitEvents();
+
+        $newsItem->revertToDraft($frozenTime);
+
+        self::assertSame($frozenTime, $newsItem->getUpdatedAt());
+        $events = $newsItem->emitEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(NewsRevertedToDraftEvent::class, $events[0]);
+        self::assertSame($frozenTime, $events[0]->timestamp);
     }
 
     #[Test]
@@ -176,6 +209,21 @@ final class NewsTest extends TestCase
     }
 
     #[Test]
+    public function markAsDeletedUsesProvidedTimestamp(): void
+    {
+        $frozenTime = CarbonImmutable::parse('2025-01-15 10:30:00');
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
+
+        $newsItem->markAsDeleted($frozenTime);
+
+        self::assertSame($frozenTime, $newsItem->getUpdatedAt());
+        $events = $newsItem->emitEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(NewsDeletedEvent::class, $events[0]);
+        self::assertSame($frozenTime, $events[0]->timestamp);
+    }
+
+    #[Test]
     public function attachImageSetsImageUrl(): void
     {
         $newsItem = new News(Uuid::v7(), 'Title', 'Text');
@@ -186,6 +234,8 @@ final class NewsTest extends TestCase
         $events = $newsItem->emitEvents();
         self::assertCount(1, $events);
         self::assertInstanceOf(NewsImageChangedEvent::class, $events[0]);
+        self::assertSame('https://example.com/image.png', $events[0]->imageUrl);
+        self::assertNull($events[0]->oldImageUrl);
     }
 
     #[Test]
@@ -198,6 +248,22 @@ final class NewsTest extends TestCase
         $newsItem->attachImage('https://example.com/image.png');
 
         self::assertSame([], $newsItem->emitEvents());
+    }
+
+    #[Test]
+    public function attachImageEmitsOldAndNewUrlOnReplace(): void
+    {
+        $newsItem = new News(Uuid::v7(), 'Title', 'Text');
+        $newsItem->attachImage('https://example.com/old-image.png');
+        $newsItem->emitEvents();
+
+        $newsItem->attachImage('https://example.com/new-image.png');
+
+        $events = $newsItem->emitEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(NewsImageChangedEvent::class, $events[0]);
+        self::assertSame('https://example.com/new-image.png', $events[0]->imageUrl);
+        self::assertSame('https://example.com/old-image.png', $events[0]->oldImageUrl);
     }
 
     #[Test]
@@ -224,6 +290,7 @@ final class NewsTest extends TestCase
         self::assertCount(1, $events);
         self::assertInstanceOf(NewsImageChangedEvent::class, $events[0]);
         self::assertNull($events[0]->imageUrl);
+        self::assertSame('https://example.com/image.png', $events[0]->oldImageUrl);
     }
 
     #[Test]

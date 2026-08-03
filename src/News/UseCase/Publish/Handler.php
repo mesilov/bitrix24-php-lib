@@ -29,7 +29,7 @@ readonly class Handler
             /** @var AggregateRootEventsEmitterInterface&News $newsItem */
             $newsItem = $this->newsRepository->getById($command->id);
 
-            $newsItem->publish();
+            $newsItem->publish($command->publishedAt);
 
             $this->newsRepository->save($newsItem);
 

@@ -29,7 +29,7 @@ readonly class Handler
             /** @var AggregateRootEventsEmitterInterface&News $newsItem */
             $newsItem = $this->newsRepository->getById($command->id);
 
-            $newsItem->markAsDeleted();
+            $newsItem->markAsDeleted($command->deletedAt);
 
             $this->newsRepository->save($newsItem);
 

@@ -29,7 +29,7 @@ readonly class Handler
             /** @var AggregateRootEventsEmitterInterface&News $newsItem */
             $newsItem = $this->newsRepository->getById($command->id);
 
-            $newsItem->revertToDraft();
+            $newsItem->revertToDraft($command->revertedAt);
 
             $this->newsRepository->save($newsItem);
 
