@@ -8,6 +8,7 @@ readonly class MarkOldInstallationsResult
 {
     public function __construct(
         public bool  $dryRun,
-        public array $staleInstallations = []
+        public array $staleInstallations = [],
+        public array $processedInstallations = []
     ) {}
 }

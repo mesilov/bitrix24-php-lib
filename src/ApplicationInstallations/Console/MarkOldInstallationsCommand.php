@@ -124,7 +124,22 @@ HELP
             return 0;
         }
 
-        $this->io->success('Stale installations marked as needReinstall. See event subscriber for details.');
+        $count = count($result->processedInstallations);
+        if (0 === $count) {
+            $this->io->success('No stale installations found.');
+
+            return 0;
+        }
+
+        $this->io->success(sprintf('Marked %d installation(s) as needReinstall:', $count));
+
+        foreach ($result->processedInstallations as $event) {
+            $this->io->text(sprintf(
+                '  - installation %s, marked at %s',
+                $event->applicationInstallationId->toRfc4122(),
+                $event->timestamp->toAtomString()
+            ));
+        }
 
         return 0;
     }

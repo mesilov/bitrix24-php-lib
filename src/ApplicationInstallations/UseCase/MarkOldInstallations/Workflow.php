@@ -5,15 +5,18 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\ApplicationInstallations\UseCase\MarkOldInstallations;
 
 use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationInstallationRepository;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationMarkedNeedReinstallEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Carbon\CarbonImmutable;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 readonly class Workflow
 {
     public function __construct(
         private Handler $handler,
         private ApplicationInstallationRepository $applicationInstallationRepository,
+        private EventDispatcherInterface $eventDispatcher,
         private LoggerInterface $logger
     ) {}
 
@@ -39,14 +42,34 @@ readonly class Workflow
                 'foundCount' => count($staleInstallations),
             ]);
 
-            return new MarkOldInstallationsResult(true, $staleInstallations);
+            return new MarkOldInstallationsResult(true, staleInstallations: $staleInstallations);
         }
 
         $command = new Command($config->ttlInSeconds, $config->memberId);
-        $this->handler->handle($command);
 
-        $this->logger->info('ApplicationInstallations.MarkOldInstallations.Workflow.finish');
+        $collector = new MarkOldInstallationsCollector();
+        $listener = $collector->add(...);
 
-        return new MarkOldInstallationsResult(false);
+        $this->eventDispatcher->addListener(
+            ApplicationInstallationMarkedNeedReinstallEvent::class,
+            $listener
+        );
+
+        try {
+            $this->handler->handle($command);
+        } finally {
+            $this->eventDispatcher->removeListener(
+                ApplicationInstallationMarkedNeedReinstallEvent::class,
+                $listener
+            );
+        }
+
+        $processedInstallations = $collector->getEvents();
+
+        $this->logger->info('ApplicationInstallations.MarkOldInstallations.Workflow.finish', [
+            'processedCount' => count($processedInstallations),
+        ]);
+
+        return new MarkOldInstallationsResult(false, processedInstallations: $processedInstallations);
     }
 }
