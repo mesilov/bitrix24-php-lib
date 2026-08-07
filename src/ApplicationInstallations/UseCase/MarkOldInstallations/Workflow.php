@@ -39,16 +39,14 @@ readonly class Workflow
                 'foundCount' => count($staleInstallations),
             ]);
 
-            return new MarkOldInstallationsResult(0, true, $staleInstallations);
+            return new MarkOldInstallationsResult(true, $staleInstallations);
         }
 
         $command = new Command($config->ttlInSeconds, $config->memberId);
-        $processedCount = $this->handler->handle($command);
+        $this->handler->handle($command);
 
-        $this->logger->info('ApplicationInstallations.MarkOldInstallations.Workflow.finish', [
-            'processedCount' => $processedCount,
-        ]);
+        $this->logger->info('ApplicationInstallations.MarkOldInstallations.Workflow.finish');
 
-        return new MarkOldInstallationsResult($processedCount, false);
+        return new MarkOldInstallationsResult(false);
     }
 }

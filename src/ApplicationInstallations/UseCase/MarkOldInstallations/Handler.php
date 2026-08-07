@@ -40,7 +40,7 @@ readonly class Handler
     /**
      * @throws LogicException
      */
-    public function handle(Command $command): int
+    public function handle(Command $command): void
     {
         $this->logger->info('ApplicationInstallations.MarkOldInstallations.start', [
             'ttlInSeconds' => $command->ttlInSeconds,
@@ -48,8 +48,6 @@ readonly class Handler
         ]);
 
         $staleInstallations = $this->findStaleInstallations($command);
-
-        $processedCount = 0;
 
         foreach ($staleInstallations as $staleInstallation) {
             $staleInstallation->markAsNeedReinstall(
@@ -59,18 +57,12 @@ readonly class Handler
             $this->applicationInstallationRepository->save($staleInstallation);
             $this->flusher->flush($staleInstallation);
 
-            ++$processedCount;
-
             $this->logger->info('ApplicationInstallations.MarkOldInstallations.marked', [
                 'installationId' => $staleInstallation->getId()->toRfc4122(),
                 'createdAt' => $staleInstallation->getCreatedAt()->toAtomString(),
             ]);
         }
 
-        $this->logger->info('ApplicationInstallations.MarkOldInstallations.finish', [
-            'processedCount' => $processedCount,
-        ]);
-
-        return $processedCount;
+        $this->logger->info('ApplicationInstallations.MarkOldInstallations.finish');
     }
 }

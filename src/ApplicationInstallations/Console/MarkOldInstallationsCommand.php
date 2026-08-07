@@ -124,14 +124,8 @@ HELP
             return 0;
         }
 
-        if (0 === $result->processedCount) {
-            $this->io->success('No stale installations found.');
+        $this->io->success('Stale installations marked as needReinstall. See event subscriber for details.');
 
-            return 0;
-        }
-
-        $this->io->success(sprintf('Processed %d stale installation(s)', $result->processedCount));
-
-        return $result->processedCount;
+        return 0;
     }
 }
