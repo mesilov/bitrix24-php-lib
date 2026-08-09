@@ -37,15 +37,7 @@ readonly class Handler
         $allSettings = $this->applicationSettingRepository->findAllForInstallation(
             $command->applicationInstallationId
         );
-
-        $setting = null;
-        foreach ($allSettings as $allSetting) {
-            if ($allSetting->getKey() === $command->key && $allSetting->isGlobal()) {
-                $setting = $allSetting;
-
-                break;
-            }
-        }
+        $setting = array_find($allSettings, fn ($allSetting): bool => $allSetting->getKey() === $command->key && $allSetting->isGlobal());
 
         if (!$setting instanceof ApplicationSettingsItemInterface) {
             throw new ItemNotFoundException(sprintf('Setting with key "%s" not found.', $command->key));

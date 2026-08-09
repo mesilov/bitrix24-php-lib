@@ -246,6 +246,8 @@ class HandlerTest extends TestCase
             ->withApplicationToken($applicationToken)
             ->withApplicationStatus(new ApplicationStatus('F'))
             ->withPortalLicenseFamily(PortalLicenseFamily::free)
+            ->withBitrix24PartnerContactPersonId(null)
+            ->withContactPersonId(null)
             ->build()
         ;
         $this->applicationInstallationRepository->save($applicationInstallation);
@@ -274,9 +276,18 @@ class HandlerTest extends TestCase
             )
         );
 
-        // Проверяем, что контакт не был создан
+        // Контакт создан, но невалидный мобильный телефон отброшен (null)
+        $dispatchedEvents = $this->eventDispatcher->getOrphanedEvents();
+        $this->assertContains(ContactPersonCreatedEvent::class, $dispatchedEvents);
+        $this->assertContains(ApplicationInstallationContactPersonLinkedEvent::class, $dispatchedEvents);
         $foundInstallation = $this->applicationInstallationRepository->getById($applicationInstallation->getId());
-        $this->assertNull($foundInstallation->getBitrix24PartnerId());
+        $contactPersonId = $foundInstallation->getContactPersonId();
+        $this->assertNotNull($contactPersonId);
+
+        $foundContactPerson = $this->repository->getById($contactPersonId);
+        $this->assertNull($foundContactPerson->getMobilePhone());
+        $this->assertSame($contactPerson->getEmail(), $foundContactPerson->getEmail());
+        $this->assertEquals($contactPerson->getFullName(), $foundContactPerson->getFullName());
     }
 
     public static function invalidPhoneProvider(): array

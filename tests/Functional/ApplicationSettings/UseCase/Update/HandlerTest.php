@@ -71,13 +71,7 @@ class HandlerTest extends TestCase
 
         // Verify update
         $allSettings = $this->repository->findAllForInstallation($uuidV7);
-        $updatedSetting = null;
-        foreach ($allSettings as $allSetting) {
-            if ($allSetting->getKey() === 'update.test' && $allSetting->isGlobal()) {
-                $updatedSetting = $allSetting;
-                break;
-            }
-        }
+        $updatedSetting = array_find($allSettings, fn($allSetting): bool => $allSetting->getKey() === 'update.test' && $allSetting->isGlobal());
 
         $this->assertNotNull($updatedSetting);
         $this->assertEquals('updated_value', $updatedSetting->getValue());
@@ -121,7 +115,6 @@ class HandlerTest extends TestCase
             key: 'personal.test',
             value: 'new_user_value',
             b24UserId: 123,
-            b24DepartmentId: null,
             changedByBitrix24UserId: 456
         );
         $this->handler->handle($updateCommand);
@@ -129,13 +122,7 @@ class HandlerTest extends TestCase
 
         // Verify update
         $allSettings = $this->repository->findAllForInstallation($uuidV7);
-        $updatedSetting = null;
-        foreach ($allSettings as $allSetting) {
-            if ($allSetting->getKey() === 'personal.test' && $allSetting->isPersonal() && $allSetting->getB24UserId() === 123) {
-                $updatedSetting = $allSetting;
-                break;
-            }
-        }
+        $updatedSetting = array_find($allSettings, fn($allSetting): bool => $allSetting->getKey() === 'personal.test' && $allSetting->isPersonal() && $allSetting->getB24UserId() === 123);
 
         $this->assertNotNull($updatedSetting);
         $this->assertEquals('new_user_value', $updatedSetting->getValue());
@@ -163,7 +150,6 @@ class HandlerTest extends TestCase
             applicationInstallationId: $uuidV7,
             key: 'dept.test',
             value: 'new_dept_value',
-            b24UserId: null,
             b24DepartmentId: 456,
             changedByBitrix24UserId: 789
         );
@@ -172,13 +158,7 @@ class HandlerTest extends TestCase
 
         // Verify update
         $allSettings = $this->repository->findAllForInstallation($uuidV7);
-        $updatedSetting = null;
-        foreach ($allSettings as $allSetting) {
-            if ($allSetting->getKey() === 'dept.test' && $allSetting->isDepartmental() && $allSetting->getB24DepartmentId() === 456) {
-                $updatedSetting = $allSetting;
-                break;
-            }
-        }
+        $updatedSetting = array_find($allSettings, fn($allSetting): bool => $allSetting->getKey() === 'dept.test' && $allSetting->isDepartmental() && $allSetting->getB24DepartmentId() === 456);
 
         $this->assertNotNull($updatedSetting);
         $this->assertEquals('new_dept_value', $updatedSetting->getValue());

@@ -56,13 +56,7 @@ class HandlerTest extends TestCase
 
         // Find created setting
         $allSettings = $this->repository->findAllForInstallation($uuidV7);
-        $setting = null;
-        foreach ($allSettings as $allSetting) {
-            if ($allSetting->getKey() === 'new.setting' && $allSetting->isGlobal()) {
-                $setting = $allSetting;
-                break;
-            }
-        }
+        $setting = array_find($allSettings, fn($allSetting): bool => $allSetting->getKey() === 'new.setting' && $allSetting->isGlobal());
 
         $this->assertNotNull($setting);
         $this->assertEquals('new.setting', $setting->getKey());
@@ -125,13 +119,7 @@ class HandlerTest extends TestCase
         EntityManagerFactory::get()->clear();
 
         $allSettings = $this->repository->findAllForInstallation($uuidV7);
-        $setting = null;
-        foreach ($allSettings as $allSetting) {
-            if ($allSetting->getKey() === 'personal.setting' && $allSetting->isPersonal()) {
-                $setting = $allSetting;
-                break;
-            }
-        }
+        $setting = array_find($allSettings, fn($allSetting): bool => $allSetting->getKey() === 'personal.setting' && $allSetting->isPersonal());
 
         $this->assertNotNull($setting);
         $this->assertEquals(123, $setting->getB24UserId());
@@ -151,13 +139,7 @@ class HandlerTest extends TestCase
         EntityManagerFactory::get()->clear();
 
         $allSettings = $this->repository->findAllForInstallation($uuidV7);
-        $setting = null;
-        foreach ($allSettings as $allSetting) {
-            if ($allSetting->getKey() === 'dept.setting' && $allSetting->isDepartmental()) {
-                $setting = $allSetting;
-                break;
-            }
-        }
+        $setting = array_find($allSettings, fn($allSetting): bool => $allSetting->getKey() === 'dept.setting' && $allSetting->isDepartmental());
 
         $this->assertNotNull($setting);
         $this->assertEquals(456, $setting->getB24DepartmentId());
