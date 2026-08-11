@@ -32,8 +32,7 @@ readonly class Handler
 
         return $this->applicationInstallationRepository->findStaleInstallations(
             ApplicationInstallationStatus::new,
-            $olderThan,
-            $command->memberId
+            $olderThan
         );
     }
 
@@ -44,7 +43,6 @@ readonly class Handler
     {
         $this->logger->info('ApplicationInstallations.MarkOldInstallations.start', [
             'ttlInSeconds' => $command->ttlInSeconds,
-            'memberId' => $command->memberId,
         ]);
 
         $staleInstallations = $this->findStaleInstallations($command);

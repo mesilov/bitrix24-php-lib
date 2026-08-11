@@ -188,36 +188,18 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
 
     public function findStaleInstallations(
         ApplicationInstallationStatus $status,
-        CarbonImmutable $olderThan,
-        ?string $memberId = null
+        CarbonImmutable $olderThan
     ): array {
         $queryBuilder = $this->getEntityManager()->getRepository(ApplicationInstallation::class)
             ->createQueryBuilder('ai')
         ;
 
         $queryBuilder
-            ->leftJoin(
-                Bitrix24Account::class,
-                'b24',
-                Join::WITH,
-                'ai.bitrix24AccountId = b24.id AND b24.isMasterAccount = true'
-            )
             ->where('ai.status = :status')
             ->andWhere('ai.createdAt < :olderThan')
             ->setParameter('status', $status)
             ->setParameter('olderThan', $olderThan)
         ;
-
-        if (null !== $memberId) {
-            if ('' === trim($memberId)) {
-                throw new InvalidArgumentException('memberId cannot be empty');
-            }
-
-            $queryBuilder
-                ->andWhere('b24.memberId = :memberId')
-                ->setParameter('memberId', $memberId)
-            ;
-        }
 
         return $queryBuilder
             ->orderBy('ai.createdAt', 'ASC')
