@@ -9,16 +9,18 @@ Issue #92 — фоновая очистка зависших установок 
 
 **В scope:**
 - Новый статус `needReinstall` в SDK (`ApplicationInstallationStatus`)
-- Метод `markAsNeedReinstall()` в SDK-интерфейсе и entity
+- Метод `markAsNeedReinstall()` в SDK entity и интерфейсе
 - Обновление guard в `applicationUninstalled()` для `needReinstall`
 - Новое доменное событие `ApplicationInstallationMarkedNeedReinstallEvent`
-- UseCase `MarkOldInstallations` (поиск + перевод в `needReinstall`)
-- Repository метод для поиска зависших установок (в локальном репо, потом в SDK)
+- UseCase `MarkOldInstallations` (Workflow → Handler, поиск + перевод в `needReinstall`)
+- Repository метод `findStaleInstallations()` в существующем `ApplicationInstallationRepository`
 - Console-команда `bitrix24:installations:mark-old`
 - Unit + Functional тесты
 - Документация и CHANGELOG
 
 **Out of scope:**
+- Фильтр по `memberId` — ищем все зависшие установки независимо от портала
+- `dry-run` режим — убрали, не нужен
 - Проверка реального состояния портала через SDK (`--verify-portal`)
 - Автоматическое планирование (cron, worker) — задача потребителя
 - Изменение `Bitrix24AccountStatus` — статус `needReinstall` только у `ApplicationInstallation`
@@ -41,13 +43,17 @@ needReinstall → deleted (applicationUninstalled)   ← НОВОЕ
 2. **markOldInstallations flow:**
 ```
 Console command (ttl=3600 по дефолту)
-  → MarkOldInstallations\Command(ttl)
-  → Handler::handle()
-    → repository.findStaleInstallations(status=new, olderThan=NOW()-ttl)
-    → для каждого: installation.markAsNeedReinstall(comment)
-    → repository.save(installation)
-    → flusher.flush(installation)
-    → событие ApplicationInstallationMarkedNeedReinstallEvent диспатчится
+  → Workflow.run(Config)
+    → регистрация listener на ApplicationInstallationMarkedNeedReinstallEvent
+    → Handler::handle(Command)
+      → repository.findStaleInstallations(status=new, olderThan=NOW()-ttl)
+      → для каждого: installation.markAsNeedReinstall(comment)
+      → repository.save(installation)
+      → flusher.flush(installation)
+      → событие ApplicationInstallationMarkedNeedReinstallEvent диспатчится через EventDispatcher
+    → unregister listener
+    → collector.getEvents() → Result(processedInstallations)
+  → Console рендерит список переведённых установок
 ```
 
 3. **Переустановка после markOldInstallations:**
@@ -56,8 +62,9 @@ Install\Command (повторная установка)
   → Install\Handler::handle()
     → findByBitrix24AccountMemberId находит installation в needReinstall
     → deactivateCurrentInstallation()
+      → markAsBlocked пропускается (только для status=new)
       → applicationUninstalled(null)  // needReinstall → deleted (guard обновлён)
-      → bitrix24Account.applicationUninstalled(null)  // new → deleted (уже работает)
+      → удаляются ВСЕ аккаунты портала (не только master), см. Install/Handler.php:125-138
     → создание новой пары
 ```
 
@@ -71,7 +78,9 @@ Install\Command (повторная установка)
 |---|---|
 | `src/Application/Contracts/ApplicationInstallations/Entity/ApplicationInstallationStatus.php` | Добавить `case needReinstall = 'needReinstall'` |
 | `src/Application/Contracts/ApplicationInstallations/Entity/ApplicationInstallationInterface.php` | Добавить метод `markAsNeedReinstall(?string $comment): void` + обновить docblock `applicationUninstalled` |
-| `src/Application/Contracts/ApplicationInstallations/Events/ApplicationInstallationMarkedNeedReinstallEvent.php` | Новое событие (id, updatedAt, comment) |
+| `src/Application/Contracts/ApplicationInstallations/Events/ApplicationInstallationMarkedNeedReinstallEvent.php` | Новое событие (`applicationInstallationId: Uuid`, `timestamp: CarbonImmutable`, `comment: ?string`) |
+
+> Временно изменения применены прямо в `vendor/bitrix24/b24phpsdk/`, будут формализованы в SDK PR.
 
 #### PR 2: bitrix24-php-lib (этот репозиторий)
 
@@ -80,99 +89,82 @@ Install\Command (повторная установка)
 | Изменение | Детали |
 |---|---|
 | `markAsNeedReinstall(?string $comment)` | Переход `new → needReinstall`, emit `ApplicationInstallationMarkedNeedReinstallEvent` |
-| Guard в `applicationUninstalled()` | Добавить `needReinstall` в допустимые статусы |
+| Guard в `applicationUninstalled()` | Добавить `needReinstall` в допустимые статусы (прямой переход `needReinstall → deleted`, без `blocked`) |
 
-**Событие — `src/ApplicationInstallations/Entity/ApplicationInstallationMarkedNeedReinstallEvent.php`:**
+**Repository — `src/ApplicationInstallations/Infrastructure/Doctrine/ApplicationInstallationRepository.php`:**
 
-```php
-readonly class ApplicationInstallationMarkedNeedReinstallEvent {
-    public function __construct(
-        public Uuid $id,
-        public CarbonImmutable $updatedAt,
-        public ?string $comment
-    ) {}
-}
-```
-
-**Repository — `src/ApplicationInstallations/Infrastructure/Repository/StaleInstallationFinderInterface.php`:**
-
-```php
-interface StaleInstallationFinderInterface {
-    public function findStaleInstallations(
-        ApplicationInstallationStatus $status,
-        CarbonImmutable $olderThan,
-        ?string $memberId = null
-    ): array;
-}
-```
-
-**Repository — `src/ApplicationInstallations/Infrastructure/Doctrine/StaleInstallationFinder.php`:**
-
-- JOIN к `Bitrix24Account` для memberId
+Метод `findStaleInstallations(ApplicationInstallationStatus $status, CarbonImmutable $olderThan): array`:
+- Без `memberId` фильтра
+- Без JOIN к `Bitrix24Account`
 - WHERE `status = :status AND createdAt < :olderThan`
-- Опциональный фильтр `AND b24.memberId = :memberId`
-
-**Repository — `tests/Helpers/ApplicationInstallations/InMemoryStaleInstallationFinder.php`:**
-
-- In-memory реализация `StaleInstallationFinderInterface` для тестов
+- ORDER BY `createdAt ASC`
 
 **UseCase — `src/ApplicationInstallations/UseCase/MarkOldInstallations/`:**
 
 | Файл | Содержание |
 |---|---|
-| `Command.php` | `public function __construct(public int $ttlInSeconds = self::DEFAULT_TTL)` + `DEFAULT_TTL = 3600` |
-| `Handler.php` | Находит зависшие через `StaleInstallationFinderInterface`, вызывает `markAsNeedReinstall()`, сохраняет, flush |
+| `Command.php` | `public int $ttlInSeconds` + валидация (>= 0) |
+| `Handler.php` | `handle(Command): void` — находит зависшие через `findStaleInstallations`, вызывает `markAsNeedReinstall()`, сохраняет, flush |
+| `MarkOldInstallationsConfig.php` | `public int $ttlInSeconds` + валидация |
+| `MarkOldInstallationsResult.php` | `public array $processedInstallations` (массив `ApplicationInstallationMarkedNeedReinstallEvent`) |
+| `MarkOldInstallationsCollector.php` | Коллектор событий — `add(event)`, `getEvents(): array` |
+| `Workflow.php` | Оркестратор: регистрирует listener на EventDispatcher → `handler->handle()` → unregister → `Result(processedInstallations)` |
 
-**Console — `src/Console/MarkOldInstallationsCommand.php`:**
+**Console — `src/ApplicationInstallations/Console/MarkOldInstallationsCommand.php`:**
 
 ```php
-protected static $defaultName = 'bitrix24:installations:mark-old';
-// --ttl=3600 (опционально, дефолт из Command::DEFAULT_TTL)
+#[AsCommand(name: 'bitrix24:installations:mark-old')]
+class MarkOldInstallationsCommand extends Command
+{
+    public const DEFAULT_TTL = 3600;
+    // аргумент: ttl (опциональный, дефолт DEFAULT_TTL)
+    // рендерит список переведённых установок + count
+}
 ```
 
 **Документация — `src/ApplicationInstallations/Docs/application-installations.md`:**
-
 - Добавить секцию «Stale Installation Cleanup» с описанием flow
 - Sequence diagram для markOldInstallations
 - Sequence diagram для reinstall после needReinstall
+- Обновить state machine — новые переходы
 - Обновить секцию Follow-Up — отметить что issue #92 реализован
 
 **CHANGELOG.md:**
-
 - Новая запись: feature — mark old installations as needReinstall via background command
 
 ### Test Cases
 
-#### Unit Tests
+#### Unit Tests — ✅ реализованы
 
-**MarkOldInstallations/HandlerTest:**
-1. Находит одну зависшую установку → переводит в `needReinstall`, событие диспатчится
-2. Находит несколько зависших → все переведены
-3. Нет зависших → ничего не делает, flush не вызван
-4. TTL = 0 → находит все `new` установки
+**MarkOldInstallations/ConfigTest** (`tests/Unit/ApplicationInstallations/UseCase/MarkOldInstallations/ConfigTest.php`):
+1. TTL = 0, 3600, 1800 — успех
+2. TTL = -1 — InvalidArgumentException
 
-**MarkOldInstallations/CommandTest:**
-1. Дефолтный TTL = 3600
-2. Кастомный TTL передаётся корректно
+> Entity-тесты (`markAsNeedReinstall` transitions) — идут в SDK, не в этот репо.
+> Handler/Workflow unit-тесты убраны — это functional concern, моки репы/Handler здесь неуместны.
 
-**Entity/ApplicationInstallation — markAsNeedReinstall:**
-1. `new → needReinstall` — успех, событие создано
-2. `active → needReinstall` — exception
-3. `blocked → needReinstall` — exception
-4. `needReinstall → deleted` через `applicationUninstalled(null)` — успех
+#### Functional Tests — ✅ реализованы
 
-#### Functional Tests
+**MarkOldInstallations/HandlerTest** (`tests/Functional/ApplicationInstallations/UseCase/MarkOldInstallations/HandlerTest.php`):
+1. Stale installation (`createdAt = NOW() - 2h`) → TTL=3600 → статус `needReinstall`, событие `ApplicationInstallationMarkedNeedReinstallEvent` диспатчнуто
+2. Fresh installation (`createdAt = NOW`) → TTL=3600 → статус остаётся `new`
+3. No stale installations → ничего не происходит, событие не диспатчится
 
-**MarkOldInstallations/HandlerTest:**
-1. Создаём `new` установку с `createdAt = NOW() - 2h`, запускаем с TTL=3600 → статус `needReinstall`
-2. Создаём `new` установку с `createdAt = NOW() - 30m`, запускаем с TTL=3600 → статус остаётся `new`
-3. Запускаем Install повторно → старая `needReinstall` установка удаляется, новая создаётся
+**MarkOldInstallations/WorkflowTest** (`tests/Functional/ApplicationInstallations/UseCase/MarkOldInstallations/WorkflowTest.php`):
+1. Full flow: stale installation → `Result.processedInstallations` содержит событие с правильным ID
+2. No stale installations → `Result` с пустым массивом `processedInstallations`
+
+**Install/HandlerTest** — добавлен тест `testReinstallOverNeedReinstallInstallationDeletesOldEntitiesAndCreatesNewPendingPair`:
+- Reinstall поверх `needReinstall` → старая `deleted`, новая пара создана
+- `markAsBlocked` пропущен (срабатывает только для `new`), сразу `applicationUninstalled(null)` → `deleted`
+- Событие `ApplicationInstallationBlockedEvent` НЕ диспатчнуто
 
 ### Assumptions
 
 - `needReinstall` добавляется только в `ApplicationInstallationStatus`, не в `Bitrix24AccountStatus`
 - Мастер-аккаунт при markOld не меняет статус — остаётся в `new`
 - `applicationUninstalled(null)` из `needReinstall → deleted` не требует блокировки
-- Метод `findStaleInstallations` сначала живёт в локальном репозитории этой библиотеки, потом переносится в SDK-интерфейс отдельным PR
+- Метод `findStaleInstallations` живёт в локальном репозитории этой библиотеки (не в SDK-интерфейсе)
 - Scheduling (cron/worker) — ответственность потребителя библиотеки
-- Константа TTL по умолчанию = 3600 секунд, находится в Command
+- Константа TTL по умолчанию = 3600 секунд, находится в Console command (`DEFAULT_TTL`)
+- При reinstall удаляются ВСЕ аккаунты портала (master + child), а не только master — см. `Install/Handler.php:125-138`
