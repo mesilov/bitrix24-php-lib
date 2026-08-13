@@ -51,12 +51,12 @@ class Bitrix24AccountReadModelTest extends TestCase
     #[Test]
     public function testFindAllActiveReturnsOnlyActiveAccounts(): void
     {
-        $active = (new Bitrix24AccountBuilder())->withStatus(Bitrix24AccountStatus::new)->withInstalled()->build();
-        $new = (new Bitrix24AccountBuilder())->build();
-        $blocked = (new Bitrix24AccountBuilder())->withStatus(Bitrix24AccountStatus::new)->withInstalled()->build();
+        $active = new Bitrix24AccountBuilder()->withStatus(Bitrix24AccountStatus::new)->withInstalled()->build();
+        $new = new Bitrix24AccountBuilder()->build();
+        $blocked = new Bitrix24AccountBuilder()->withStatus(Bitrix24AccountStatus::new)->withInstalled()->build();
         $blocked->markAsBlocked(null);
 
-        $deleted = (new Bitrix24AccountBuilder())->withStatus(Bitrix24AccountStatus::new)->withInstalled()->build();
+        $deleted = new Bitrix24AccountBuilder()->withStatus(Bitrix24AccountStatus::new)->withInstalled()->build();
         $deleted->applicationUninstalled(null);
 
         $this->repository->save($active);
