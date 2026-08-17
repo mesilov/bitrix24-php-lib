@@ -20,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Stopwatch\Stopwatch;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * @internal
@@ -51,7 +52,24 @@ class Bitrix24AccountReadModelTest extends TestCase
     #[Test]
     public function testFindAllActiveReturnsOnlyActiveAccounts(): void
     {
-        $active = new Bitrix24AccountBuilder()->withStatus(Bitrix24AccountStatus::new)->withInstalled()->build();
+        $activeMemberIds = [
+            Uuid::v4()->toRfc4122(),
+            Uuid::v4()->toRfc4122(),
+            Uuid::v4()->toRfc4122(),
+        ];
+
+        foreach ($activeMemberIds as $activeMemberId) {
+            $activeAccount = new Bitrix24AccountBuilder()
+                ->withMemberId($activeMemberId)
+                ->withStatus(Bitrix24AccountStatus::new)
+                ->withInstalled()
+                ->build();
+
+            $this->repository->save($activeAccount);
+
+            $this->flusher->flush($activeAccount);
+        }
+
         $new = new Bitrix24AccountBuilder()->build();
         $blocked = new Bitrix24AccountBuilder()->withStatus(Bitrix24AccountStatus::new)->withInstalled()->build();
         $blocked->markAsBlocked(null);
@@ -59,24 +77,23 @@ class Bitrix24AccountReadModelTest extends TestCase
         $deleted = new Bitrix24AccountBuilder()->withStatus(Bitrix24AccountStatus::new)->withInstalled()->build();
         $deleted->applicationUninstalled(null);
 
-        $this->repository->save($active);
         $this->repository->save($new);
         $this->repository->save($blocked);
         $this->repository->save($deleted);
 
-        $this->flusher->flush($active, $new, $blocked, $deleted);
+        $this->flusher->flush($new, $blocked, $deleted);
 
-        $found = [];
+        $foundActiveAccounts = 0;
         $pagination = $this->readModel->findAllActive('desc', 1, 1000);
         foreach ($pagination as $account) {
             self::assertSame(Bitrix24AccountStatus::active, $account->getStatus());
-            $found[] = $account->getId()->toRfc4122();
+
+            if (in_array($account->getMemberId(), $activeMemberIds, true)) {
+                $foundActiveAccounts++;
+            }
         }
 
-        self::assertContains($active->getId()->toRfc4122(), $found);
-        self::assertNotContains($new->getId()->toRfc4122(), $found);
-        self::assertNotContains($blocked->getId()->toRfc4122(), $found);
-        self::assertNotContains($deleted->getId()->toRfc4122(), $found);
+        self::assertSame(3, $foundActiveAccounts, 'findAllActive must return exactly all created active accounts');
     }
 
     #[Test]
