@@ -40,21 +40,22 @@ active → deleted (applicationUninstalled)
 needReinstall → deleted (applicationUninstalled)   ← НОВОЕ
 ```
 
-2. **markOldInstallations flow:**
+2. **markOldInstallations flow (после рефакторинга по ревью):**
 ```
 Console command (ttl=3600 по дефолту)
-  → Workflow.run(Config)
-    → регистрация listener на ApplicationInstallationMarkedNeedReinstallEvent
-    → Handler::handle(Command)
-      → repository.findStaleInstallations(status=new, olderThan=NOW()-ttl)
-      → для каждого: installation.markAsNeedReinstall(comment)
-      → repository.save(installation)
-      → flusher.flush(installation)
-      → событие ApplicationInstallationMarkedNeedReinstallEvent диспатчится через EventDispatcher
-    → unregister listener
-    → collector.getEvents() → Result(processedInstallations)
-  → Console рендерит список переведённых установок
+  → валидация ttl inline (>= 0)
+  → repository.findStaleInstallations(status=new, olderThan=NOW()-ttl)   // query side, CQRS read
+  → foreach stale:
+      → MarkAsNeedReinstall\Handler::handle(Command(installationId, comment))  // command side
+        → getById(installationId)         // identity map: без доп. SQL, ре-проверка guard от race с ONAPPINSTALL
+        → installation.markAsNeedReinstall(comment)
+        → repository.save + flusher.flush → событие ApplicationInstallationMarkedNeedReinstallEvent
+      → catch LogicException → skip (race condition: статус изменился параллельно)
+  → рендер: помеченные ID + count + пропущенные ID
 ```
+
+> Рефакторинг по итогам ревью: use case — единоразовая операция над одним агрегатом (без foreach),
+> батч-оркестрация вынесена в Console command. Workflow/Config/Result/Collector удалены.
 
 3. **Переустановка после markOldInstallations:**
 ```
@@ -70,7 +71,7 @@ Install\Command (повторная установка)
 
 ### Implementation Changes
 
-#### PR 1: SDK (bitrix24/b24phpsdk)
+#### PR 1: SDK (bitrix24/b24phpsdk) — разбит на issues #576–#580
 
 **Файлы SDK:**
 
@@ -99,26 +100,27 @@ Install\Command (повторная установка)
 - WHERE `status = :status AND createdAt < :olderThan`
 - ORDER BY `createdAt ASC`
 
-**UseCase — `src/ApplicationInstallations/UseCase/MarkOldInstallations/`:**
+**UseCase — `src/ApplicationInstallations/UseCase/MarkAsNeedReinstall/`** (единоразовая операция над одним агрегатом):
 
 | Файл | Содержание |
 |---|---|
-| `Command.php` | `public int $ttlInSeconds` + валидация (>= 0) |
-| `Handler.php` | `handle(Command): void` — находит зависшие через `findStaleInstallations`, вызывает `markAsNeedReinstall()`, сохраняет, flush |
-| `MarkOldInstallationsConfig.php` | `public int $ttlInSeconds` + валидация |
-| `MarkOldInstallationsResult.php` | `public array $processedInstallations` (массив `ApplicationInstallationMarkedNeedReinstallEvent`) |
-| `MarkOldInstallationsCollector.php` | Коллектор событий — `add(event)`, `getEvents(): array` |
-| `Workflow.php` | Оркестратор: регистрирует listener на EventDispatcher → `handler->handle()` → unregister → `Result(processedInstallations)` |
+| `Command.php` | `installationId: Uuid`, `comment: ?string` |
+| `Handler.php` | `handle(Command): void` — `getById` → `markAsNeedReinstall(comment)` → save → flush → лог. Комментарий у `getById` про identity map |
 
-**Console — `src/ApplicationInstallations/Console/MarkOldInstallationsCommand.php`:**
+**Удалено (после рефакторинга по ревью):** весь `UseCase/MarkOldInstallations/` — Workflow, Handler, Command, MarkOldInstallationsConfig, MarkOldInstallationsResult, MarkOldInstallationsCollector.
+
+**Console — `src/ApplicationInstallations/Console/MarkOldInstallationsCommand.php`** (батч-оркестратор):
 
 ```php
 #[AsCommand(name: 'bitrix24:installations:mark-old')]
 class MarkOldInstallationsCommand extends Command
 {
     public const DEFAULT_TTL = 3600;
-    // аргумент: ttl (опциональный, дефолт DEFAULT_TTL)
-    // рендерит список переведённых установок + count
+    // аргумент: ttl (опциональный, дефолт DEFAULT_TTL), валидация inline
+    // конструктор: ApplicationInstallationRepository + MarkAsNeedReinstall\Handler
+    // findStaleInstallations(new, NOW()-ttl) → foreach → handler->handle(new Command(id, comment))
+    // catch LogicException → skip (race condition с ONAPPINSTALL)
+    // рендер: помеченные ID + count, пропущенные ID
 }
 ```
 
@@ -134,37 +136,39 @@ class MarkOldInstallationsCommand extends Command
 
 ### Test Cases
 
-#### Unit Tests — ✅ реализованы
+#### Unit Tests — удалены после рефакторинга
 
-**MarkOldInstallations/ConfigTest** (`tests/Unit/ApplicationInstallations/UseCase/MarkOldInstallations/ConfigTest.php`):
-1. TTL = 0, 3600, 1800 — успех
-2. TTL = -1 — InvalidArgumentException
-
+> ConfigTest удалён вместе с MarkOldInstallationsConfig (валидация TTL теперь inline в Console command, консоль не тестируем unit-тестами).
 > Entity-тесты (`markAsNeedReinstall` transitions) — идут в SDK, не в этот репо.
-> Handler/Workflow unit-тесты убраны — это functional concern, моки репы/Handler здесь неуместны.
 
 #### Functional Tests — ✅ реализованы
 
-**MarkOldInstallations/HandlerTest** (`tests/Functional/ApplicationInstallations/UseCase/MarkOldInstallations/HandlerTest.php`):
-1. Stale installation (`createdAt = NOW() - 2h`) → TTL=3600 → статус `needReinstall`, событие `ApplicationInstallationMarkedNeedReinstallEvent` диспатчнуто
-2. Fresh installation (`createdAt = NOW`) → TTL=3600 → статус остаётся `new`
-3. No stale installations → ничего не происходит, событие не диспатчится
+**MarkAsNeedReinstall/HandlerTest** (`tests/Functional/ApplicationInstallations/UseCase/MarkAsNeedReinstall/HandlerTest.php`):
+1. Pending installation в `new` → handle → статус `needReinstall`, comment сохранён, событие `ApplicationInstallationMarkedNeedReinstallEvent` диспатчнуто
+2. Active installation → `LogicException`
+3. Неизвестный installationId → `ApplicationInstallationNotFoundException`
 
-**MarkOldInstallations/WorkflowTest** (`tests/Functional/ApplicationInstallations/UseCase/MarkOldInstallations/WorkflowTest.php`):
-1. Full flow: stale installation → `Result.processedInstallations` содержит событие с правильным ID
-2. No stale installations → `Result` с пустым массивом `processedInstallations`
+**ApplicationInstallationRepositoryTest** — добавлен `testFindStaleInstallationsReturnsOnlyOldEnoughNewOnes`:
+- Old `new`-installation (createdAt=NOW()-2h, TTL=3600) → найдена
+- Fresh `new`-installation → не найдена
+- Old `active`-installation (createdAt=NOW()-2h) → не найдена (статус не тот)
+- `backdateCreatedAt` через DQL UPDATE (createdAt readonly в конструкторе)
 
 **Install/HandlerTest** — добавлен тест `testReinstallOverNeedReinstallInstallationDeletesOldEntitiesAndCreatesNewPendingPair`:
 - Reinstall поверх `needReinstall` → старая `deleted`, новая пара создана
 - `markAsBlocked` пропущен (срабатывает только для `new`), сразу `applicationUninstalled(null)` → `deleted`
 - Событие `ApplicationInstallationBlockedEvent` НЕ диспатчнуто
 
+> Удалены после рефакторинга: MarkOldInstallations/ConfigTest, HandlerTest, WorkflowTest (unit + functional).
+
 ### Assumptions
 
 - `needReinstall` добавляется только в `ApplicationInstallationStatus`, не в `Bitrix24AccountStatus`
 - Мастер-аккаунт при markOld не меняет статус — остаётся в `new`
 - `applicationUninstalled(null)` из `needReinstall → deleted` не требует блокировки
-- Метод `findStaleInstallations` живёт в локальном репозитории этой библиотеки (не в SDK-интерфейсе)
+- Метод `findStaleInstallations` временно живёт в локальном репозитории; в SDK-интерфейс пойдёт отдельным issue ([b24phpsdk#579](https://github.com/bitrix24/b24phpsdk/issues/579))
 - Scheduling (cron/worker) — ответственность потребителя библиотеки
 - Константа TTL по умолчанию = 3600 секунд, находится в Console command (`DEFAULT_TTL`)
 - При reinstall удаляются ВСЕ аккаунты портала (master + child), а не только master — см. `Install/Handler.php:125-138`
+- Use case обрабатывает ровно один агрегат; повторная загрузка через `getById` не даёт доп. SQL (Doctrine identity map) и защищает guard от race с ONAPPINSTALL
+- SDK issues: [#576](https://github.com/bitrix24/b24phpsdk/issues/576) (enum), [#577](https://github.com/bitrix24/b24phpsdk/issues/577) (interface method), [#578](https://github.com/bitrix24/b24phpsdk/issues/578) (event), [#579](https://github.com/bitrix24/b24phpsdk/issues/579) (repo interface), [#580](https://github.com/bitrix24/b24phpsdk/issues/580) (reference impl + tests)

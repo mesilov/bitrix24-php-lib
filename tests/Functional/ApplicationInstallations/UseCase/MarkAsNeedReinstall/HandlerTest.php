@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Bitrix24\Lib\Tests\Functional\ApplicationInstallations\UseCase\MarkOldInstallations;
+namespace Bitrix24\Lib\Tests\Functional\ApplicationInstallations\UseCase\MarkAsNeedReinstall;
 
 use Bitrix24\Lib\ApplicationInstallations\Entity\ApplicationInstallation;
 use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationInstallationRepository;
-use Bitrix24\Lib\ApplicationInstallations\UseCase\MarkOldInstallations\Command;
-use Bitrix24\Lib\ApplicationInstallations\UseCase\MarkOldInstallations\Handler;
+use Bitrix24\Lib\ApplicationInstallations\UseCase\MarkAsNeedReinstall\Command;
+use Bitrix24\Lib\ApplicationInstallations\UseCase\MarkAsNeedReinstall\Handler;
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
-use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationMarkedNeedReinstallEvent;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Exceptions\ApplicationInstallationNotFoundException;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
-use Carbon\CarbonImmutable;
+use Bitrix24\SDK\Core\Exceptions\LogicException;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -58,58 +58,45 @@ class HandlerTest extends TestCase
     }
 
     #[Test]
-    public function testStaleInstallationIsMarkedAsNeedReinstall(): void
+    public function testPendingInstallationIsMarkedAsNeedReinstall(): void
     {
-        $bitrix24Account = $this->createAccount();
-        $installation = $this->createInstallation($bitrix24Account->getId());
+        $installation = $this->persistInstallation();
 
-        $this->entityManager->persist($bitrix24Account);
-        $this->entityManager->persist($installation);
-        $this->entityManager->flush();
-
-        $this->backdateCreatedAt($installation->getId(), new CarbonImmutable('-2 hours'));
-
-        $this->handler->handle(new Command(3600));
+        $this->handler->handle(new Command($installation->getId(), 'installation timed out without ONAPPINSTALL'));
         $this->entityManager->clear();
 
         $updated = $this->installationRepository->getById($installation->getId());
 
         self::assertSame(ApplicationInstallationStatus::needReinstall, $updated->getStatus());
+        self::assertSame('installation timed out without ONAPPINSTALL', $updated->getComment());
 
         $events = $this->eventDispatcher->getOrphanedEvents();
         self::assertContains(ApplicationInstallationMarkedNeedReinstallEvent::class, $events);
     }
 
     #[Test]
-    public function testFreshInstallationStaysNew(): void
+    public function testActiveInstallationThrowsLogicException(): void
     {
-        $bitrix24Account = $this->createAccount();
-        $installation = $this->createInstallation($bitrix24Account->getId());
-
-        $this->entityManager->persist($bitrix24Account);
-        $this->entityManager->persist($installation);
+        $installation = $this->persistInstallation();
+        $installation->applicationInstalled(Uuid::v7()->toRfc4122());
         $this->entityManager->flush();
-        $this->entityManager->clear();
 
-        $this->handler->handle(new Command(3600));
+        $this->expectException(LogicException::class);
 
-        $updated = $this->installationRepository->getById($installation->getId());
-
-        self::assertSame(ApplicationInstallationStatus::new, $updated->getStatus());
+        $this->handler->handle(new Command($installation->getId(), 'installation timed out without ONAPPINSTALL'));
     }
 
     #[Test]
-    public function testNoStaleInstallationsDoesNothing(): void
+    public function testUnknownInstallationIdThrowsNotFoundException(): void
     {
-        $this->handler->handle(new Command(3600));
+        $this->expectException(ApplicationInstallationNotFoundException::class);
 
-        $events = $this->eventDispatcher->getOrphanedEvents();
-        self::assertNotContains(ApplicationInstallationMarkedNeedReinstallEvent::class, $events);
+        $this->handler->handle(new Command(Uuid::v7(), 'installation timed out without ONAPPINSTALL'));
     }
 
-    private function createAccount(): Bitrix24Account
+    private function persistInstallation(): ApplicationInstallation
     {
-        return new Bitrix24Account(
+        $bitrix24Account = new Bitrix24Account(
             Uuid::v7(),
             1,
             true,
@@ -120,13 +107,10 @@ class HandlerTest extends TestCase
             new Scope(['crm']),
             true
         );
-    }
 
-    private function createInstallation(Uuid $bitrix24AccountId): ApplicationInstallation
-    {
-        return new ApplicationInstallation(
+        $installation = new ApplicationInstallation(
             Uuid::v7(),
-            $bitrix24AccountId,
+            $bitrix24Account->getId(),
             new ApplicationStatus('F'),
             PortalLicenseFamily::free,
             10,
@@ -136,15 +120,11 @@ class HandlerTest extends TestCase
             'lead-1',
             'install'
         );
-    }
 
-    private function backdateCreatedAt(Uuid $installationId, CarbonImmutable $createdAt): void
-    {
-        $this->entityManager->createQuery(
-            'UPDATE ' . ApplicationInstallation::class . ' ai SET ai.createdAt = :createdAt WHERE ai.id = :id'
-        )
-            ->setParameter('createdAt', $createdAt)
-            ->setParameter('id', $installationId, 'uuid')
-            ->execute();
+        $this->entityManager->persist($bitrix24Account);
+        $this->entityManager->persist($installation);
+        $this->entityManager->flush();
+
+        return $installation;
     }
 }

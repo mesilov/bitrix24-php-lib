@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\ApplicationInstallations\Console;
 
-use Bitrix24\Lib\ApplicationInstallations\UseCase\MarkOldInstallations\MarkOldInstallationsConfig;
-use Bitrix24\Lib\ApplicationInstallations\UseCase\MarkOldInstallations\Workflow;
-use Bitrix24\Lib\ApplicationInstallations\UseCase\MarkOldInstallations\MarkOldInstallationsResult;
-use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
+use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationInstallationRepository;
+use Bitrix24\Lib\ApplicationInstallations\UseCase\MarkAsNeedReinstall\Command as MarkAsNeedReinstallCommand;
+use Bitrix24\Lib\ApplicationInstallations\UseCase\MarkAsNeedReinstall\Handler;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
+use Bitrix24\SDK\Core\Exceptions\LogicException;
+use Carbon\CarbonImmutable;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Uid\Uuid;
 
 #[AsCommand(
     name: 'bitrix24:installations:mark-old',
@@ -26,7 +29,8 @@ class MarkOldInstallationsCommand extends Command
     private ?SymfonyStyle $io = null;
 
     public function __construct(
-        private readonly Workflow $workflow
+        private readonly ApplicationInstallationRepository $applicationInstallationRepository,
+        private readonly Handler $markAsNeedReinstallHandler
     ) {
         parent::__construct();
     }
@@ -61,48 +65,75 @@ HELP
     {
         $this->io = new SymfonyStyle($input, $output);
 
-        $config = $this->parseInput($input);
-        if (null === $config) {
+        $ttl = (int) $input->getArgument('ttl');
+        if ($ttl < 0) {
+            $this->io->error('TTL in seconds must be a non-negative integer.');
+
             return Command::FAILURE;
         }
 
-        $result = $this->workflow->run($config);
+        $olderThan = new CarbonImmutable();
+        $olderThan = $olderThan->subSeconds($ttl);
 
-        return $this->renderResult($result);
+        $staleInstallations = $this->applicationInstallationRepository->findStaleInstallations(
+            ApplicationInstallationStatus::new,
+            $olderThan
+        );
+
+        return $this->processStaleInstallations($staleInstallations, $ttl);
     }
 
-    private function parseInput(InputInterface $input): ?MarkOldInstallationsConfig
+    private function processStaleInstallations(array $staleInstallations, int $ttl): int
     {
-        $ttl = (int) $input->getArgument('ttl');
-
-        try {
-            return new MarkOldInstallationsConfig($ttl);
-        } catch (InvalidArgumentException $invalidArgumentException) {
-            $this->io->error($invalidArgumentException->getMessage());
-        }
-
-        return null;
-    }
-
-    private function renderResult(MarkOldInstallationsResult $result): int
-    {
-        $count = count($result->processedInstallations);
-        if (0 === $count) {
+        if ([] === $staleInstallations) {
             $this->io->success('No stale installations found.');
 
-            return 0;
+            return Command::SUCCESS;
         }
 
-        $this->io->success(sprintf('Marked %d installation(s) as needReinstall:', $count));
+        $comment = sprintf('installation timed out without ONAPPINSTALL, TTL = %d seconds', $ttl);
 
-        foreach ($result->processedInstallations as $event) {
-            $this->io->text(sprintf(
-                '  - installation %s, marked at %s',
-                $event->applicationInstallationId->toRfc4122(),
-                $event->timestamp->toAtomString()
-            ));
+        $markedIds = [];
+        $failedIds = [];
+
+        foreach ($staleInstallations as $staleInstallation) {
+            $installationId = $staleInstallation->getId();
+
+            try {
+                $this->markAsNeedReinstallHandler->handle(
+                    new MarkAsNeedReinstallCommand($installationId, $comment)
+                );
+
+                $markedIds[] = $installationId;
+            } catch (LogicException) {
+                // Installation changed status concurrently (e.g. ONAPPINSTALL arrived) — skip it.
+                $failedIds[] = $installationId;
+            }
         }
 
-        return 0;
+        return $this->renderResult($markedIds, $failedIds);
+    }
+
+    /**
+     * @param Uuid[] $markedIds
+     * @param Uuid[] $failedIds
+     */
+    private function renderResult(array $markedIds, array $failedIds): int
+    {
+        $this->io->success(sprintf('Marked %d installation(s) as needReinstall:', count($markedIds)));
+
+        foreach ($markedIds as $installationId) {
+            $this->io->text(sprintf('  - installation %s', $installationId->toRfc4122()));
+        }
+
+        if ([] !== $failedIds) {
+            $this->io->warning(sprintf('Skipped %d installation(s) changed status concurrently:', count($failedIds)));
+
+            foreach ($failedIds as $installationId) {
+                $this->io->text(sprintf('  - installation %s', $installationId->toRfc4122()));
+            }
+        }
+
+        return Command::SUCCESS;
     }
 }
