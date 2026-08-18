@@ -13,6 +13,7 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\Applicati
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationContactPersonLinkedEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationCreatedEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationFinishedEvent;
+use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationMarkedNeedReinstallEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationUnblockedEvent;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Events\ApplicationInstallationUninstalledEvent;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
@@ -166,10 +167,11 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         if (
             ApplicationInstallationStatus::active !== $this->status
             && ApplicationInstallationStatus::blocked !== $this->status
+            && ApplicationInstallationStatus::needReinstall !== $this->status
         ) {
             throw new LogicException(
                 sprintf(
-                    'installation was interrupted because status must be in active or blocked, but your status is %s',
+                    'installation was interrupted because status must be in active, blocked or needReinstall, but your status is %s',
                     $this->status->value
                 )
             );
@@ -235,6 +237,26 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         $this->updatedAt = new CarbonImmutable();
 
         $this->events[] = new ApplicationInstallationBlockedEvent(
+            $this->id,
+            new CarbonImmutable(),
+            $this->comment
+        );
+    }
+
+    public function markAsNeedReinstall(?string $comment): void
+    {
+        if (ApplicationInstallationStatus::new !== $this->status) {
+            throw new LogicException(sprintf(
+                'you can mark application installation as need reinstall only in status new, but your status is «%s»',
+                $this->status->value
+            ));
+        }
+
+        $this->status = ApplicationInstallationStatus::needReinstall;
+        $this->comment = $comment;
+        $this->updatedAt = new CarbonImmutable();
+
+        $this->events[] = new ApplicationInstallationMarkedNeedReinstallEvent(
             $this->id,
             new CarbonImmutable(),
             $this->comment

@@ -11,6 +11,7 @@ use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\Applicati
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Exceptions\ApplicationInstallationNotFoundException;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Repository\ApplicationInstallationRepositoryInterface;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
+use Carbon\CarbonImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Query\Expr\Join;
@@ -182,6 +183,28 @@ class ApplicationInstallationRepository extends EntityRepository implements Appl
             ->setParameter('status', ApplicationInstallationStatus::deleted)
             ->getQuery()
             ->getOneOrNullResult()
+        ;
+    }
+
+    public function findStaleInstallations(
+        ApplicationInstallationStatus $status,
+        CarbonImmutable $olderThan
+    ): array {
+        $queryBuilder = $this->getEntityManager()->getRepository(ApplicationInstallation::class)
+            ->createQueryBuilder('ai')
+        ;
+
+        $queryBuilder
+            ->where('ai.status = :status')
+            ->andWhere('ai.createdAt < :olderThan')
+            ->setParameter('status', $status)
+            ->setParameter('olderThan', $olderThan)
+        ;
+
+        return $queryBuilder
+            ->orderBy('ai.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult()
         ;
     }
 }

@@ -152,6 +152,36 @@ class HandlerTest extends TestCase
         self::assertNotContains(ApplicationInstallationFinishedEvent::class, $events);
     }
 
+    #[Test]
+    public function testReinstallOverNeedReinstallInstallationDeletesOldEntitiesAndCreatesNewPendingPair(): void
+    {
+        $memberId = Uuid::v4()->toRfc4122();
+        $bitrix24Account = $this->createAccount($memberId);
+        $applicationInstallation = $this->createInstallation($bitrix24Account->getId());
+        $applicationInstallation->markAsNeedReinstall('installation timed out without ONAPPINSTALL');
+
+        $this->entityManager->persist($bitrix24Account);
+        $this->entityManager->persist($applicationInstallation);
+        $this->entityManager->flush();
+        $this->entityManager->clear();
+
+        $this->handler->handle($this->createCommand(null, $memberId));
+        $this->entityManager->clear();
+
+        /** @var ApplicationInstallation $deletedInstallation */
+        $deletedInstallation = $this->entityManager->find(ApplicationInstallation::class, $applicationInstallation->getId());
+        $currentInstallation = $this->installationRepository->findByBitrix24AccountMemberId($memberId);
+
+        self::assertNotNull($currentInstallation);
+        self::assertSame(ApplicationInstallationStatus::deleted, $deletedInstallation->getStatus());
+        self::assertSame(ApplicationInstallationStatus::new, $currentInstallation->getStatus());
+        self::assertNotSame($applicationInstallation->getId()->toRfc4122(), $currentInstallation->getId()->toRfc4122());
+
+        $events = $this->eventDispatcher->getOrphanedEvents();
+        self::assertContains(ApplicationInstallationUninstalledEvent::class, $events);
+        self::assertNotContains(ApplicationInstallationBlockedEvent::class, $events);
+    }
+
     private function createCommand(?string $applicationToken = null, ?string $memberId = null): Command
     {
         return new Command(
