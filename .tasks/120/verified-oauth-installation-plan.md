@@ -1,52 +1,71 @@
 # План реализации issue #120: проверка OAuth-авторизации при установке
 
-## Summary
+## Что именно подтверждаем
 
-Move reusable verification of incoming Bitrix24 OAuth authorization into the library and require it before installation writes. Keep consumer application sessions, TTL, consent rules, exports and custom-domain allowlists outside this change. Issue: https://github.com/mesilov/bitrix24-php-lib/issues/120. Base: origin/dev (`0edc8fc`).
+1. Переносим общую проверку входящей авторизации в библиотеку и используем для неё механизм SDK.
+2. Обработчики `Install` и `OnAppInstall` обязательно вызывают проверку до изменения установки и аккаунтов.
+3. Добавляем в `OnAppInstall\Command` обязательный `AuthToken` из авторизации события. Это изменение публичного контракта, поэтому вызывающему приложению потребуется передавать новый аргумент. Существующий `applicationToken` сохраняется: он не заменяет OAuth-токен.
 
-## Target contract
+## Задача и границы
 
-- Add `src/ApplicationInstallations/Services/Authorization/AuthorizationVerifierInterface.php` with `verify(AuthToken $authToken, Domain $domain, string $memberId, ?int $expectedUserId = null): VerifiedAuthorization`.
-- Add immutable `VerifiedAuthorization.php`: confirmed client ID, member ID, domain, user ID, effective AuthToken/expiry and verified user profile.
-- Add `SdkAuthorizationVerifier.php`, configured with trusted application profile and OAuth server configuration. Use SDK CoreBuilder/credentials and the SDK secure `app.info` calling convention, not a direct Symfony HTTP implementation copied from the consumer.
-- The SDK secure check returns vendor metadata: validate client_id, install.member_id, install.uri, positive user_id and valid expiry. The portal app.info CODE is not the OAuth client_id.
-- Do not require installed=true during installation. Only contact the portal for profile after vendor identity matches; compare profile.ID with vendor user_id and expected user when supplied.
-- Preserve SDK token renewal semantics and return the effective verified credentials. Do not emit installation/account domain events or perform persistence before verification succeeds. SDK transport must not send raw credentials to application logs.
-- Verification failures distinguish invalid/mismatched authorization from upstream unavailability without including tokens, request/response objects or secrets in exception messages.
+Issue: https://github.com/mesilov/bitrix24-php-lib/issues/120.
+PR: https://github.com/mesilov/bitrix24-php-lib/pull/121.
+База: `origin/dev`, коммит `0edc8fc` на момент подготовки.
 
-## Production changes
+Переносим переиспользуемую проверку входящей OAuth-авторизации Битрикс24 и делаем её обязательной перед записью установки. Собственные сессии приложения, их срок и хранение, согласия, выгрузки и списки разрешённых коробочных доменов остаются в приложении.
 
-1. Add the reusable interface, verified result, SDK implementation and a controlled `AuthorizationVerificationException` in the authorization service folder.
-2. Add a required verifier dependency to `src/ApplicationInstallations/UseCase/Install/Handler.php`. Verify before querying/deactivating an old installation or saving a new pair. Store the verified effective AuthToken. Match command user identity/admin information against the verified profile; reject inconsistent input.
-3. Add an AuthToken argument to `src/ApplicationInstallations/UseCase/OnAppInstall/Command.php` and a required verifier dependency to its Handler. Require verified event credentials before finishing a pending installation; bind verified identity to the pending master account. Preserve the verified duplicate-event no-op behavior. No nullable verifier, no tokenless fallback.
-4. Remove secret-bearing log fields in the modified installation handlers; use only safe outcome/error metadata for authorization diagnostics.
-5. Update `src/ApplicationInstallations/Docs/application-installations.md` and README integration examples with dependency wiring, passing event authToken, reuse before issuing consumer sessions, upstream failure handling and migration notes. Add a release-facing BC entry to CHANGELOG in its existing top-section style; do not introduce an Unreleased section or invent a release date.
+## Целевой контракт
 
-## Tests
+- Добавить `src/ApplicationInstallations/Services/Authorization/AuthorizationVerifierInterface.php` с методом `verify(AuthToken $authToken, Domain $domain, string $memberId, ?int $expectedUserId = null): VerifiedAuthorization`.
+- Добавить неизменяемый `VerifiedAuthorization.php`: подтверждённые client ID, member ID, домен, user ID, актуальный `AuthToken` со сроком действия и проверенный профиль пользователя.
+- Добавить `SdkAuthorizationVerifier.php` с доверенными настройками приложения и OAuth-сервера. Использовать `CoreBuilder`, credentials и безопасный вызов `app.info` средствами SDK; не копировать собственный HTTP-клиент приложения.
+- В ответе OAuth-сервера проверять `client_id`, `install.member_id`, `install.uri`, положительный `user_id` и действительный срок авторизации. Поле `CODE` портального `app.info` не является OAuth `client_id`.
+- При установке не требовать `installed=true`. Обращаться к `profile` только после подтверждения идентичности через OAuth-сервер; сверять `profile.ID` с `user_id` и ожидаемым пользователем, если он указан.
+- Сохранить обработку обновления токенов средствами SDK и возвращать актуальные подтверждённые credentials. Авторизация, которую SDK успешно обновил и затем проверил, может пройти; оставшаяся истёкшей авторизация отклоняется.
+- До успешной проверки не сохранять установки/аккаунты и не публиковать их доменные события. Транспорт SDK не должен отправлять исходные credentials в логи приложения.
+- Отличать некорректную авторизацию от недоступности внешнего сервера. Сообщения исключений не должны включать токены, объекты запросов/ответов и секреты.
 
-- New unit tests under `tests/Unit/ApplicationInstallations/Services/Authorization/`: SDK transport fake proves secure app.info targets the configured OAuth server, no portal call before vendor validation, then profile uses the verified domain.
-- Valid pending installation; foreign client, member, domain, user; expired/numeric/ISO8601 expiry; malformed/missing metadata; upstream/transport failure; no raw secrets in logs/exceptions; sequential verifications do not reuse another request credentials.
-- Update `tests/Unit/ApplicationInstallations/UseCase/Install/HandlerTest.php`: failed verification makes zero repository save/flush calls and does not deactivate an existing installation; valid UI/one-step/reinstall flows still pass and use verified credentials.
-- Update `tests/Unit/ApplicationInstallations/UseCase/OnAppInstall/{CommandTest,HandlerTest}.php`: OAuth credentials required; failed verification leaves pending state unchanged; valid completion and verified duplicates preserved.
-- Extend functional Install and OnAppInstall tests with a recording/failing verifier: real database state stays unchanged on rejection. No live customer portals or outbound API calls in automated suites.
-- Update all test helpers and constructor call sites; grep for both handlers and commands to cover direct consumers.
+## Изменения кода
 
-## Environment and verification
+1. Добавить интерфейс, объект результата, реализацию через SDK и контролируемое исключение `AuthorizationVerificationException` в каталог сервиса авторизации.
+2. В `src/ApplicationInstallations/UseCase/Install/Handler.php` добавить обязательную зависимость проверки. Вызывать её до поиска/деактивации прежней установки и сохранения новой пары. Сохранять подтверждённый актуальный `AuthToken`; сверять сведения о пользователе и административном признаке команды с проверенным профилем, отклонять противоречивый ввод.
+3. В `src/ApplicationInstallations/UseCase/OnAppInstall/Command.php` добавить `AuthToken`, в обработчик — обязательную зависимость проверки. Подтверждать авторизацию события до завершения ожидающей установки и связывать подтверждённую идентичность с её master account. Сохранить отсутствие изменений при проверенном повторном событии. Не добавлять необязательный verifier или обход при отсутствии токена.
+4. Убрать содержащие секреты поля логов в изменяемых обработчиках установки. Диагностика авторизации содержит только безопасный результат и код ошибки.
+5. Обновить `src/ApplicationInstallations/Docs/application-installations.md` и примеры README: настройка зависимостей, передача `authToken` из события, повторное использование проверки перед выдачей сессии приложения, ошибки внешнего сервера и миграция. Добавить описание несовместимости в CHANGELOG в существующем стиле верхнего раздела; не вводить `Unreleased` и не придумывать дату релиза.
 
-The checkout has a stale ignored composer.lock/vendor (SDK dev-dev), while composer.json requires dev-v3-dev. Resolve the local environment through Makefile Composer targets before relying on vendor APIs; do not commit ignored lock/vendor or change package constraints without a verified need.
+## Тесты
 
-Run tests/linters only via Makefile. Write a focused regression first and observe RED using a make entrypoint; implement, then run the repository quality gate in its required order: `make lint-all`, `make test-unit`, `make test-functional`. Functional tests recreate only this library test database; confirm its target and keep unrelated data untouched. Do not expose debug-show-env password output in reports.
+- Новые модульные тесты в `tests/Unit/ApplicationInstallations/Services/Authorization/`: тестовый транспорт SDK подтверждает обращение безопасного `app.info` к настроенному OAuth-серверу, отсутствие запроса к порталу до проверки и последующий `profile` на подтверждённом домене.
+- Сценарии: корректная ожидающая установка; чужие приложение, member ID, домен и пользователь; истёкшая авторизация и успешное обновление средствами SDK; числовой срок и ISO8601; отсутствующий/некорректный ответ; ошибка внешнего сервера и транспорта; отсутствие секретов в логах/исключениях; изоляция credentials последовательных проверок.
+- Обновить `tests/Unit/ApplicationInstallations/UseCase/Install/HandlerTest.php`: при отказе нет `save`/`flush`, прежняя установка не деактивируется; корректные установка через интерфейс, одношаговая установка и переустановка используют подтверждённые credentials.
+- Обновить `tests/Unit/ApplicationInstallations/UseCase/OnAppInstall/{CommandTest,HandlerTest}.php`: OAuth-авторизация обязательна; при отказе ожидающее состояние не меняется; корректное завершение и проверенные повторы сохранены.
+- Дополнить функциональные тесты `Install` и `OnAppInstall` записывающей/отказывающей тестовой реализацией verifier: при отказе реальное состояние тестовой БД не меняется. Автотесты не обращаются к клиентским порталам и внешним API.
+- Обновить тестовые helpers и все места создания изменённых команд и обработчиков.
 
-## GitHub workflow
+## Среда и проверки
 
-Issue #120 is created and read back after duplicate/label checks. Branch: `feature/120-verified-oauth-installation`, based on origin/dev. Plan: `.tasks/120/verified-oauth-installation-plan.md`. Preserve the pre-existing .mcp.json and opencode.json changes. The maintainer skill requires explicit plan review before production edits. After approved implementation and green gates, re-read `.github/PULL_REQUEST_TEMPLATE.md`, create a PR against dev with `Fix #120` and honest verification. Do not merge or release the library automatically.
+В рабочей копии есть устаревшие игнорируемые `composer.lock` и `vendor` с SDK `dev-dev`, хотя `composer.json` требует `dev-v3-dev`. Сначала привести локальную среду в соответствие через Composer-цели Makefile. Не коммитить игнорируемые lock/vendor и не менять ограничения зависимостей без подтверждённой необходимости.
 
-## External context
+Линтеры и тесты запускать только через Makefile. Сначала добавить проверку регрессии и увидеть ожидаемое падение через make, затем реализовать поведение и выполнить полный цикл в установленном порядке:
 
-Official Bitrix24 MCP is available under b24_dev_mcp and was live-checked. Fetched app.info method documentation: https://apidocs.bitrix24.ru/api-reference/common/system/app-info.html. It documents the regular portal call, not the vendor metadata response. The secure calling convention is established by installed current SDK code in the consumer (Main::guardValidateCurrentAuthToken and EndpointUrlFormatter); verify it against the resolved SDK version during environment setup.
+1. `make lint-all`.
+2. `make test-unit`.
+3. `make test-functional`.
 
-## Approval and current state
+Функциональные тесты пересоздают только тестовую БД этой библиотеки: подтвердить целевую БД и сохранить посторонние данные. Не публиковать пароль из вывода `debug-show-env`.
 
-- Issue #120 created after duplicate and label checks; GitHub CLI browser authorization completed.
-- The proposed ownership boundary was agreed in conversation. The repository-local maintainer skill additionally requires explicit review of this concrete plan before production code changes.
-- Current deliverable is a plan-only draft PR. No production changes, Composer resolution, tests or linters have run yet. After plan approval, implement in this same branch, complete the required gates and update the PR.
+## Ветка и PR
+
+Issue #120 создана после проверки дубликатов и labels, её текст прочитан повторно. Ветка: `feature/120-verified-oauth-installation` от `origin/dev`. План: `.tasks/120/verified-oauth-installation-plan.md`.
+
+Существовавшие до задачи изменения `.mcp.json` и `opencode.json` не включать в коммиты. Локальный maintainer-skill требует явного одобрения этого плана до изменения production-кода. После одобрения реализовать изменения в этой же ветке, обновить CHANGELOG и документацию, пройти проверки и обновить draft PR #121 по шаблону `.github/PULL_REQUEST_TEMPLATE.md`, сохранив `Fix #120` и базу `dev`. Автоматически не сливать PR и не выпускать версию библиотеки.
+
+## Внешние источники
+
+Официальный Bitrix24 MCP доступен как `b24_dev_mcp`, проверен живым запросом. Получена документация `app.info`: https://apidocs.bitrix24.ru/api-reference/common/system/app-info.html. Она описывает обычный портальный вызов, а не ответ OAuth-сервера. Безопасный механизм подтверждён кодом SDK в приложении-потребителе: `Main::guardValidateCurrentAuthToken` и `EndpointUrlFormatter`. При подготовке среды сверить его с реально установленной актуальной версией SDK библиотеки.
+
+## Текущее состояние
+
+- GitHub CLI авторизован; issue #120 и draft PR #121 созданы.
+- Общая граница ответственности согласована в обсуждении. Требуется просмотр конкретного плана по локальному workflow репозитория.
+- В PR пока только план. Production-код, зависимости, тесты и линтеры не менялись и не запускались. После одобрения реализация и результаты проверок будут добавлены в этот же PR.
