@@ -46,8 +46,13 @@ class Flusher
     }
 
     /** Serialize installation, uninstall and generation-bound account creation. */
-    public function withPortalLock(string $memberId, \Closure $operation, ?Uuid $activeInstallationId = null, #[\SensitiveParameter] ?string $applicationToken = null): void
-    {
+    public function withPortalLock(
+        string $memberId,
+        \Closure $operation,
+        ?Uuid $activeInstallationId = null,
+        #[\SensitiveParameter]
+        ?string $applicationToken = null,
+    ): void {
         $connection = $this->em->getConnection();
         if ($connection->isTransactionActive()) {
             throw new \LogicException('Portal lifecycle operation requires its own transaction.');
@@ -55,7 +60,9 @@ class Flusher
 
         $unitOfWork = $this->em->getUnitOfWork();
         $unitOfWork->computeChangeSets();
-        if ([] !== $unitOfWork->getScheduledEntityInsertions() || [] !== $unitOfWork->getScheduledEntityUpdates() || [] !== $unitOfWork->getScheduledEntityDeletions()) {
+        if ([] !== $unitOfWork->getScheduledEntityInsertions()
+            || [] !== $unitOfWork->getScheduledEntityUpdates()
+            || [] !== $unitOfWork->getScheduledEntityDeletions()) {
             throw new \LogicException('Flush unrelated changes before a portal lifecycle operation.');
         }
 
@@ -64,18 +71,9 @@ class Flusher
 
         try {
             LifecycleLock::acquire($connection, 'member:'.$memberId);
-            if (null !== $applicationToken && false !== $connection->fetchOne('SELECT installation_id FROM b24lib_uninstallations WHERE application_token_hash = ?', [hash('sha256', $applicationToken)])) {
-                throw new InactiveInstallationException();
-            }
-
+            $this->assertApplicationTokenAvailable($applicationToken);
             if (null !== $activeInstallationId) {
-                $active = $connection->fetchOne(
-                    'SELECT i.id FROM b24lib_application_installations i INNER JOIN b24lib_bitrix24_accounts a ON a.id = i.bitrix_24_account_id WHERE i.id = ? AND i.status = ? AND a.member_id = ?',
-                    [$activeInstallationId->toRfc4122(), 'active', $memberId]
-                );
-                if (false === $active) {
-                    throw new InactiveInstallationException();
-                }
+                $this->assertActiveInstallation($activeInstallationId, $memberId);
             }
 
             $operation();
@@ -85,6 +83,34 @@ class Flusher
             $this->em->close();
 
             throw $throwable;
+        }
+    }
+
+    private function assertApplicationTokenAvailable(#[\SensitiveParameter] ?string $applicationToken): void
+    {
+        if (null === $applicationToken) {
+            return;
+        }
+
+        $uninstalledId = $this->em->getConnection()->fetchOne(
+            'SELECT installation_id FROM b24lib_uninstallations WHERE application_token_hash = ?',
+            [hash('sha256', $applicationToken)]
+        );
+        if (false !== $uninstalledId) {
+            throw new InactiveInstallationException();
+        }
+    }
+
+    private function assertActiveInstallation(Uuid $installationId, string $memberId): void
+    {
+        $activeId = $this->em->getConnection()->fetchOne(
+            'SELECT i.id FROM b24lib_application_installations i
+             INNER JOIN b24lib_bitrix24_accounts a ON a.id = i.bitrix_24_account_id
+             WHERE i.id = ? AND i.status = ? AND a.member_id = ?',
+            [$installationId->toRfc4122(), 'active', $memberId]
+        );
+        if (false === $activeId) {
+            throw new InactiveInstallationException();
         }
     }
 }

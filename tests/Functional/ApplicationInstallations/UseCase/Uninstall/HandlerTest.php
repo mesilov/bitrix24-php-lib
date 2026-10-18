@@ -7,28 +7,45 @@ namespace Bitrix24\Lib\Tests\Functional\ApplicationInstallations\UseCase\Uninsta
 use Bitrix24\Lib\ApplicationInstallations\Entity\ApplicationInstallation;
 use Bitrix24\Lib\ApplicationInstallations\Entity\Uninstallation;
 use Bitrix24\Lib\ApplicationInstallations\Events\ApplicationUninstallationCompletedEvent;
+use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationInstallationRepository;
 use Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\UninstallationStore;
+use Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\InactiveInstallationException;
 use Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\UninstallationContext;
+use Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\UninstallationFailedException;
+use Bitrix24\Lib\ApplicationInstallations\UseCase\Install\Command as InstallCommand;
+use Bitrix24\Lib\ApplicationInstallations\UseCase\Install\Handler as InstallHandler;
+use Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall\Command as OnAppInstallCommand;
+use Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall\Handler as OnAppInstallHandler;
 use Bitrix24\Lib\ApplicationInstallations\UseCase\Uninstall\Command;
 use Bitrix24\Lib\ApplicationInstallations\UseCase\Uninstall\Handler;
-use Bitrix24\Lib\ApplicationSettings\Entity\ApplicationSettingsItem;
 use Bitrix24\Lib\ApplicationSettings\Entity\ApplicationSettingStatus;
+use Bitrix24\Lib\ApplicationSettings\Entity\ApplicationSettingsItem;
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
+use Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository;
+use Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallStart\Command as AccountInstallStartCommand;
+use Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallStart\Handler as AccountInstallStartHandler;
 use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\Lib\ContactPersons\Entity\ContactPerson;
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Journal\Entity\LogLevel;
 use Bitrix24\Lib\Journal\Entity\ValueObjects\Context;
+use Bitrix24\Lib\Services\Flusher;
+use Bitrix24\Lib\Services\LifecycleLock;
 use Bitrix24\Lib\Tests\EntityManagerFactory;
 use Bitrix24\Lib\Tests\Functional\ApplicationInstallations\Builders\ApplicationInstallationBuilder;
 use Bitrix24\Lib\Tests\Functional\Bitrix24Accounts\Builders\Bitrix24AccountBuilder;
 use Bitrix24\Lib\Tests\Functional\ContactPersons\Builders\ContactPersonBuilder;
 use Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\RecordingApplicationDataCleaner;
+use Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\RecordingAuthorizationVerifier;
 use Bitrix24\Lib\Tests\Helpers\CollectingLogger;
 use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Bitrix24\SDK\Application\Contracts\Bitrix24Accounts\Entity\Bitrix24AccountStatus;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
+use Darsyn\IP\Version\Multi;
+use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Exception\DriverException;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -92,7 +109,7 @@ class HandlerTest extends TestCase
         [$installation, , $command] = $this->installation(true, null, $contact->getId());
         $active = $this->setting($installation);
         $deleted = $this->setting($installation, ApplicationSettingStatus::Deleted);
-        $journalItem = new JournalItem($command->memberId, $installation->getId(), LogLevel::info, 'user details', 'test', new Context(\Darsyn\IP\Version\Multi::factory('127.0.0.1')));
+        $journalItem = new JournalItem($command->memberId, $installation->getId(), LogLevel::info, 'user details', 'test', new Context(Multi::factory('127.0.0.1')));
         $this->em->persist($journalItem);
         [$other, $otherAccount] = $this->installation(true);
         $otherSetting = $this->setting($other);
@@ -189,7 +206,10 @@ class HandlerTest extends TestCase
         $oldSetting = $this->setting($old);
         $this->em->flush();
         $this->cleaner->onClean = static fn () => throw new \RuntimeException('failure');
-        try { $this->handler->handle($command); } catch (\RuntimeException) {}
+        try {
+            $this->handler->handle($command);
+        } catch (\RuntimeException) {
+        }
 
         $this->reopenAfterFailure();
         [$new, $newAccount] = $this->installation(true, $command->memberId);
@@ -233,7 +253,10 @@ class HandlerTest extends TestCase
     {
         [$installation, , $command] = $this->installation(true);
         $this->cleaner->onClean = static fn () => throw new \RuntimeException('failure');
-        try { $this->handler->handle($command); } catch (\RuntimeException) {}
+        try {
+            $this->handler->handle($command);
+        } catch (\RuntimeException) {
+        }
 
         $this->reopenAfterFailure();
         $this->handler->handle(new Command($command->domainUrl, 'wrong-member', $command->applicationToken, true));
@@ -255,18 +278,19 @@ class HandlerTest extends TestCase
     {
         [$installation, $account, $command] = $this->installation(true);
         $this->handler->handle($command);
-        $accountHandler = new \Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallStart\Handler(
-            new \Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository($this->em),
-            new \Bitrix24\Lib\Services\Flusher($this->em, $this->dispatcher), $this->logger
+        $accountHandler = new AccountInstallStartHandler(
+            new Bitrix24AccountRepository($this->em),
+            new Flusher($this->em, $this->dispatcher), $this->logger
         );
-        $late = new \Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallStart\Command(
+        $late = new AccountInstallStartCommand(
             42, false, $command->memberId, $command->domainUrl, $account->getAuthToken(),
             1, $account->getApplicationScope(), $installation->getId()
         );
         try {
             $accountHandler->handle($late);
             self::fail('Late authorization was persisted after uninstall');
-        } catch (\Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\InactiveInstallationException) {}
+        } catch (InactiveInstallationException) {
+        }
 
         $this->reopenAfterFailure();
         self::assertSame(0, $this->em->getRepository(Bitrix24Account::class)->count(['memberId' => $command->memberId]));
@@ -275,14 +299,14 @@ class HandlerTest extends TestCase
     public function testConcurrentPortalWriterBlocksUninstallBeforeAnyDeletion(): void
     {
         [$installation, $account, $command] = $this->installation(true);
-        $peer = \Doctrine\DBAL\DriverManager::getConnection($this->em->getConnection()->getParams());
+        $peer = DriverManager::getConnection($this->em->getConnection()->getParams());
         $peer->beginTransaction();
-        \Bitrix24\Lib\Services\LifecycleLock::acquire($peer, 'member:'.$command->memberId);
+        LifecycleLock::acquire($peer, 'member:'.$command->memberId);
         $this->em->getConnection()->executeStatement("SET lock_timeout = '100ms'");
         try {
             $this->handler->handle($command);
             self::fail('Uninstall bypassed a concurrent lifecycle writer');
-        } catch (\Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\UninstallationFailedException) {
+        } catch (UninstallationFailedException) {
         } finally {
             $peer->rollBack();
             $peer->close();
@@ -301,14 +325,14 @@ class HandlerTest extends TestCase
         $contact = (new ContactPersonBuilder())->build();
         $this->em->persist($contact);
         [$installation, $account, $command] = $this->installation(true, null, $contact->getId());
-        $peer = \Doctrine\DBAL\DriverManager::getConnection($this->em->getConnection()->getParams());
+        $peer = DriverManager::getConnection($this->em->getConnection()->getParams());
         $peer->beginTransaction();
-        \Bitrix24\Lib\Services\LifecycleLock::acquire($peer, 'contact:'.$contact->getId()->toRfc4122());
+        LifecycleLock::acquire($peer, 'contact:'.$contact->getId()->toRfc4122());
         $this->em->getConnection()->executeStatement("SET lock_timeout = '100ms'");
         try {
             $this->handler->handle($command);
             self::fail('Cleanup bypassed a concurrent contact writer');
-        } catch (\Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\UninstallationFailedException) {
+        } catch (UninstallationFailedException) {
         } finally {
             $peer->rollBack();
             $peer->close();
@@ -331,7 +355,7 @@ class HandlerTest extends TestCase
         $this->handler->handle($command);
         [$new] = $this->installation(true);
         $this->em->find(ApplicationInstallation::class, $new->getId())->linkContactPerson($contact->getId());
-        $flusher = new \Bitrix24\Lib\Services\Flusher($this->em, $this->dispatcher);
+        $flusher = new Flusher($this->em, $this->dispatcher);
         try {
             $flusher->flush();
             self::fail('Deleted contact was attached to another installation');
@@ -380,7 +404,8 @@ class HandlerTest extends TestCase
         try {
             $this->handler->handle($command);
             self::fail('Uninstall committed unrelated changes');
-        } catch (\LogicException) {}
+        } catch (\LogicException) {
+        }
 
         $this->em->clear();
         self::assertNull($this->em->find(ApplicationSettingsItem::class, $unrelated->getId()));
@@ -421,16 +446,16 @@ class HandlerTest extends TestCase
     {
         [, $account, $command] = $this->installation(true);
         $this->handler->handle($command);
-        $recordingAuthorizationVerifier = new \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\RecordingAuthorizationVerifier();
+        $recordingAuthorizationVerifier = new RecordingAuthorizationVerifier();
         $recordingAuthorizationVerifier->userId = $account->getBitrix24UserId();
 
-        $handler = new \Bitrix24\Lib\ApplicationInstallations\UseCase\Install\Handler(
-            new \Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository($this->em),
-            new \Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationInstallationRepository($this->em),
-            new \Bitrix24\Lib\Services\Flusher($this->em, $this->dispatcher), $this->logger,
+        $handler = new InstallHandler(
+            new Bitrix24AccountRepository($this->em),
+            new ApplicationInstallationRepository($this->em),
+            new Flusher($this->em, $this->dispatcher), $this->logger,
             $recordingAuthorizationVerifier
         );
-        $replay = new \Bitrix24\Lib\ApplicationInstallations\UseCase\Install\Command(
+        $replay = new InstallCommand(
             memberId: $command->memberId, domain: $command->domainUrl, authToken: $account->getAuthToken(),
             applicationVersion: 1, applicationScope: $account->getApplicationScope(),
             bitrix24UserId: $account->getBitrix24UserId(), isBitrix24UserAdmin: true,
@@ -440,7 +465,8 @@ class HandlerTest extends TestCase
         try {
             $handler->handle($replay);
             self::fail('Retired application token was installed again');
-        } catch (\Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\InactiveInstallationException) {}
+        } catch (InactiveInstallationException) {
+        }
 
         $this->reopenAfterFailure();
         self::assertSame(0, $this->em->getRepository(Bitrix24Account::class)->count(['memberId' => $command->memberId]));
@@ -453,9 +479,10 @@ class HandlerTest extends TestCase
         $applicationSettingsItem = new ApplicationSettingsItem($installation->getId(), 'late.setting', 'personal data');
         $this->em->persist($applicationSettingsItem);
         try {
-            (new \Bitrix24\Lib\Services\Flusher($this->em, $this->dispatcher))->flush();
+            (new Flusher($this->em, $this->dispatcher))->flush();
             self::fail('A late setting survived completed cleanup');
-        } catch (\Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\InactiveInstallationException) {}
+        } catch (InactiveInstallationException) {
+        }
 
         $this->reopenAfterFailure();
         self::assertNull($this->em->find(ApplicationSettingsItem::class, $applicationSettingsItem->getId()));
@@ -465,12 +492,13 @@ class HandlerTest extends TestCase
     {
         [$installation, , $command] = $this->installation(true);
         $this->handler->handle($command);
-        $journalItem = new JournalItem($command->memberId, $installation->getId(), LogLevel::info, 'late personal details', 'test', new Context(\Darsyn\IP\Version\Multi::factory('127.0.0.1')));
+        $journalItem = new JournalItem($command->memberId, $installation->getId(), LogLevel::info, 'late personal details', 'test', new Context(Multi::factory('127.0.0.1')));
         $this->em->persist($journalItem);
         try {
-            (new \Bitrix24\Lib\Services\Flusher($this->em, $this->dispatcher))->flush();
+            (new Flusher($this->em, $this->dispatcher))->flush();
             self::fail('A late journal entry survived completed cleanup');
-        } catch (\Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\InactiveInstallationException) {}
+        } catch (InactiveInstallationException) {
+        }
 
         $this->reopenAfterFailure();
         self::assertNull($this->em->find(JournalItem::class, $journalItem->getId()));
@@ -479,15 +507,15 @@ class HandlerTest extends TestCase
     public function testSettingWriterParticipatesInInstallationCleanupLock(): void
     {
         [$installation] = $this->installation(true);
-        $peer = \Doctrine\DBAL\DriverManager::getConnection($this->em->getConnection()->getParams());
+        $peer = DriverManager::getConnection($this->em->getConnection()->getParams());
         $peer->beginTransaction();
-        \Bitrix24\Lib\Services\LifecycleLock::acquire($peer, 'installation:'.$installation->getId()->toRfc4122());
+        LifecycleLock::acquire($peer, 'installation:'.$installation->getId()->toRfc4122());
         $late = $this->setting($installation);
         $this->em->getConnection()->executeStatement("SET lock_timeout = '100ms'");
         try {
-            (new \Bitrix24\Lib\Services\Flusher($this->em, $this->dispatcher))->flush();
+            (new Flusher($this->em, $this->dispatcher))->flush();
             self::fail('Setting write bypassed the cleanup generation lock');
-        } catch (\Doctrine\DBAL\Exception\DriverException $driverException) {
+        } catch (DriverException $driverException) {
             self::assertSame('55P03', $driverException->getSQLState());
         } finally {
             $peer->rollBack();
@@ -508,20 +536,21 @@ class HandlerTest extends TestCase
         $this->em->persist($applicationInstallation);
         $this->em->flush();
 
-        $recordingAuthorizationVerifier = new \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\RecordingAuthorizationVerifier();
+        $recordingAuthorizationVerifier = new RecordingAuthorizationVerifier();
         $recordingAuthorizationVerifier->userId = $account->getBitrix24UserId();
 
-        $handler = new \Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall\Handler(
-            new \Bitrix24\Lib\Bitrix24Accounts\Infrastructure\Doctrine\Bitrix24AccountRepository($this->em),
-            new \Bitrix24\Lib\ApplicationInstallations\Infrastructure\Doctrine\ApplicationInstallationRepository($this->em),
-            new \Bitrix24\Lib\Services\Flusher($this->em, $this->dispatcher), $this->logger, $recordingAuthorizationVerifier
+        $handler = new OnAppInstallHandler(
+            new Bitrix24AccountRepository($this->em),
+            new ApplicationInstallationRepository($this->em),
+            new Flusher($this->em, $this->dispatcher), $this->logger, $recordingAuthorizationVerifier
         );
         try {
-            $handler->handle(new \Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall\Command(
+            $handler->handle(new OnAppInstallCommand(
                 $command->memberId, $command->domainUrl, $command->applicationToken, new ApplicationStatus('F'), $account->getAuthToken()
             ));
             self::fail('Retired token finished a new generation');
-        } catch (\Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\InactiveInstallationException) {}
+        } catch (InactiveInstallationException) {
+        }
 
         $this->reopenAfterFailure();
         self::assertSame(ApplicationInstallationStatus::new, $this->em->find(ApplicationInstallation::class, $applicationInstallation->getId())->getStatus());
@@ -531,8 +560,8 @@ class HandlerTest extends TestCase
     public function testStaleInstallationCannotPersistANewContactAfterCleanup(): void
     {
         [$installation, , $command] = $this->installation(true);
-        $entityManager = new \Doctrine\ORM\EntityManager(
-            \Doctrine\DBAL\DriverManager::getConnection($this->em->getConnection()->getParams()),
+        $entityManager = new EntityManager(
+            DriverManager::getConnection($this->em->getConnection()->getParams()),
             $this->em->getConfiguration()
         );
         $stale = $entityManager->find(ApplicationInstallation::class, $installation->getId());
@@ -541,9 +570,10 @@ class HandlerTest extends TestCase
         $entityManager->persist($contact);
         $stale->linkContactPerson($contact->getId());
         try {
-            (new \Bitrix24\Lib\Services\Flusher($entityManager, $this->dispatcher))->flush($stale, $contact);
+            (new Flusher($entityManager, $this->dispatcher))->flush($stale, $contact);
             self::fail('Stale installation inserted personal data after cleanup');
-        } catch (\Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\InactiveInstallationException) {}
+        } catch (InactiveInstallationException) {
+        }
 
         $this->em->clear();
         self::assertNull($this->em->find(ContactPerson::class, $contact->getId()));

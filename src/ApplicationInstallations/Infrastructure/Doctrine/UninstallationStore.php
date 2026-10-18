@@ -37,11 +37,15 @@ final readonly class UninstallationStore implements UninstallationStoreInterface
                     return null === $receipt->getCompletedAt() ? $receipt->contextFor($command->memberId) : null;
                 }
 
-                $installation = $this->em->createQueryBuilder()->select('i')->from(ApplicationInstallation::class, 'i')
-                    ->where('i.applicationToken = :token')->andWhere('i.status IN (:statuses)')
+                $installation = $this->em->createQueryBuilder()
+                    ->select('i')
+                    ->from(ApplicationInstallation::class, 'i')
+                    ->where('i.applicationToken = :token')
+                    ->andWhere('i.status IN (:statuses)')
                     ->setParameter('token', $command->applicationToken)
                     ->setParameter('statuses', [ApplicationInstallationStatus::active, ApplicationInstallationStatus::blocked])
-                    ->getQuery()->getOneOrNullResult()
+                    ->getQuery()
+                    ->getOneOrNullResult()
                 ;
                 if (!$installation instanceof ApplicationInstallation) {
                     return null;
@@ -62,25 +66,12 @@ final readonly class UninstallationStore implements UninstallationStoreInterface
                     return null;
                 }
 
-                // Reject an ambiguous/stale generation instead of deleting a newer installation's accounts.
-                $otherInstallations = $this->em->createQueryBuilder()->select('COUNT(i.id)')->from(ApplicationInstallation::class, 'i')
-                    ->innerJoin(Bitrix24Account::class, 'a', Join::WITH, 'i.bitrix24AccountId = a.id')
-                    ->where('a.memberId = :member')->andWhere('i.id != :id')->andWhere('i.status != :deleted')
-                    ->setParameter('member', $master->getMemberId())->setParameter('id', $installation->getId())
-                    ->setParameter('deleted', ApplicationInstallationStatus::deleted)->getQuery()->getSingleScalarResult()
-                ;
-                if ((int) $otherInstallations > 0) {
+                // Reject a stale generation before deleting the portal's accounts.
+                if ($this->hasOtherInstallations($installation, $master->getMemberId())) {
                     return null;
                 }
 
-                $accounts = $this->em->createQueryBuilder()->select('a')->from(Bitrix24Account::class, 'a')
-                    ->where('a.memberId = :member')->setParameter('member', $master->getMemberId())
-                    ->orderBy('a.id', 'ASC')->getQuery()->setLockMode(LockMode::PESSIMISTIC_WRITE)
-                    ->getResult()
-                ;
-                foreach ($accounts as $account) {
-                    $this->em->remove($account);
-                }
+                $this->removePortalAccounts($master->getMemberId());
 
                 $installation->applicationUninstalled($command->applicationToken);
                 $installation->forgetUninstallToken();
@@ -106,26 +97,31 @@ final readonly class UninstallationStore implements UninstallationStoreInterface
         try {
             return $this->transaction(function () use ($context, $cleaner): bool {
                 LifecycleLock::acquire($this->em->getConnection(), 'installation:'.$context->installationId->toRfc4122());
-                $receipt = $this->em->createQueryBuilder()->select('r')->from(Uninstallation::class, 'r')
-                    ->where('r.installationId = :id')->setParameter('id', $context->installationId)
-                    ->getQuery()->setLockMode(LockMode::PESSIMISTIC_WRITE)->getOneOrNullResult()
+                $receipt = $this->em->createQueryBuilder()
+                    ->select('r')
+                    ->from(Uninstallation::class, 'r')
+                    ->where('r.installationId = :id')
+                    ->setParameter('id', $context->installationId)
+                    ->getQuery()
+                    ->setLockMode(LockMode::PESSIMISTIC_WRITE)
+                    ->getOneOrNullResult()
                 ;
                 if (!$receipt instanceof Uninstallation || null !== $receipt->getCompletedAt()) {
                     return false;
                 }
 
-                $trusted = $receipt->contextFor($context->memberId);
-                if (null === $trusted) {
+                $trustedContext = $receipt->contextFor($context->memberId);
+                if (null === $trustedContext) {
                     return false;
                 }
 
-                $installation = $this->em->find(ApplicationInstallation::class, $trusted->installationId, LockMode::PESSIMISTIC_WRITE);
+                $installation = $this->em->find(ApplicationInstallation::class, $trustedContext->installationId, LockMode::PESSIMISTIC_WRITE);
                 if (!$installation instanceof ApplicationInstallation || ApplicationInstallationStatus::deleted !== $installation->getStatus()) {
                     throw new \LogicException('Pending cleanup installation is unavailable.');
                 }
 
-                $cleaner->clean($trusted);
-                if ($trusted->clean) {
+                $cleaner->clean($trustedContext);
+                if ($trustedContext->clean) {
                     $this->removeInstallationData($installation);
                 }
 
@@ -137,6 +133,42 @@ final readonly class UninstallationStore implements UninstallationStoreInterface
             }, $context->memberId);
         } catch (\Throwable) {
             throw new UninstallationFailedException('Application data cleanup failed; retry the uninstall event.');
+        }
+    }
+
+    private function hasOtherInstallations(ApplicationInstallation $installation, string $memberId): bool
+    {
+        $otherInstallations = $this->em->createQueryBuilder()
+            ->select('COUNT(i.id)')
+            ->from(ApplicationInstallation::class, 'i')
+            ->innerJoin(Bitrix24Account::class, 'a', Join::WITH, 'i.bitrix24AccountId = a.id')
+            ->where('a.memberId = :member')
+            ->andWhere('i.id != :id')
+            ->andWhere('i.status != :deleted')
+            ->setParameter('member', $memberId)
+            ->setParameter('id', $installation->getId())
+            ->setParameter('deleted', ApplicationInstallationStatus::deleted)
+            ->getQuery()
+            ->getSingleScalarResult()
+        ;
+
+        return (int) $otherInstallations > 0;
+    }
+
+    private function removePortalAccounts(string $memberId): void
+    {
+        $accounts = $this->em->createQueryBuilder()
+            ->select('a')
+            ->from(Bitrix24Account::class, 'a')
+            ->where('a.memberId = :member')
+            ->setParameter('member', $memberId)
+            ->orderBy('a.id', 'ASC')
+            ->getQuery()
+            ->setLockMode(LockMode::PESSIMISTIC_WRITE)
+            ->getResult()
+        ;
+        foreach ($accounts as $account) {
+            $this->em->remove($account);
         }
     }
 
@@ -164,9 +196,15 @@ final readonly class UninstallationStore implements UninstallationStoreInterface
                 continue;
             }
 
-            $references = $this->em->createQueryBuilder()->select('COUNT(i.id)')->from(ApplicationInstallation::class, 'i')
-                ->where('i.id != :installation')->andWhere('(i.contactPersonId = :contact OR i.bitrix24PartnerContactPersonId = :contact)')
-                ->setParameter('installation', $installation->getId())->setParameter('contact', $contactId)->getQuery()->getSingleScalarResult()
+            $references = $this->em->createQueryBuilder()
+                ->select('COUNT(i.id)')
+                ->from(ApplicationInstallation::class, 'i')
+                ->where('i.id != :installation')
+                ->andWhere('(i.contactPersonId = :contact OR i.bitrix24PartnerContactPersonId = :contact)')
+                ->setParameter('installation', $installation->getId())
+                ->setParameter('contact', $contactId)
+                ->getQuery()
+                ->getSingleScalarResult()
             ;
             if (0 === (int) $references) {
                 $this->em->remove($contact);
@@ -182,7 +220,9 @@ final readonly class UninstallationStore implements UninstallationStoreInterface
 
         $unitOfWork = $this->em->getUnitOfWork();
         $unitOfWork->computeChangeSets();
-        if ([] !== $unitOfWork->getScheduledEntityInsertions() || [] !== $unitOfWork->getScheduledEntityUpdates() || [] !== $unitOfWork->getScheduledEntityDeletions()) {
+        if ([] !== $unitOfWork->getScheduledEntityInsertions()
+            || [] !== $unitOfWork->getScheduledEntityUpdates()
+            || [] !== $unitOfWork->getScheduledEntityDeletions()) {
             throw new \LogicException('Flush unrelated changes before processing uninstall.');
         }
 

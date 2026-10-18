@@ -11,6 +11,7 @@ use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\ContactPersons\Entity\ContactPerson;
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
+use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 
 /** Synchronize ORM writes with uninstall before they reach the database. */
@@ -67,31 +68,60 @@ final class LifecycleWriteGuard
 
         $connection = $em->getConnection();
         ksort($members);
-        foreach ($members as $member => $_) {
-            LifecycleLock::acquire($connection, 'member:'.$member);
+        foreach (array_keys($members) as $memberId) {
+            LifecycleLock::acquire($connection, 'member:'.$memberId);
         }
 
         ksort($installations);
-        foreach ($installations as $id => $_) {
-            LifecycleLock::acquire($connection, 'installation:'.$id);
-            if (isset($newInstallations[$id]) && false !== $connection->fetchOne('SELECT installation_id FROM b24lib_uninstallations WHERE installation_id = ?', [$id])) {
-                throw new InactiveInstallationException();
+        foreach (array_keys($installations) as $installationId) {
+            LifecycleLock::acquire($connection, 'installation:'.$installationId);
+            if (isset($newInstallations[$installationId])) {
+                self::assertInstallationNotRemoved($connection, $installationId);
             }
 
-            if (isset($existingInstallations[$id]) || (isset($dataOwners[$id]) && !isset($newInstallations[$id]))) {
-                $status = $connection->fetchOne('SELECT status FROM b24lib_application_installations WHERE id = ?', [$id]);
-                if (false === $status || $status === ApplicationInstallationStatus::deleted->value) {
-                    throw new InactiveInstallationException();
-                }
+            $requiresExistingInstallation = isset($existingInstallations[$installationId])
+                || (isset($dataOwners[$installationId]) && !isset($newInstallations[$installationId]));
+            if ($requiresExistingInstallation) {
+                self::assertInstallationAvailable($connection, $installationId);
             }
         }
 
         ksort($contacts);
-        foreach ($contacts as $id => $_) {
-            LifecycleLock::acquire($connection, 'contact:'.$id);
-            if (!isset($newContacts[$id]) && false === $connection->fetchOne('SELECT id FROM b24lib_contact_persons WHERE id = ?', [$id])) {
-                throw new \LogicException('Referenced contact is no longer available.');
+        foreach (array_keys($contacts) as $contactId) {
+            LifecycleLock::acquire($connection, 'contact:'.$contactId);
+            if (!isset($newContacts[$contactId])) {
+                self::assertContactAvailable($connection, $contactId);
             }
+        }
+    }
+
+    private static function assertInstallationNotRemoved(Connection $connection, string $installationId): void
+    {
+        $removedId = $connection->fetchOne(
+            'SELECT installation_id FROM b24lib_uninstallations WHERE installation_id = ?',
+            [$installationId]
+        );
+        if (false !== $removedId) {
+            throw new InactiveInstallationException();
+        }
+    }
+
+    private static function assertInstallationAvailable(Connection $connection, string $installationId): void
+    {
+        $status = $connection->fetchOne(
+            'SELECT status FROM b24lib_application_installations WHERE id = ?',
+            [$installationId]
+        );
+        if (false === $status || $status === ApplicationInstallationStatus::deleted->value) {
+            throw new InactiveInstallationException();
+        }
+    }
+
+    private static function assertContactAvailable(Connection $connection, string $contactId): void
+    {
+        $existingId = $connection->fetchOne('SELECT id FROM b24lib_contact_persons WHERE id = ?', [$contactId]);
+        if (false === $existingId) {
+            throw new \LogicException('Referenced contact is no longer available.');
         }
     }
 }
