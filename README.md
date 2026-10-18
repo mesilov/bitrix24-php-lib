@@ -253,3 +253,9 @@ No additional configuration is needed for the default local test run.
 3. All work is organized through issues.
 4. Development processes are remote-first.
 5. Think and discuss, then write.
+
+### Migrating installation authorization (#120)
+
+`Install\Handler` and `OnAppInstall\Handler` require an `AuthorizationVerifierInterface` as the fifth constructor argument. Use `SdkAuthorizationVerifier` configured with a trusted `ApplicationProfile` and OAuth-server URL. `OnAppInstall\Command` additionally requires `AuthToken` from the event's OAuth `auth` data; `applicationToken` remains a separate argument. No storage migrations are needed.
+
+See [verification, construction examples and failure handling](src/ApplicationInstallations/Docs/application-installations.md#verified-oauth-authorization).

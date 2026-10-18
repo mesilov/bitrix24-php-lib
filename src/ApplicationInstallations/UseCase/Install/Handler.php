@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Bitrix24\Lib\ApplicationInstallations\UseCase\Install;
 
 use Bitrix24\Lib\ApplicationInstallations\Entity\ApplicationInstallation;
+use Bitrix24\Lib\ApplicationInstallations\Services\Authorization\AuthorizationUnavailableException;
+use Bitrix24\Lib\ApplicationInstallations\Services\Authorization\AuthorizationVerifierInterface;
+use Bitrix24\Lib\ApplicationInstallations\Services\Authorization\InvalidAuthorizationException;
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
@@ -23,7 +26,8 @@ readonly class Handler
         private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
         private ApplicationInstallationRepositoryInterface $applicationInstallationRepository,
         private Flusher $flusher,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private AuthorizationVerifierInterface $authorizationVerifier,
     ) {}
 
     /**
@@ -32,6 +36,8 @@ readonly class Handler
      * 1) For some reason, we missed the event from the B24 with token, that we need to delete the application (the portal was removed, we were not available and the request was missed or somehow)
      * 2) It is necessary to manually or somehow delete the application knowing only his Member_id (maybe something else for validation).
      *
+     * @throws InvalidAuthorizationException
+     * @throws AuthorizationUnavailableException
      * @throws InvalidArgumentException
      */
     public function handle(Command $command): void
@@ -41,8 +47,12 @@ readonly class Handler
             'bitrix24UserId' => $command->bitrix24UserId,
             'isBitrix24UserAdmin' => $command->isBitrix24UserAdmin,
             'memberId' => $command->memberId,
-            'applicationToken' => $command->applicationToken,
         ]);
+
+        $verified = $this->authorizationVerifier->verify($command->authToken, $command->domain, $command->memberId, $command->bitrix24UserId);
+        if ($verified->userId !== $command->bitrix24UserId || $verified->isAdmin() !== $command->isBitrix24UserAdmin) {
+            throw new InvalidAuthorizationException();
+        }
 
         $activeInstallation = $this->applicationInstallationRepository->findByBitrix24AccountMemberId($command->memberId);
 
@@ -60,7 +70,7 @@ readonly class Handler
             $command->isBitrix24UserAdmin,
             $command->memberId,
             $command->domain->value,
-            $command->authToken,
+            $verified->authToken,
             $command->applicationVersion,
             $command->applicationScope,
             true,

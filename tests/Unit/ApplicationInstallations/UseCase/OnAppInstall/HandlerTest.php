@@ -58,8 +58,52 @@ class HandlerTest extends TestCase
             $this->bitrix24AccountRepository,
             $this->applicationInstallationRepository,
             $this->flusher,
-            $this->logger
+            $this->logger,
+            new \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\RecordingAuthorizationVerifier()
         );
+    }
+
+    #[Test]
+    public function testRejectedAuthorizationPreservesExistingInstallation(): void
+    {
+        $command = $this->createCommand();
+        $account = $this->createAccount($command->memberId, true);
+        $installation = $this->createInstallation($account->getId());
+        $this->bitrix24AccountRepository->save($account);
+        $this->applicationInstallationRepository->save($installation);
+        $recordingAuthorizationVerifier = new \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\RecordingAuthorizationVerifier();
+        $recordingAuthorizationVerifier->reject = true;
+
+        $handler = new Handler($this->bitrix24AccountRepository, $this->applicationInstallationRepository, $this->flusher, new NullLogger(), $recordingAuthorizationVerifier);
+        try {
+            $handler->handle($command);
+            self::fail('Rejected authorization accepted');
+        } catch (\Bitrix24\Lib\ApplicationInstallations\Services\Authorization\InvalidAuthorizationException) {
+            self::assertSame(Bitrix24AccountStatus::new, $account->getStatus());
+            self::assertSame(ApplicationInstallationStatus::new, $installation->getStatus());
+            self::assertSame(1, $this->bitrix24AccountRepository->getSaveCalls());
+            self::assertSame(1, $this->applicationInstallationRepository->getSaveCalls());
+            self::assertSame([], $this->flusher->getFlushCalls());
+        }
+    }
+
+    #[Test]
+    public function testRejectedAuthorizationDoesNotWriteOrFlush(): void
+    {
+        $verifier = $this->createMock(\Bitrix24\Lib\ApplicationInstallations\Services\Authorization\AuthorizationVerifierInterface::class);
+        $verifier->expects(self::once())->method('verify')->willThrowException(
+            new \Bitrix24\Lib\ApplicationInstallations\Services\Authorization\InvalidAuthorizationException()
+        );
+        $handler = new Handler($this->bitrix24AccountRepository, $this->applicationInstallationRepository,
+            $this->flusher, new NullLogger(), $verifier);
+        try {
+            $handler->handle($this->createCommand());
+            self::fail('Rejected authorization accepted');
+        } catch (\Bitrix24\Lib\ApplicationInstallations\Services\Authorization\InvalidAuthorizationException) {
+            self::assertSame(0, $this->bitrix24AccountRepository->getSaveCalls());
+            self::assertSame(0, $this->applicationInstallationRepository->getSaveCalls());
+            self::assertSame([], $this->flusher->getFlushCalls());
+        }
     }
 
     #[Test]
@@ -201,7 +245,8 @@ class HandlerTest extends TestCase
             memberId: Uuid::v4()->toRfc4122(),
             domainUrl: new Domain('example.bitrix24.test'),
             applicationToken: $applicationToken ?? Uuid::v7()->toRfc4122(),
-            applicationStatus: $applicationStatus ?? new ApplicationStatus('T')
+            applicationStatus: $applicationStatus ?? new ApplicationStatus('T'),
+            authToken: new AuthToken('event-access', null, time() + 3600)
         );
     }
 

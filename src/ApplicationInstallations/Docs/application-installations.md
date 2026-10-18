@@ -15,6 +15,48 @@ External references:
 - Bitrix24 `ONAPPINSTALL`: https://apidocs.bitrix24.com/api-reference/common/events/on-app-install.html
 - Bitrix24 install finish behavior: https://apidocs.bitrix24.ru/api-reference/app-installation/installation-finish.html
 
+
+## Verified OAuth authorization
+
+Both installation handlers require an `AuthorizationVerifierInterface` as the fifth constructor argument. Configure `SdkAuthorizationVerifier` with the application's trusted `ApplicationProfile` and OAuth-server URL from server configuration. Never take the OAuth-server URL or application profile from an installation request.
+
+```php
+$verifier = new \Bitrix24\Lib\ApplicationInstallations\Services\Authorization\SdkAuthorizationVerifier(
+    $applicationProfile,
+    'https://oauth.bitrix24.tech/',
+);
+$installHandler = new \Bitrix24\Lib\ApplicationInstallations\UseCase\Install\Handler(
+    $accountRepository, $installationRepository, $flusher, $logger, $verifier,
+);
+$eventHandler = new \Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall\Handler(
+    $accountRepository, $installationRepository, $flusher, $logger, $verifier,
+);
+```
+
+Before any installation mutation, the verifier calls the SDK's secure `app.info` on the configured OAuth server and compares `client_id`, `install.member_id`, HTTPS `install.uri`, `user_id` and authoritative expiry. Only then does it read `profile` from the confirmed portal and compare the user IDs. Pending installations (`installed=false`) are supported. Portal `app.info.CODE` is not the OAuth client ID and is not compared.
+
+`Install` also checks the command's user ID and admin flag against the verified profile. It persists the effective verified OAuth token, including SDK refreshes, with the expiry confirmed by the OAuth server. Verification failure leaves an existing installation and its accounts unchanged.
+
+`OnAppInstall\Command` now requires an OAuth `AuthToken` as the fifth argument, separate from `applicationToken`:
+
+```php
+$command = new \Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall\Command(
+    memberId: $memberId,
+    domainUrl: $domain,
+    applicationToken: $applicationToken,
+    applicationStatus: $applicationStatus,
+    authToken: \Bitrix24\SDK\Core\Credentials\AuthToken::initFromEventRequest($request),
+);
+```
+
+The event's verified user must match the master account of the pending or active installation. Verified duplicate events remain a no-op. The event's one-off OAuth token is not persisted over the installation's refreshable token.
+
+`InvalidAuthorizationException` means verification was rejected; `AuthorizationUnavailableException` means verification could not complete because of an upstream/transport failure. Both fail closed. SDK error text, response bodies and exception chains are not exposed. The verifier uses the SDK's default null logger and an isolated event dispatcher, so raw transport logs and refresh events cannot persist unverified credentials. Installation handlers no longer log application tokens.
+
+For non-installation consumers, `verify($authToken, $domain, $memberId, $expectedUserId)` returns immutable `VerifiedAuthorization` with the confirmed identity, effective token and profile. Application sessions and their lifetime remain the consumer's responsibility.
+
+The verifier attests the access token's identity, not the association of a supplied refresh token with it. It retains an unused refresh token without proactively rotating it. When credentials renew later, the caller must verify the renewed authorization against the stored portal, member and user before replacing stored credentials; an SDK renewal event alone is not an identity check.
+
 ## US1: Install With Token
 
 If `Install\Command::$applicationToken !== null`, `src/ApplicationInstallations/UseCase/Install/Handler.php` finishes the installation in one step:
@@ -86,7 +128,7 @@ sequenceDiagram
 
 Algorithm:
 
-1. Load current non-deleted installation by `memberId`
+1. Verify OAuth authorization; then load current non-deleted installation by `memberId`
 2. If installation is `new`:
    - load master `Bitrix24Account` by `memberId` only in status `new`
    - call `changeApplicationStatus(...)`

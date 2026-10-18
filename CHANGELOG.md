@@ -2,6 +2,11 @@
 
 ### BC
 
+- **Mandatory OAuth verification for installation handlers** — [#120](https://github.com/mesilov/bitrix24-php-lib/issues/120)
+    - `Install\Handler` and `OnAppInstall\Handler` require an `AuthorizationVerifierInterface` as the fifth constructor argument
+    - `OnAppInstall\Command` requires an OAuth `AuthToken` as the fifth argument, separately from `applicationToken`
+    - See the installation documentation for construction and migration examples; no database migration is required
+
 - **Journal table namespacing fix** — [#102](https://github.com/mesilov/bitrix24-php-lib/issues/102)
     - Table renamed:
         - `journal` -> `b24lib_journal`
@@ -20,6 +25,11 @@ ALTER INDEX idx_journal_member_id RENAME TO b24lib_journal_idx_member_id;
 ```
 
 ### Changed
+
+- **SDK-backed verification of application, portal and user identity** — [#120](https://github.com/mesilov/bitrix24-php-lib/issues/120)
+    - Secure OAuth-server `app.info` verification precedes portal profile reads and installation mutations
+    - Rejected verification preserves existing installations; effective verified tokens are retained on install
+    - Installation handlers no longer include application tokens in log contexts
 
 - **Symfony 8 boot compatibility for consumer applications** — [#106](https://github.com/mesilov/bitrix24-php-lib/issues/106)
     - Relaxed `doctrine/doctrine-bundle` from `3.2.2` to `^3.2.2 || ^3.3@dev`
