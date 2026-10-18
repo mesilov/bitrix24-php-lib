@@ -6,6 +6,7 @@ namespace Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall;
 
 use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\SDK\Application\ApplicationStatus;
+use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Exceptions\InvalidArgumentException;
 
 /**
@@ -20,6 +21,7 @@ readonly class Command
         public Domain $domainUrl,
         public string $applicationToken,
         public ApplicationStatus $applicationStatus,
+        public AuthToken $authToken,
     ) {
         $this->validate();
     }

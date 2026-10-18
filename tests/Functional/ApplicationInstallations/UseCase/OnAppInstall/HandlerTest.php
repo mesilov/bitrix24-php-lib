@@ -64,8 +64,36 @@ class HandlerTest extends TestCase
             $this->accountRepository,
             $this->installationRepository,
             new Flusher($this->entityManager, $this->eventDispatcher),
-            $this->logger
+            $this->logger,
+            new \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\RecordingAuthorizationVerifier()
         );
+    }
+
+    #[Test]
+    public function testRejectedAuthorizationPreservesDatabaseState(): void
+    {
+        $memberId = Uuid::v4()->toRfc4122();
+        $account = $this->createAccount($memberId);
+        $installation = $this->createInstallation($account->getId(), new ApplicationStatus('F'));
+        $command = new Command($memberId, new Domain('example.bitrix24.test'), 'event-token', new ApplicationStatus('T'), new AuthToken('event-access', null, time() + 3600));
+        $this->entityManager->persist($account);
+        $this->entityManager->persist($installation);
+        $this->entityManager->flush();
+
+        $recordingAuthorizationVerifier = new \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\RecordingAuthorizationVerifier();
+        $recordingAuthorizationVerifier->reject = true;
+
+        $handler = new Handler($this->accountRepository, $this->installationRepository,
+            new Flusher($this->entityManager, $this->eventDispatcher), new \Psr\Log\NullLogger(), $recordingAuthorizationVerifier);
+        try {
+            $handler->handle($command);
+            self::fail('Rejected authorization accepted');
+        } catch (\Bitrix24\Lib\ApplicationInstallations\Services\Authorization\InvalidAuthorizationException) {
+            $this->entityManager->clear();
+            self::assertSame(ApplicationInstallationStatus::new, $this->installationRepository->findByBitrix24AccountMemberId($command->memberId)->getStatus());
+            self::assertCount(1, $this->accountRepository->findByMemberId($command->memberId));
+            self::assertSame(Bitrix24AccountStatus::new, $this->accountRepository->findByMemberId($command->memberId)[0]->getStatus());
+        }
     }
 
     #[Test]
@@ -84,7 +112,8 @@ class HandlerTest extends TestCase
             memberId: $memberId,
             domainUrl: new Domain('example.bitrix24.test'),
             applicationToken: $applicationToken,
-            applicationStatus: new ApplicationStatus('T')
+            applicationStatus: new ApplicationStatus('T'),
+            authToken: new AuthToken('event-access', null, time() + 3600)
         ));
 
         $this->entityManager->clear();
@@ -118,7 +147,8 @@ class HandlerTest extends TestCase
             memberId: $memberId,
             domainUrl: new Domain('example.bitrix24.test'),
             applicationToken: $applicationToken,
-            applicationStatus: new ApplicationStatus('T')
+            applicationStatus: new ApplicationStatus('T'),
+            authToken: new AuthToken('event-access', null, time() + 3600)
         ));
 
         $this->entityManager->clear();
@@ -152,7 +182,8 @@ class HandlerTest extends TestCase
             memberId: $memberId,
             domainUrl: new Domain('example.bitrix24.test'),
             applicationToken: $replayedToken,
-            applicationStatus: new ApplicationStatus('T')
+            applicationStatus: new ApplicationStatus('T'),
+            authToken: new AuthToken('event-access', null, time() + 3600)
         ));
 
         $this->entityManager->clear();
@@ -177,7 +208,8 @@ class HandlerTest extends TestCase
             memberId: Uuid::v4()->toRfc4122(),
             domainUrl: new Domain('example.bitrix24.test'),
             applicationToken: Uuid::v7()->toRfc4122(),
-            applicationStatus: new ApplicationStatus('T')
+            applicationStatus: new ApplicationStatus('T'),
+            authToken: new AuthToken('event-access', null, time() + 3600)
         ));
     }
 
@@ -198,7 +230,8 @@ class HandlerTest extends TestCase
             memberId: $memberId,
             domainUrl: new Domain('example.bitrix24.test'),
             applicationToken: Uuid::v7()->toRfc4122(),
-            applicationStatus: new ApplicationStatus('T')
+            applicationStatus: new ApplicationStatus('T'),
+            authToken: new AuthToken('event-access', null, time() + 3600)
         ));
     }
 

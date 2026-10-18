@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall;
 
+use Bitrix24\Lib\ApplicationInstallations\Services\Authorization\AuthorizationUnavailableException;
+use Bitrix24\Lib\ApplicationInstallations\Services\Authorization\AuthorizationVerifierInterface;
+use Bitrix24\Lib\ApplicationInstallations\Services\Authorization\InvalidAuthorizationException;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
@@ -24,10 +27,13 @@ readonly class Handler
         private Bitrix24AccountRepositoryInterface $bitrix24AccountRepository,
         private ApplicationInstallationRepositoryInterface $applicationInstallationRepository,
         private Flusher $flusher,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private AuthorizationVerifierInterface $authorizationVerifier,
     ) {}
 
     /**
+     * @throws InvalidAuthorizationException
+     * @throws AuthorizationUnavailableException
      * @throws ApplicationInstallationNotFoundException|InvalidArgumentException|MultipleBitrix24AccountsFoundException
      */
     public function handle(Command $command): void
@@ -35,9 +41,10 @@ readonly class Handler
         $this->logger->info('ApplicationInstallation.OnAppInstall.start', [
             'b24_domain_url' => $command->domainUrl,
             'b24_member_id' => $command->memberId,
-            'b24_application_id' => $command->applicationToken,
             'application_status' => $command->applicationStatus,
         ]);
+
+        $verified = $this->authorizationVerifier->verify($command->authToken, $command->domainUrl, $command->memberId);
 
         $applicationInstallation = $this->applicationInstallationRepository->findByBitrix24AccountMemberId($command->memberId);
 
@@ -46,22 +53,25 @@ readonly class Handler
         }
 
         assert($applicationInstallation instanceof AggregateRootEventsEmitterInterface);
+        if (!in_array($applicationInstallation->getStatus(), [ApplicationInstallationStatus::new, ApplicationInstallationStatus::active], true)) {
+            throw $this->buildInstallationNotFoundException($command->memberId);
+        }
+
+        $status = ApplicationInstallationStatus::new === $applicationInstallation->getStatus() ? Bitrix24AccountStatus::new : Bitrix24AccountStatus::active;
+        $account = $this->findMasterAccountByMemberId($command->memberId, $status);
+        if ($account->getBitrix24UserId() !== $verified->userId) {
+            throw new InvalidAuthorizationException();
+        }
 
         if (ApplicationInstallationStatus::new === $applicationInstallation->getStatus()) {
-            $this->finishPendingInstallation($command, $applicationInstallation);
+            $this->finishPendingInstallation($command, $applicationInstallation, $account);
 
             $this->logger->info('ApplicationInstallation.OnAppInstall.finish');
 
             return;
         }
 
-        if (ApplicationInstallationStatus::active === $applicationInstallation->getStatus()) {
-            $this->handleRepeatedEvent($command, $applicationInstallation);
-
-            return;
-        }
-
-        throw $this->buildInstallationNotFoundException($command->memberId);
+        $this->handleRepeatedEvent($command, $applicationInstallation, $account);
     }
 
     /**
@@ -69,10 +79,9 @@ readonly class Handler
      */
     private function finishPendingInstallation(
         Command $command,
-        AggregateRootEventsEmitterInterface&ApplicationInstallationInterface $applicationInstallation
+        AggregateRootEventsEmitterInterface&ApplicationInstallationInterface $applicationInstallation,
+        AggregateRootEventsEmitterInterface&Bitrix24AccountInterface $bitrix24Account,
     ): void {
-        $bitrix24Account = $this->findMasterAccountByMemberId($command->memberId, Bitrix24AccountStatus::new);
-
         $applicationInstallation->changeApplicationStatus($command->applicationStatus);
         $bitrix24Account->applicationInstalled($command->applicationToken);
         $applicationInstallation->applicationInstalled($command->applicationToken);
@@ -88,17 +97,15 @@ readonly class Handler
      */
     private function handleRepeatedEvent(
         Command $command,
-        AggregateRootEventsEmitterInterface&ApplicationInstallationInterface $applicationInstallation
+        AggregateRootEventsEmitterInterface&ApplicationInstallationInterface $applicationInstallation,
+        AggregateRootEventsEmitterInterface&Bitrix24AccountInterface $bitrix24Account,
     ): void {
-        $bitrix24Account = $this->findMasterAccountByMemberId($command->memberId, Bitrix24AccountStatus::active);
-
         $sameToken = $applicationInstallation->isApplicationTokenValid($command->applicationToken)
             && $bitrix24Account->isApplicationTokenValid($command->applicationToken);
 
         $this->logger->warning('ApplicationInstallation.OnAppInstall.duplicate', [
             'memberId' => $command->memberId,
             'domain' => $command->domainUrl->value,
-            'applicationToken' => $command->applicationToken,
             'tokenMatch' => $sameToken,
         ]);
     }

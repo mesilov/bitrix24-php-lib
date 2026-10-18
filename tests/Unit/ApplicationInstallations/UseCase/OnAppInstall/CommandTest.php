@@ -44,7 +44,8 @@ class CommandTest extends TestCase
             $memberId,
             $domain,
             $applicationToken,
-            $applicationStatus
+            $applicationStatus,
+            new \Bitrix24\SDK\Core\Credentials\AuthToken('event-access', null, time() + 3600)
         );
 
         if (null === $expectedException) {

@@ -121,7 +121,6 @@ class HandlerTest extends TestCase
             key: 'personal.test',
             value: 'new_user_value',
             b24UserId: 123,
-            b24DepartmentId: null,
             changedByBitrix24UserId: 456
         );
         $this->handler->handle($updateCommand);
@@ -163,7 +162,6 @@ class HandlerTest extends TestCase
             applicationInstallationId: $uuidV7,
             key: 'dept.test',
             value: 'new_dept_value',
-            b24UserId: null,
             b24DepartmentId: 456,
             changedByBitrix24UserId: 789
         );

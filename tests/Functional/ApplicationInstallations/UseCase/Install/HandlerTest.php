@@ -64,8 +64,35 @@ class HandlerTest extends TestCase
             $this->accountRepository,
             $this->installationRepository,
             new Flusher($this->entityManager, $this->eventDispatcher),
-            new NullLogger()
+            new NullLogger(),
+            new \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\RecordingAuthorizationVerifier()
         );
+    }
+
+    #[Test]
+    public function testRejectedAuthorizationPreservesDatabaseState(): void
+    {
+        $command = $this->createCommand();
+        $account = $this->createAccount($command->memberId);
+        $installation = $this->createInstallation($account->getId());
+        $this->entityManager->persist($account);
+        $this->entityManager->persist($installation);
+        $this->entityManager->flush();
+
+        $recordingAuthorizationVerifier = new \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\RecordingAuthorizationVerifier();
+        $recordingAuthorizationVerifier->reject = true;
+
+        $handler = new Handler($this->accountRepository, $this->installationRepository,
+            new Flusher($this->entityManager, $this->eventDispatcher), new NullLogger(), $recordingAuthorizationVerifier);
+        try {
+            $handler->handle($command);
+            self::fail('Rejected authorization accepted');
+        } catch (\Bitrix24\Lib\ApplicationInstallations\Services\Authorization\InvalidAuthorizationException) {
+            $this->entityManager->clear();
+            self::assertSame(ApplicationInstallationStatus::new, $this->installationRepository->findByBitrix24AccountMemberId($command->memberId)->getStatus());
+            self::assertCount(1, $this->accountRepository->findByMemberId($command->memberId));
+            self::assertSame(Bitrix24AccountStatus::new, $this->accountRepository->findByMemberId($command->memberId)[0]->getStatus());
+        }
     }
 
     #[Test]
