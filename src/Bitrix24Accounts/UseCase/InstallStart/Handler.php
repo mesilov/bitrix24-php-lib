@@ -25,30 +25,32 @@ readonly class Handler
             'member_id' => $command->memberId,
         ]);
 
-        $uuidV7 = Uuid::v7();
+        $this->flusher->withPortalLock($command->memberId, function () use ($command): void {
+            $uuidV7 = Uuid::v7();
 
-        $bitrix24Account = new Bitrix24Account(
-            $uuidV7,
-            $command->bitrix24UserId,
-            $command->isBitrix24UserAdmin,
-            $command->memberId,
-            $command->domain->value,
-            $command->authToken,
-            $command->applicationVersion,
-            $command->applicationScope,
-            false,
-            true
-        );
+            $bitrix24Account = new Bitrix24Account(
+                $uuidV7,
+                $command->bitrix24UserId,
+                $command->isBitrix24UserAdmin,
+                $command->memberId,
+                $command->domain->value,
+                $command->authToken,
+                $command->applicationVersion,
+                $command->applicationScope,
+                false,
+                true
+            );
 
-        $this->bitrix24AccountRepository->save($bitrix24Account);
-        $this->flusher->flush($bitrix24Account);
+            $this->bitrix24AccountRepository->save($bitrix24Account);
+            $this->flusher->flush($bitrix24Account);
 
-        $this->logger->info(
-            'Bitrix24Accounts.InstallStart.Finish',
-            [
-                'domain_url' => $command->domain,
-                'member_id' => $command->memberId,
-            ]
-        );
+            $this->logger->info(
+                'Bitrix24Accounts.InstallStart.Finish',
+                [
+                    'domain_url' => $command->domain,
+                    'member_id' => $command->memberId,
+                ]
+            );
+        }, $command->applicationInstallationId);
     }
 }

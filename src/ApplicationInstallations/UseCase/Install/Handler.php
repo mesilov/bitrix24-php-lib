@@ -8,6 +8,7 @@ use Bitrix24\Lib\ApplicationInstallations\Entity\ApplicationInstallation;
 use Bitrix24\Lib\ApplicationInstallations\Services\Authorization\AuthorizationUnavailableException;
 use Bitrix24\Lib\ApplicationInstallations\Services\Authorization\AuthorizationVerifierInterface;
 use Bitrix24\Lib\ApplicationInstallations\Services\Authorization\InvalidAuthorizationException;
+use Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\InactiveInstallationException;
 use Bitrix24\Lib\Bitrix24Accounts\Entity\Bitrix24Account;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
@@ -36,6 +37,7 @@ readonly class Handler
      * 1) For some reason, we missed the event from the B24 with token, that we need to delete the application (the portal was removed, we were not available and the request was missed or somehow)
      * 2) It is necessary to manually or somehow delete the application knowing only his Member_id (maybe something else for validation).
      *
+     * @throws InactiveInstallationException
      * @throws InvalidAuthorizationException
      * @throws AuthorizationUnavailableException
      * @throws InvalidArgumentException
@@ -49,69 +51,71 @@ readonly class Handler
             'memberId' => $command->memberId,
         ]);
 
-        $verified = $this->authorizationVerifier->verify($command->authToken, $command->domain, $command->memberId, $command->bitrix24UserId);
-        if ($verified->userId !== $command->bitrix24UserId || $verified->isAdmin() !== $command->isBitrix24UserAdmin) {
-            throw new InvalidAuthorizationException();
-        }
+        $this->flusher->withPortalLock($command->memberId, function () use ($command): void {
+            $verified = $this->authorizationVerifier->verify($command->authToken, $command->domain, $command->memberId, $command->bitrix24UserId);
+            if ($verified->userId !== $command->bitrix24UserId || $verified->isAdmin() !== $command->isBitrix24UserAdmin) {
+                throw new InvalidAuthorizationException();
+            }
 
-        $activeInstallation = $this->applicationInstallationRepository->findByBitrix24AccountMemberId($command->memberId);
+            $activeInstallation = $this->applicationInstallationRepository->findByBitrix24AccountMemberId($command->memberId);
 
-        if (null !== $activeInstallation) {
-            assert($activeInstallation instanceof AggregateRootEventsEmitterInterface);
-            $this->deactivateCurrentInstallation($command->memberId, $activeInstallation);
-        }
+            if (null !== $activeInstallation) {
+                assert($activeInstallation instanceof AggregateRootEventsEmitterInterface);
+                $this->deactivateCurrentInstallation($command->memberId, $activeInstallation);
+            }
 
-        $uuidV7 = Uuid::v7();
-        $applicationInstallationId = Uuid::v7();
+            $uuidV7 = Uuid::v7();
+            $applicationInstallationId = Uuid::v7();
 
-        $bitrix24Account = new Bitrix24Account(
-            $uuidV7,
-            $command->bitrix24UserId,
-            $command->isBitrix24UserAdmin,
-            $command->memberId,
-            $command->domain->value,
-            $verified->authToken,
-            $command->applicationVersion,
-            $command->applicationScope,
-            true,
-            true
-        );
+            $bitrix24Account = new Bitrix24Account(
+                $uuidV7,
+                $command->bitrix24UserId,
+                $command->isBitrix24UserAdmin,
+                $command->memberId,
+                $command->domain->value,
+                $verified->authToken,
+                $command->applicationVersion,
+                $command->applicationScope,
+                true,
+                true
+            );
 
-        if (null !== $command->applicationToken) {
-            $bitrix24Account->applicationInstalled($command->applicationToken);
-        }
+            if (null !== $command->applicationToken) {
+                $bitrix24Account->applicationInstalled($command->applicationToken);
+            }
 
-        $this->bitrix24AccountRepository->save($bitrix24Account);
+            $this->bitrix24AccountRepository->save($bitrix24Account);
 
-        $applicationInstallation = new ApplicationInstallation(
-            $applicationInstallationId,
-            $uuidV7,
-            $command->applicationStatus,
-            $command->portalLicenseFamily,
-            $command->portalUsersCount,
-            $command->contactPersonId,
-            $command->bitrix24PartnerContactPersonId,
-            $command->bitrix24PartnerId,
-            $command->externalId,
-            $command->comment,
-            true
-        );
+            $applicationInstallation = new ApplicationInstallation(
+                $applicationInstallationId,
+                $uuidV7,
+                $command->applicationStatus,
+                $command->portalLicenseFamily,
+                $command->portalUsersCount,
+                $command->contactPersonId,
+                $command->bitrix24PartnerContactPersonId,
+                $command->bitrix24PartnerId,
+                $command->externalId,
+                $command->comment,
+                true
+            );
 
-        if (null !== $command->applicationToken) {
-            $applicationInstallation->applicationInstalled($command->applicationToken);
-        }
+            if (null !== $command->applicationToken) {
+                $applicationInstallation->applicationInstalled($command->applicationToken);
+            }
 
-        $this->applicationInstallationRepository->save($applicationInstallation);
+            $this->applicationInstallationRepository->save($applicationInstallation);
 
-        $this->flusher->flush($applicationInstallation, $bitrix24Account);
+            $this->flusher->flush($applicationInstallation, $bitrix24Account);
 
-        $this->logger->info(
-            'ApplicationInstallations.Install.Finish',
-            [
-                'applicationId' => $applicationInstallationId,
-                'bitrix24AccountId' => $uuidV7,
-            ]
-        );
+            $this->logger->info(
+                'ApplicationInstallations.Install.Finish',
+                [
+                    'applicationId' => $applicationInstallationId,
+                    'bitrix24AccountId' => $uuidV7,
+                ]
+            );
+        }, applicationToken: $command->applicationToken);
     }
 
     /**

@@ -196,13 +196,13 @@ $handler->handle($command);
 // Setting is marked as deleted, but remains in DB
 ```
 
-### OnApplicationDelete - Delete All Settings on Uninstall
+### OnApplicationDelete - Soft Delete All Settings
 
 ```php
 use Bitrix24\Lib\ApplicationSettings\UseCase\OnApplicationDelete\Command;
 use Bitrix24\Lib\ApplicationSettings\UseCase\OnApplicationDelete\Handler;
 
-// When application is uninstalled
+// Legacy soft-delete operation; not physical uninstall cleanup.
 $command = new Command(
     applicationInstallationId: $installationId
 );
@@ -210,6 +210,8 @@ $command = new Command(
 $handler->handle($command);
 // All settings marked as deleted
 ```
+
+Для физической очистки при ONAPPUNINSTALL используйте [новый uninstall-handler](../../ApplicationInstallations/Docs/uninstall.md): при CLEAN=1 он удаляет и активные, и ранее soft-deleted настройки.
 
 ## Working with Repository
 

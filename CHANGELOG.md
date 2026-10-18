@@ -2,6 +2,15 @@
 
 ### BC
 
+- **Безопасное удаление приложения** — [#122](https://github.com/mesilov/bitrix24-php-lib/issues/122)
+    - `ApplicationInstallations\UseCase\Uninstall\Command` требует четвёртый аргумент CLEAN; строгий разбор события доступен через `fromEvent`
+    - `Uninstall\Handler` получает `UninstallationStoreInterface`, обязательный `ApplicationDataCleanerInterface`, logger и event dispatcher вместо repositories/Flusher
+    - `Bitrix24Accounts\UseCase\InstallStart\Command` требует восьмой аргумент installation ID; создание аккаунта допускается только для этой активной установки
+    - Запись настроек/журнала требует существующую неудалённую установку; generation-lock исключает поздние вставки после очистки
+    - Lifecycle-транзакции требуют PostgreSQL и чистый UnitOfWork; Flusher проверяет существование привязываемых контактов
+    - Добавьте таблицу `b24lib_uninstallations` до обновления обработчика; пример миграции и DI приведён в документации удаления
+    - SDK-события из этого handler заменены уведомлением `ApplicationUninstallationCompletedEvent` после commit; критическую очистку перенесите в cleaner
+
 - **Mandatory OAuth verification for installation handlers** — [#120](https://github.com/mesilov/bitrix24-php-lib/issues/120)
     - `Install\Handler` and `OnAppInstall\Handler` require an `AuthorizationVerifierInterface` as the fifth constructor argument
     - `OnAppInstall\Command` requires an OAuth `AuthToken` as the fifth argument, separately from `applicationToken`
@@ -25,6 +34,12 @@ ALTER INDEX idx_journal_member_id RENAME TO b24lib_journal_idx_member_id;
 ```
 
 ### Changed
+
+- **Локально проверенный uninstall и повторяемая очистка** — [#122](https://github.com/mesilov/bitrix24-php-lib/issues/122)
+    - Неизвестный application token и несовпадающий member ID не меняют данные; API Битрикс24 не вызывается
+    - OAuth-аккаунты физически удаляются до очистки приложения; её сбой не восстанавливает credentials
+    - CLEAN=1 удаляет настройки, включая soft-deleted, журнал установки и эксклюзивные контакты; CLEAN=0 сохраняет пользовательские данные по явно описанной политике
+    - Хешированная отметка позволяет продолжить незавершённую очистку без повторного удаления новых аккаунтов; исходные токены отсутствуют в логах и ошибках
 
 - **Reproducible SDK contract and current Rector compatibility** — [#120](https://github.com/mesilov/bitrix24-php-lib/issues/120)
     - Pin `dev-v3-dev` to SDK commit `398296d5d27dc9f09fb4d18a896a052d8bd795bd`; newer installation interfaces require a separate library migration

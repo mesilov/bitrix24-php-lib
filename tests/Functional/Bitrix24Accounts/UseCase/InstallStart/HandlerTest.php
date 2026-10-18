@@ -74,6 +74,17 @@ class HandlerTest extends TestCase
             ->withApplicationScope(new Scope(['crm']))
             ->build();
 
+        $master = (new Bitrix24AccountBuilder())->withMemberId($bitrix24AccountBuilder->getMemberId())->withMaster(true)->build();
+        $installation = (new \Bitrix24\Lib\Tests\Functional\ApplicationInstallations\Builders\ApplicationInstallationBuilder())
+            ->withBitrix24AccountId($master->getId())
+            ->withApplicationStatus(new \Bitrix24\SDK\Application\ApplicationStatus('F'))
+            ->withPortalLicenseFamily(\Bitrix24\SDK\Application\PortalLicenseFamily::free)
+            ->withApplicationStatusInstallation(\Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus::active)
+            ->build();
+        EntityManagerFactory::get()->persist($master);
+        EntityManagerFactory::get()->persist($installation);
+        EntityManagerFactory::get()->flush();
+
         $this->handler->handle(
             new Bitrix24Accounts\UseCase\InstallStart\Command(
                 $bitrix24AccountBuilder->getBitrix24UserId(),
@@ -82,7 +93,8 @@ class HandlerTest extends TestCase
                 new Domain($bitrix24AccountBuilder->getDomainUrl()),
                 $bitrix24AccountBuilder->getAuthToken(),
                 $bitrix24AccountBuilder->getApplicationVersion(),
-                $bitrix24AccountBuilder->getApplicationScope()
+                $bitrix24AccountBuilder->getApplicationScope(),
+                $installation->getId()
             )
         );
 

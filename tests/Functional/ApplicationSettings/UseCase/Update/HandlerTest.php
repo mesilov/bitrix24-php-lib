@@ -44,7 +44,7 @@ class HandlerTest extends TestCase
 
     public function testCanUpdateExistingSetting(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
 
         // Create initial setting
         $applicationSettingsItem = new ApplicationSettingsItem(
@@ -85,7 +85,7 @@ class HandlerTest extends TestCase
 
     public function testThrowsExceptionWhenUpdatingNonExistentSetting(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
 
         $updateCommand = new Command(
             $uuidV7,
@@ -101,7 +101,7 @@ class HandlerTest extends TestCase
 
     public function testCanUpdatePersonalSetting(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
 
         // Create initial personal setting
         $applicationSettingsItem = new ApplicationSettingsItem(
@@ -142,7 +142,7 @@ class HandlerTest extends TestCase
 
     public function testCanUpdateDepartmentalSetting(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
 
         // Create initial departmental setting
         $applicationSettingsItem = new ApplicationSettingsItem(

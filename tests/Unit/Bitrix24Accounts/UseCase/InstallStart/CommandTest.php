@@ -54,7 +54,8 @@ class CommandTest extends TestCase
             $domain,
             $authToken,
             $applicationVersion,
-            $applicationScope
+            $applicationScope,
+            Uuid::v7()
         );
 
     }

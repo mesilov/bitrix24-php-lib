@@ -12,19 +12,35 @@ readonly class Command
     public function __construct(
         public Domain $domainUrl,
         public string $memberId,
-        public string $applicationToken
+        #[\SensitiveParameter]
+        public string $applicationToken,
+        public bool $clean,
     ) {
-        $this->validate();
+        if ('' === trim($applicationToken) || '' === trim($memberId)) {
+            throw new InvalidArgumentException('Uninstall requires a non-empty application token and member ID.');
+        }
     }
 
-    private function validate(): void
+    /** Parse the POST event without coercing missing/ambiguous CLEAN values. */
+    public static function fromEvent(#[\SensitiveParameter] array $event): self
     {
-        if ('' === $this->applicationToken) {
-            throw new InvalidArgumentException('applicationToken must be a non-empty string.');
+        $auth = $event['auth'] ?? null;
+        $data = $event['data'] ?? null;
+        if ('ONAPPUNINSTALL' !== ($event['event'] ?? null) || !is_array($auth) || !is_array($data)) {
+            throw new InvalidArgumentException('Invalid uninstall event.');
         }
 
-        if ('' === $this->memberId) {
-            throw new InvalidArgumentException('Member ID must be a non-empty string.');
+        $clean = $data['CLEAN'] ?? null;
+        if (!in_array($clean, [0, 1, '0', '1'], true)) {
+            throw new InvalidArgumentException('CLEAN must be explicitly 0 or 1.');
         }
+
+        foreach (['domain', 'member_id', 'application_token'] as $key) {
+            if (!is_string($auth[$key] ?? null) || '' === trim($auth[$key])) {
+                throw new InvalidArgumentException('Invalid uninstall auth fields.');
+            }
+        }
+
+        return new self(new Domain($auth['domain']), $auth['member_id'], $auth['application_token'], in_array($clean, [1, '1'], true));
     }
 }

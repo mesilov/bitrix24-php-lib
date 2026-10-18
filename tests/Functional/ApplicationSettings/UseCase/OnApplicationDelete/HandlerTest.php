@@ -44,7 +44,7 @@ class HandlerTest extends TestCase
 
     public function testCanSoftDeleteAllSettingsForInstallation(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
 
         // Create multiple settings
         $setting1 = new ApplicationSettingsItem(
@@ -103,8 +103,8 @@ class HandlerTest extends TestCase
 
     public function testDoesNotAffectOtherInstallations(): void
     {
-        $uuidV7 = Uuid::v7();
-        $installation2 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
+        $installation2 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
 
         // Create settings for two installations
         $setting1 = new ApplicationSettingsItem(
@@ -144,7 +144,7 @@ class HandlerTest extends TestCase
 
     public function testOnlyDeletesActiveSettings(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
 
         // Create active and already deleted settings
         $activeSetting = new ApplicationSettingsItem(

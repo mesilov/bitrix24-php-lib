@@ -44,7 +44,7 @@ class HandlerTest extends TestCase
 
     public function testCanDeleteExistingSetting(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
         $applicationSettingsItem = new ApplicationSettingsItem(
             $uuidV7,
             'delete.test',

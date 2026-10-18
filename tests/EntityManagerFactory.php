@@ -30,7 +30,7 @@ class EntityManagerFactory
 
     public static function get(): EntityManagerInterface
     {
-        if (!self::$entityManager instanceof EntityManager) {
+        if (!self::$entityManager instanceof EntityManager || !self::$entityManager->isOpen()) {
             $paths = [
                 __DIR__.'/../config/xml',
             ];
