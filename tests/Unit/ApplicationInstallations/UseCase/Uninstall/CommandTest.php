@@ -38,7 +38,8 @@ class CommandTest extends TestCase
         $command = new Command(
             $domain,
             $memberId,
-            $applicationToken
+            $applicationToken,
+            false
         );
 
         if (null === $expectedException) {
@@ -80,5 +81,46 @@ class CommandTest extends TestCase
             '',
             InvalidArgumentException::class,
         ];
+    }
+
+    #[DataProvider('validCleanFlags')]
+    public function testEventPreservesExplicitCleanChoice(string|int $flag, bool $expected): void
+    {
+        $command = Command::fromEvent([
+            'event' => 'ONAPPUNINSTALL',
+            'data' => ['CLEAN' => $flag],
+            'auth' => ['domain' => 'example.bitrix24.ru', 'member_id' => 'member', 'application_token' => 'secret'],
+        ]);
+        self::assertSame($expected, $command->clean);
+    }
+
+    public static function validCleanFlags(): iterable
+    {
+        yield ['0', false];
+        yield [0, false];
+        yield ['1', true];
+        yield [1, true];
+    }
+
+    #[DataProvider('invalidCleanFlags')]
+    public function testEventRejectsMissingOrAmbiguousCleanChoice(mixed $flag): void
+    {
+        $event = [
+            'event' => 'ONAPPUNINSTALL', 'data' => [],
+            'auth' => ['domain' => 'example.bitrix24.ru', 'member_id' => 'member', 'application_token' => 'secret'],
+        ];
+        if ($flag !== null) {
+            $event['data']['CLEAN'] = $flag;
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        Command::fromEvent($event);
+    }
+
+    public static function invalidCleanFlags(): iterable
+    {
+        foreach ([null, '', 'false', 'true', true, false, 2, -1, [], '01', ' 1'] as $flag) {
+            yield [$flag];
+        }
     }
 }

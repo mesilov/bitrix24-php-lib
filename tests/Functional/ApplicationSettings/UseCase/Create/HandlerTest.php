@@ -43,7 +43,7 @@ class HandlerTest extends TestCase
 
     public function testCanCreateNewSetting(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
         $command = new Command(
             $uuidV7,
             'new.setting',
@@ -71,7 +71,7 @@ class HandlerTest extends TestCase
 
     public function testThrowsExceptionWhenCreatingDuplicateSetting(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
 
         // Create initial setting
         $createCommand = new Command(
@@ -97,7 +97,7 @@ class HandlerTest extends TestCase
 
     public function testMultipleSettingsForSameInstallation(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
 
         $command1 = new Command($uuidV7, 'setting.one', 'value1');
         $command2 = new Command($uuidV7, 'setting.two', 'value2');
@@ -113,7 +113,7 @@ class HandlerTest extends TestCase
 
     public function testCanCreatePersonalSetting(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
         $command = new Command(
             applicationInstallationId: $uuidV7,
             key: 'personal.setting',
@@ -139,7 +139,7 @@ class HandlerTest extends TestCase
 
     public function testCanCreateDepartmentalSetting(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
         $command = new Command(
             applicationInstallationId: $uuidV7,
             key: 'dept.setting',

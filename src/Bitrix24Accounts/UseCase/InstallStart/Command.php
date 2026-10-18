@@ -7,6 +7,7 @@ namespace Bitrix24\Lib\Bitrix24Accounts\UseCase\InstallStart;
 use Bitrix24\Lib\Common\ValueObjects\Domain;
 use Bitrix24\SDK\Core\Credentials\AuthToken;
 use Bitrix24\SDK\Core\Credentials\Scope;
+use Symfony\Component\Uid\Uuid;
 
 readonly class Command
 {
@@ -17,7 +18,8 @@ readonly class Command
         public Domain $domain,
         public AuthToken $authToken,
         public int $applicationVersion,
-        public Scope $applicationScope
+        public Scope $applicationScope,
+        public Uuid $applicationInstallationId,
     ) {
         $this->validate();
     }

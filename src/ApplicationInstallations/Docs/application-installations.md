@@ -219,3 +219,7 @@ The follow-up issue tracks background cleanup options such as:
 - TTL worker with alert-only behavior
 - reconciliation job for portal state re-check
 - manual operational recovery flow
+
+## Безопасное удаление и очистка
+
+Обработка ONAPPUNINSTALL, CLEAN, повторы, новая схема DI и миграция таблицы: [Удаление приложения и очистка данных](uninstall.md). Проверка события выполняется только локально по application token и сохранённой установке, без REST-вызовов.

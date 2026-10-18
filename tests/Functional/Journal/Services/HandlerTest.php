@@ -61,7 +61,7 @@ class HandlerTest extends TestCase
     public function testSuccessAdd(): void
     {
         $memberId = 'test-member-id';
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
         $level = LogLevel::info;
         $message = 'Test message';
         $label = 'test-label';

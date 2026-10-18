@@ -41,8 +41,8 @@ class ApplicationInstallationBuilder
     {
         $this->id = Uuid::v7();
         $this->bitrix24AccountId = Uuid::v7();
-        $this->bitrix24PartnerContactPersonId = Uuid::v7();
-        $this->contactPersonId = Uuid::v7();
+        $this->bitrix24PartnerContactPersonId = null;
+        $this->contactPersonId = null;
         $this->portalUsersCount = random_int(1, 1_000_000);
     }
 

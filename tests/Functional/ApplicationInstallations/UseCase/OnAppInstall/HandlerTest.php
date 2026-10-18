@@ -89,6 +89,9 @@ class HandlerTest extends TestCase
             $handler->handle($command);
             self::fail('Rejected authorization accepted');
         } catch (\Bitrix24\Lib\ApplicationInstallations\Services\Authorization\InvalidAuthorizationException) {
+            $this->entityManager = EntityManagerFactory::get();
+            $this->installationRepository = new ApplicationInstallationRepository($this->entityManager);
+            $this->accountRepository = new Bitrix24AccountRepository($this->entityManager);
             $this->entityManager->clear();
             self::assertSame(ApplicationInstallationStatus::new, $this->installationRepository->findByBitrix24AccountMemberId($command->memberId)->getStatus());
             self::assertCount(1, $this->accountRepository->findByMemberId($command->memberId));

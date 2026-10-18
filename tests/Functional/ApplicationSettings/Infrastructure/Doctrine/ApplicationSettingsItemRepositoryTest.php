@@ -37,7 +37,7 @@ class ApplicationSettingsItemRepositoryTest extends TestCase
 
     public function testDuplicateGlobalSettingsWithSameKeyAreAllowedByDatabaseConstraint(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
 
         $firstSetting = new ApplicationSettingsItem(
             $uuidV7,
@@ -68,7 +68,7 @@ class ApplicationSettingsItemRepositoryTest extends TestCase
      */
     public function testDifferentScopesWithSameKeyAreAllowed(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
 
         $globalSetting = new ApplicationSettingsItem(
             $uuidV7,
@@ -110,7 +110,7 @@ class ApplicationSettingsItemRepositoryTest extends TestCase
      */
     public function testPersistenceAcrossFlushAndClear(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
 
         $applicationSettingsItem = new ApplicationSettingsItem(
             $uuidV7,
@@ -138,7 +138,7 @@ class ApplicationSettingsItemRepositoryTest extends TestCase
      */
     public function testSoftDeletePersistsInDatabase(): void
     {
-        $uuidV7 = Uuid::v7();
+        $uuidV7 = \Bitrix24\Lib\Tests\Helpers\ApplicationInstallations\InstalledApplicationFixture::createId();
 
         $applicationSettingsItem = new ApplicationSettingsItem(
             $uuidV7,

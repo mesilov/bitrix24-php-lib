@@ -7,6 +7,7 @@ namespace Bitrix24\Lib\ApplicationInstallations\UseCase\OnAppInstall;
 use Bitrix24\Lib\ApplicationInstallations\Services\Authorization\AuthorizationUnavailableException;
 use Bitrix24\Lib\ApplicationInstallations\Services\Authorization\AuthorizationVerifierInterface;
 use Bitrix24\Lib\ApplicationInstallations\Services\Authorization\InvalidAuthorizationException;
+use Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\InactiveInstallationException;
 use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationInterface;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
@@ -32,6 +33,7 @@ readonly class Handler
     ) {}
 
     /**
+     * @throws InactiveInstallationException
      * @throws InvalidAuthorizationException
      * @throws AuthorizationUnavailableException
      * @throws ApplicationInstallationNotFoundException|InvalidArgumentException|MultipleBitrix24AccountsFoundException
@@ -44,34 +46,36 @@ readonly class Handler
             'application_status' => $command->applicationStatus,
         ]);
 
-        $verified = $this->authorizationVerifier->verify($command->authToken, $command->domainUrl, $command->memberId);
+        $this->flusher->withPortalLock($command->memberId, function () use ($command): void {
+            $verified = $this->authorizationVerifier->verify($command->authToken, $command->domainUrl, $command->memberId);
 
-        $applicationInstallation = $this->applicationInstallationRepository->findByBitrix24AccountMemberId($command->memberId);
+            $applicationInstallation = $this->applicationInstallationRepository->findByBitrix24AccountMemberId($command->memberId);
 
-        if (null === $applicationInstallation) {
-            throw $this->buildInstallationNotFoundException($command->memberId);
-        }
+            if (null === $applicationInstallation) {
+                throw $this->buildInstallationNotFoundException($command->memberId);
+            }
 
-        assert($applicationInstallation instanceof AggregateRootEventsEmitterInterface);
-        if (!in_array($applicationInstallation->getStatus(), [ApplicationInstallationStatus::new, ApplicationInstallationStatus::active], true)) {
-            throw $this->buildInstallationNotFoundException($command->memberId);
-        }
+            assert($applicationInstallation instanceof AggregateRootEventsEmitterInterface);
+            if (!in_array($applicationInstallation->getStatus(), [ApplicationInstallationStatus::new, ApplicationInstallationStatus::active], true)) {
+                throw $this->buildInstallationNotFoundException($command->memberId);
+            }
 
-        $status = ApplicationInstallationStatus::new === $applicationInstallation->getStatus() ? Bitrix24AccountStatus::new : Bitrix24AccountStatus::active;
-        $account = $this->findMasterAccountByMemberId($command->memberId, $status);
-        if ($account->getBitrix24UserId() !== $verified->userId) {
-            throw new InvalidAuthorizationException();
-        }
+            $status = ApplicationInstallationStatus::new === $applicationInstallation->getStatus() ? Bitrix24AccountStatus::new : Bitrix24AccountStatus::active;
+            $account = $this->findMasterAccountByMemberId($command->memberId, $status);
+            if ($account->getBitrix24UserId() !== $verified->userId) {
+                throw new InvalidAuthorizationException();
+            }
 
-        if (ApplicationInstallationStatus::new === $applicationInstallation->getStatus()) {
-            $this->finishPendingInstallation($command, $applicationInstallation, $account);
+            if (ApplicationInstallationStatus::new === $applicationInstallation->getStatus()) {
+                $this->finishPendingInstallation($command, $applicationInstallation, $account);
 
-            $this->logger->info('ApplicationInstallation.OnAppInstall.finish');
+                $this->logger->info('ApplicationInstallation.OnAppInstall.finish');
 
-            return;
-        }
+                return;
+            }
 
-        $this->handleRepeatedEvent($command, $applicationInstallation, $account);
+            $this->handleRepeatedEvent($command, $applicationInstallation, $account);
+        }, applicationToken: $command->applicationToken);
     }
 
     /**

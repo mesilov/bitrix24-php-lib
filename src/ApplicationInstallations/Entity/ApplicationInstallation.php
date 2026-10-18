@@ -194,6 +194,16 @@ class ApplicationInstallation extends AggregateRoot implements ApplicationInstal
         );
     }
 
+    /** Keep only the hashed retry receipt after authorization revocation. */
+    public function forgetUninstallToken(): void
+    {
+        if (ApplicationInstallationStatus::deleted !== $this->status) {
+            throw new LogicException('Only a deleted installation can discard its uninstall token.');
+        }
+
+        $this->applicationToken = null;
+    }
+
     #[\Override]
     public function markAsActive(?string $comment): void
     {

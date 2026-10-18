@@ -259,3 +259,7 @@ No additional configuration is needed for the default local test run.
 `Install\Handler` and `OnAppInstall\Handler` require an `AuthorizationVerifierInterface` as the fifth constructor argument. Use `SdkAuthorizationVerifier` configured with a trusted `ApplicationProfile` and OAuth-server URL. `OnAppInstall\Command` additionally requires `AuthToken` from the event's OAuth `auth` data; `applicationToken` remains a separate argument. No storage migrations are needed.
 
 See [verification, construction examples and failure handling](src/ApplicationInstallations/Docs/application-installations.md#verified-oauth-authorization).
+
+### Безопасное удаление приложения
+
+[ONAPPUNINSTALL, CLEAN и очистка данных](src/ApplicationInstallations/Docs/uninstall.md): локальная проверка application token, физическое удаление OAuth credentials, повторяемая очистка через обязательный обработчик приложения и миграция таблицы технических отметок. Интеграция требует обновить DI и передавать CLEAN явно.
