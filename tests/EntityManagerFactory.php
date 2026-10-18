@@ -32,7 +32,7 @@ class EntityManagerFactory
     {
         if (!self::$entityManager instanceof EntityManager) {
             $paths = [
-                dirname(__DIR__).'/config/xml',
+                __DIR__.'/../config/xml',
             ];
             $isDevMode = true;
 

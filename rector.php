@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 use Rector\Config\RectorConfig;
 use Rector\Naming\Rector\Class_\RenamePropertyToMatchTypeRector;
-use Rector\PHPUnit\Set\PHPUnitSetList;
 use Rector\CodeQuality\Rector\Identical\FlipTypeControlToUseExclusiveTypeRector;
 use Rector\Naming\Rector\ClassMethod\RenameParamToMatchTypeRector;
 use Rector\Naming\Rector\Assign\RenameVariableToMatchMethodCallReturnTypeRector;
@@ -24,11 +23,7 @@ return RectorConfig::configure()
         __DIR__ . '/tests/',
     ])
     ->withCache(cacheDirectory: __DIR__ . '.cache/rector')
-    ->withSets(
-        [
-            PHPUnitSetList::PHPUNIT_110
-        ]
-    )
+    ->withComposerBased(phpunit: true)
     ->withImportNames(
         importNames: false,
         importDocBlockNames: false,

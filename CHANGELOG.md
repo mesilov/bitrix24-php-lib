@@ -26,6 +26,10 @@ ALTER INDEX idx_journal_member_id RENAME TO b24lib_journal_idx_member_id;
 
 ### Changed
 
+- **Reproducible SDK contract and current Rector compatibility** — [#120](https://github.com/mesilov/bitrix24-php-lib/issues/120)
+    - Pin `dev-v3-dev` to SDK commit `398296d5d27dc9f09fb4d18a896a052d8bd795bd`; newer installation interfaces require a separate library migration
+    - Require Rector `^2.7` and select PHPUnit upgrade rules from the installed Composer version instead of removed `PHPUNIT_110`
+
 - **SDK-backed verification of application, portal and user identity** — [#120](https://github.com/mesilov/bitrix24-php-lib/issues/120)
     - Secure OAuth-server `app.info` verification precedes portal profile reads and installation mutations
     - Rejected verification preserves existing installations; effective verified tokens are retained on install

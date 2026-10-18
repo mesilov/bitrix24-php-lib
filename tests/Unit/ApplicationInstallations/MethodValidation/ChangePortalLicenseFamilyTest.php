@@ -8,7 +8,7 @@ use Bitrix24\SDK\Application\ApplicationStatus;
 use Bitrix24\SDK\Application\PortalLicenseFamily;
 use PHPUnit\Framework\TestCase;
 use Bitrix24\Lib\Tests\Functional\ApplicationInstallations\Builders\ApplicationInstallationBuilder;
-class ChangePortalLicenseFamily extends TestCase
+class ChangePortalLicenseFamilyTest extends TestCase
 {
    public function testEqualsChangePortalLicenseFamily(): void
    {

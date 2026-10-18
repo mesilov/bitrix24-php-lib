@@ -14,9 +14,9 @@ declare(strict_types=1);
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Dotenv\Dotenv;
 
-require_once dirname(__DIR__).'/vendor/autoload.php';
+require_once __DIR__.'/../vendor/autoload.php';
 
-require_once dirname(__DIR__).'/tests/EntityManagerFactory.php';
+require_once __DIR__.'/../tests/EntityManagerFactory.php';
 
 if (!class_exists(Dotenv::class)) {
     throw new LogicException('You need to add "symfony/dotenv" as Composer dependencies.');
@@ -31,4 +31,4 @@ if ($input->hasParameterOption('--no-debug', true)) {
     putenv('APP_DEBUG='.$_SERVER['APP_DEBUG'] = $_ENV['APP_DEBUG'] = '0');
 }
 
-(new Dotenv())->loadEnv(dirname(__DIR__).'/.env');
+(new Dotenv())->loadEnv(__DIR__.'/../.env');
