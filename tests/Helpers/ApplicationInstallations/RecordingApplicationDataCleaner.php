@@ -17,7 +17,7 @@ final class RecordingApplicationDataCleaner implements ApplicationDataCleanerInt
     public function clean(UninstallationContext $context): void
     {
         $this->contexts[] = $context;
-        if ($this->onClean !== null) {
+        if ($this->onClean instanceof \Closure) {
             ($this->onClean)($context);
         }
     }

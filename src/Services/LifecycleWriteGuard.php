@@ -13,6 +13,7 @@ use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Uid\Uuid;
 
 /** Synchronize ORM writes with uninstall before they reach the database. */
 final class LifecycleWriteGuard
@@ -53,7 +54,7 @@ final class LifecycleWriteGuard
                 }
 
                 foreach ([$write->getContactPersonId(), $write->getBitrix24PartnerContactPersonId()] as $id) {
-                    if (null !== $id) {
+                    if ($id instanceof Uuid) {
                         $contacts[$id->toRfc4122()] = true;
                     }
                 }

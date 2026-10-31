@@ -59,7 +59,7 @@ readonly class Handler
 
             $activeInstallation = $this->applicationInstallationRepository->findByBitrix24AccountMemberId($command->memberId);
 
-            if (null !== $activeInstallation) {
+            if ($activeInstallation instanceof ApplicationInstallationInterface) {
                 assert($activeInstallation instanceof AggregateRootEventsEmitterInterface);
                 $this->deactivateCurrentInstallation($command->memberId, $activeInstallation);
             }

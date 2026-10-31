@@ -8,6 +8,7 @@ use Bitrix24\Lib\Services\Flusher;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Exceptions\ContactPersonNotFoundException;
 use Bitrix24\SDK\Application\Contracts\ContactPersons\Repository\ContactPersonRepositoryInterface;
 use Bitrix24\SDK\Application\Contracts\Events\AggregateRootEventsEmitterInterface;
+use libphonenumber\PhoneNumber;
 use libphonenumber\PhoneNumberFormat;
 use libphonenumber\PhoneNumberUtil;
 use Psr\Log\LoggerInterface;
@@ -37,7 +38,7 @@ readonly class Handler
 
             $actualPhone = $contactPerson->getMobilePhone();
 
-            if (null !== $actualPhone && $command->phone->equals($actualPhone)) {
+            if ($actualPhone instanceof PhoneNumber && $command->phone->equals($actualPhone)) {
                 $contactPerson->markMobilePhoneAsVerified($command->phoneVerifiedAt);
 
                 $this->contactPersonRepository->save($contactPerson);

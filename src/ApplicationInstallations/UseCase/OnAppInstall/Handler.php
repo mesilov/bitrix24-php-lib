@@ -51,7 +51,7 @@ readonly class Handler
 
             $applicationInstallation = $this->applicationInstallationRepository->findByBitrix24AccountMemberId($command->memberId);
 
-            if (null === $applicationInstallation) {
+            if (!$applicationInstallation instanceof ApplicationInstallationInterface) {
                 throw $this->buildInstallationNotFoundException($command->memberId);
             }
 

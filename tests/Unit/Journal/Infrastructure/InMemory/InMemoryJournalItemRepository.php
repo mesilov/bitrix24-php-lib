@@ -42,7 +42,7 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
     {
         $journalItem = $this->findById($uuid);
 
-        if (null === $journalItem) {
+        if (!$journalItem instanceof \Bitrix24\Lib\Journal\Entity\JournalItemInterface) {
             throw new \InvalidArgumentException(sprintf('Journal item not found by id %s', $uuid->toRfc4122()));
         }
 
@@ -79,7 +79,7 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
                     return false;
                 }
 
-                if (null !== $logLevel && $journalItem->getLevel() !== $logLevel) {
+                if ($logLevel instanceof \Bitrix24\Lib\Journal\Entity\LogLevel && $journalItem->getLevel() !== $logLevel) {
                     return false;
                 }
 
@@ -112,7 +112,7 @@ class InMemoryJournalItemRepository implements JournalItemRepositoryInterface
                     return false;
                 }
 
-                if (null !== $logLevel && $journalItem->getLevel() !== $logLevel) {
+                if ($logLevel instanceof \Bitrix24\Lib\Journal\Entity\LogLevel && $journalItem->getLevel() !== $logLevel) {
                     return false;
                 }
 

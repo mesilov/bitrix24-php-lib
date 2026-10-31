@@ -40,7 +40,7 @@ readonly class Handler
         $mobilePhoneNumber = $command->mobilePhoneNumber;
 
         try {
-            if (null !== $command->mobilePhoneNumber) {
+            if ($command->mobilePhoneNumber instanceof PhoneNumber) {
                 try {
                     $this->guardMobilePhoneNumber($command->mobilePhoneNumber);
                 } catch (InvalidArgumentException) {

@@ -43,6 +43,7 @@ ALTER INDEX idx_journal_member_id RENAME TO b24lib_journal_idx_member_id;
     - Historical receipts no longer reject verified Install/ONAPPINSTALL callbacks or hide a current active/blocked installation during uninstall
     - Pending cleanup resumes only when no matching current installation exists; CLEAN, member checks, OAuth verification and installation UUID guards remain enforced
     - Indistinguishable same-token uninstall events follow current state; token history does not provide callback-generation replay protection
+    - Align nullable-object checks with Rector 2.8.3 used by freshly resolved CI dependencies
 
 - **Локально проверенный uninstall и повторяемая очистка** — [#122](https://github.com/mesilov/bitrix24-php-lib/issues/122)
     - Неизвестный application token и несовпадающий member ID не меняют данные; API Битрикс24 не вызывается

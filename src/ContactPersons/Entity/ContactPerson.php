@@ -46,8 +46,8 @@ class ContactPerson extends AggregateRoot implements ContactPersonInterface
         private readonly CarbonImmutable $createdAt = new CarbonImmutable(),
         private CarbonImmutable $updatedAt = new CarbonImmutable(),
     ) {
-        $this->isEmailVerified = null !== $emailVerifiedAt;
-        $this->isMobilePhoneVerified = null !== $mobilePhoneVerifiedAt;
+        $this->isEmailVerified = $emailVerifiedAt instanceof CarbonImmutable;
+        $this->isMobilePhoneVerified = $mobilePhoneVerifiedAt instanceof CarbonImmutable;
         $this->addContactPersonCreatedEventIfNeeded($this->isEmitContactPersonCreatedEvent);
     }
 

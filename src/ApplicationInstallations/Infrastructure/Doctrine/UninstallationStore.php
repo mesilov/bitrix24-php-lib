@@ -17,9 +17,11 @@ use Bitrix24\Lib\ContactPersons\Entity\ContactPerson;
 use Bitrix24\Lib\Journal\Entity\JournalItem;
 use Bitrix24\Lib\Services\LifecycleLock;
 use Bitrix24\SDK\Application\Contracts\ApplicationInstallations\Entity\ApplicationInstallationStatus;
+use Carbon\CarbonImmutable;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query\Expr\Join;
+use Symfony\Component\Uid\Uuid;
 
 final readonly class UninstallationStore implements UninstallationStoreInterface
 {
@@ -118,12 +120,12 @@ final readonly class UninstallationStore implements UninstallationStoreInterface
                     ->setLockMode(LockMode::PESSIMISTIC_WRITE)
                     ->getOneOrNullResult()
                 ;
-                if (!$receipt instanceof Uninstallation || null !== $receipt->getCompletedAt()) {
+                if (!$receipt instanceof Uninstallation || $receipt->getCompletedAt() instanceof CarbonImmutable) {
                     return false;
                 }
 
                 $trustedContext = $receipt->contextFor($context->memberId);
-                if (null === $trustedContext) {
+                if (!$trustedContext instanceof UninstallationContext) {
                     return false;
                 }
 
@@ -195,7 +197,7 @@ final readonly class UninstallationStore implements UninstallationStoreInterface
 
         $contactIds = [];
         foreach ([$installation->getContactPersonId(), $installation->getBitrix24PartnerContactPersonId()] as $id) {
-            if (null !== $id) {
+            if ($id instanceof Uuid) {
                 $contactIds[$id->toRfc4122()] = $id;
             }
         }
@@ -204,7 +206,7 @@ final readonly class UninstallationStore implements UninstallationStoreInterface
         foreach ($contactIds as $contactId) {
             LifecycleLock::acquire($this->em->getConnection(), 'contact:'.$contactId->toRfc4122());
             $contact = $this->em->find(ContactPerson::class, $contactId, LockMode::PESSIMISTIC_WRITE);
-            if (!$contact instanceof ContactPerson || null !== $contact->getBitrix24PartnerId()) {
+            if (!$contact instanceof ContactPerson || $contact->getBitrix24PartnerId() instanceof Uuid) {
                 continue;
             }
 

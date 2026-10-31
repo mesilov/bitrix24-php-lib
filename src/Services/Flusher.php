@@ -74,7 +74,7 @@ class Flusher
 
         try {
             LifecycleLock::acquire($connection, 'member:'.$memberId);
-            if (null !== $activeInstallationId) {
+            if ($activeInstallationId instanceof Uuid) {
                 $this->assertActiveInstallation($activeInstallationId, $memberId);
             }
 
