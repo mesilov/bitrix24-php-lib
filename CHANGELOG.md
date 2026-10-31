@@ -2,6 +2,10 @@
 
 ### BC
 
+- **Uninstall receipts identify installation generations** — [#124](https://github.com/mesilov/bitrix24-php-lib/issues/124)
+    - `b24lib_uninstallations` uses `installation_id` as primary key; token/member hashes are nonunique retry lookup fields
+    - Existing #122 schemas require the documented transactional upgrade before deploying the new mapping; `EntityManager::find(Uninstallation::class, ...)` now takes the installation UUID
+
 - **Безопасное удаление приложения** — [#122](https://github.com/mesilov/bitrix24-php-lib/issues/122)
     - `ApplicationInstallations\UseCase\Uninstall\Command` требует четвёртый аргумент CLEAN; строгий разбор события доступен через `fromEvent`
     - `Uninstall\Handler` получает `UninstallationStoreInterface`, обязательный `ApplicationDataCleanerInterface`, logger и event dispatcher вместо repositories/Flusher
@@ -34,6 +38,12 @@ ALTER INDEX idx_journal_member_id RENAME TO b24lib_journal_idx_member_id;
 ```
 
 ### Changed
+
+- **Allow reinstalling and uninstalling with a reused application token** — [#124](https://github.com/mesilov/bitrix24-php-lib/issues/124)
+    - Historical receipts no longer reject verified Install/ONAPPINSTALL callbacks or hide a current active/blocked installation during uninstall
+    - Pending cleanup resumes only when no matching current installation exists; CLEAN, member checks, OAuth verification and installation UUID guards remain enforced
+    - Indistinguishable same-token uninstall events follow current state; token history does not provide callback-generation replay protection
+    - Align nullable-object checks with Rector 2.8.3 used by freshly resolved CI dependencies
 
 - **Локально проверенный uninstall и повторяемая очистка** — [#122](https://github.com/mesilov/bitrix24-php-lib/issues/122)
     - Неизвестный application token и несовпадающий member ID не меняют данные; API Битрикс24 не вызывается

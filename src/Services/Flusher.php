@@ -45,7 +45,10 @@ class Flusher
         }
     }
 
-    /** Serialize installation, uninstall and generation-bound account creation. */
+    /**
+     * Serialize installation, uninstall and generation-bound account creation.
+     * The applicationToken argument is retained for source compatibility; a token does not identify a generation.
+     */
     public function withPortalLock(
         string $memberId,
         \Closure $operation,
@@ -71,8 +74,7 @@ class Flusher
 
         try {
             LifecycleLock::acquire($connection, 'member:'.$memberId);
-            $this->assertApplicationTokenAvailable($applicationToken);
-            if (null !== $activeInstallationId) {
+            if ($activeInstallationId instanceof Uuid) {
                 $this->assertActiveInstallation($activeInstallationId, $memberId);
             }
 
@@ -83,21 +85,6 @@ class Flusher
             $this->em->close();
 
             throw $throwable;
-        }
-    }
-
-    private function assertApplicationTokenAvailable(#[\SensitiveParameter] ?string $applicationToken): void
-    {
-        if (null === $applicationToken) {
-            return;
-        }
-
-        $uninstalledId = $this->em->getConnection()->fetchOne(
-            'SELECT installation_id FROM b24lib_uninstallations WHERE application_token_hash = ?',
-            [hash('sha256', $applicationToken)]
-        );
-        if (false !== $uninstalledId) {
-            throw new InactiveInstallationException();
         }
     }
 

@@ -50,7 +50,7 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
     {
         $journalItem = $this->findById($uuid);
 
-        if (null === $journalItem) {
+        if (!$journalItem instanceof JournalItemInterface) {
             throw new \InvalidArgumentException(sprintf('Journal item not found by id %s', $uuid->toRfc4122()));
         }
 
@@ -84,7 +84,7 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
             ->setParameter('appId', $applicationInstallationId)
         ;
 
-        if (null !== $logLevel) {
+        if ($logLevel instanceof LogLevel) {
             $queryBuilder->andWhere('j.level = :level')
                 ->setParameter('level', $logLevel->value)
             ;
@@ -119,7 +119,7 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
             ->setParameter('memberId', $memberId)
         ;
 
-        if (null !== $logLevel) {
+        if ($logLevel instanceof LogLevel) {
             $queryBuilder->andWhere('j.level = :level')
                 ->setParameter('level', $logLevel->value)
             ;
@@ -201,7 +201,7 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
             ;
         }
 
-        if (null !== $domain) {
+        if ($domain instanceof Domain) {
             $queryBuilder->innerJoin(ApplicationInstallation::class, 'ai', 'WITH', 'ai.id = j.applicationInstallationId')
                 ->innerJoin(Bitrix24Account::class, 'b24', 'WITH', 'b24.id = ai.bitrix24AccountId')
                 ->andWhere('b24.domainUrl = :domainUrl')
@@ -209,7 +209,7 @@ class DoctrineDbalJournalItemRepository implements JournalItemRepositoryInterfac
             ;
         }
 
-        if (null !== $logLevel) {
+        if ($logLevel instanceof LogLevel) {
             $queryBuilder->andWhere('j.level = :level')
                 ->setParameter('level', $logLevel->value)
             ;

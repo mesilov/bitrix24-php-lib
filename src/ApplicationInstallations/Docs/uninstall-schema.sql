@@ -6,7 +6,7 @@ CREATE TABLE b24lib_uninstallations (
     clean BOOLEAN NOT NULL,
     requested_at_utc TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
     completed_at_utc TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL,
-    PRIMARY KEY (application_token_hash),
-    CONSTRAINT b24lib_uninstallations_unique_installation UNIQUE (installation_id)
+    PRIMARY KEY (installation_id)
 );
 CREATE INDEX b24lib_uninstallations_idx_completed ON b24lib_uninstallations (completed_at_utc);
+CREATE INDEX b24lib_uninstallations_idx_token_member ON b24lib_uninstallations (application_token_hash, member_id_hash);

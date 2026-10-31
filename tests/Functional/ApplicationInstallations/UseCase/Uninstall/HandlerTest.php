@@ -428,21 +428,65 @@ class HandlerTest extends TestCase
             $this->em->persist($uninstallation);
             $this->em->flush();
             $this->em->clear();
-            $loaded = $this->em->find(Uninstallation::class, hash('sha256', 'migration-test-token'));
+            $loaded = $this->em->find(Uninstallation::class, $uninstallation->getInstallationId());
             self::assertNotNull($loaded);
             self::assertTrue($loaded->contextFor('migration-member')->clean);
             self::assertNull($loaded->getCompletedAt());
             $loaded->complete();
             $this->em->flush();
             $this->em->clear();
-            self::assertNotNull($this->em->find(Uninstallation::class, hash('sha256', 'migration-test-token'))->getCompletedAt());
+            self::assertNotNull($this->em->find(Uninstallation::class, $uninstallation->getInstallationId())->getCompletedAt());
         } finally {
             $connection->rollBack();
             $this->em->clear();
         }
     }
 
-    public function testRetiredApplicationTokenCannotBeInstalledAgain(): void
+    public function testUpgradePreservesReceiptsAndAllowsReusingTheirToken(): void
+    {
+        $connection = $this->em->getConnection();
+        $schema = 'uninstall_upgrade_'.str_replace('-', '', Uuid::v7()->toRfc4122());
+        $connection->beginTransaction();
+        try {
+            $connection->executeStatement('CREATE SCHEMA '.$schema);
+            $connection->executeStatement('SET LOCAL search_path TO '.$schema);
+            // The schema shipped by #122, independently of the fresh-install SQL under test.
+            $connection->executeStatement('CREATE TABLE b24lib_uninstallations (
+                application_token_hash VARCHAR(64) PRIMARY KEY,
+                installation_id UUID NOT NULL,
+                member_id_hash VARCHAR(64) NOT NULL,
+                clean BOOLEAN NOT NULL,
+                requested_at_utc TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
+                completed_at_utc TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL,
+                CONSTRAINT b24lib_uninstallations_unique_installation UNIQUE (installation_id)
+            )');
+            $old = new Uninstallation(Uuid::v7(), 'upgrade-token', 'upgrade-member', false);
+            $old->complete();
+            $connection->insert('b24lib_uninstallations', [
+                'application_token_hash' => $old->getTokenHash(),
+                'installation_id' => $old->getInstallationId()->toRfc4122(),
+                'member_id_hash' => hash('sha256', 'upgrade-member'),
+                'clean' => 'false', 'requested_at_utc' => '2026-01-01 00:00:00', 'completed_at_utc' => '2026-01-01 00:00:01',
+            ]);
+            $before = $connection->fetchAllAssociative('SELECT * FROM b24lib_uninstallations');
+            $sql = file_get_contents(dirname(__DIR__, 5).'/src/ApplicationInstallations/Docs/uninstall-schema-upgrade-124.sql');
+            self::assertIsString($sql);
+            $connection->executeStatement($sql);
+            self::assertSame($before, $connection->fetchAllAssociative('SELECT * FROM b24lib_uninstallations'));
+            $new = new Uninstallation(Uuid::v7(), 'upgrade-token', 'upgrade-member', true);
+            $this->em->persist($new);
+            $this->em->flush();
+            $this->em->clear();
+            self::assertNotNull($this->em->find(Uninstallation::class, $old->getInstallationId())->getCompletedAt());
+            self::assertNull($this->em->find(Uninstallation::class, $new->getInstallationId())->getCompletedAt());
+            self::assertSame(2, $this->em->getRepository(Uninstallation::class)->count(['tokenHash' => $old->getTokenHash()]));
+        } finally {
+            $connection->rollBack();
+            $this->em->clear();
+        }
+    }
+
+    public function testApplicationTokenCanBeReusedByANewInstallation(): void
     {
         [, $account, $command] = $this->installation(true);
         $this->handler->handle($command);
@@ -462,14 +506,62 @@ class HandlerTest extends TestCase
             applicationStatus: new ApplicationStatus('F'), portalLicenseFamily: PortalLicenseFamily::free,
             applicationToken: $command->applicationToken, portalUsersCount: 1
         );
+        $handler->handle($replay);
+
+        $this->em->clear();
+        $installation = (new ApplicationInstallationRepository($this->em))->findByBitrix24AccountMemberId($command->memberId);
+        self::assertNotNull($installation);
+        self::assertSame(ApplicationInstallationStatus::active, $installation->getStatus());
+        self::assertSame(1, $this->em->getRepository(Bitrix24Account::class)->count(['memberId' => $command->memberId]));
+        self::assertCount(1, $recordingAuthorizationVerifier->calls);
+    }
+
+    public function testCompletedReceiptDoesNotHideAnActiveInstallationWithTheSameToken(): void
+    {
+        [, , $oldCommand] = $this->installation(true);
+        $this->handler->handle($oldCommand);
+        [$installation, $account, $command] = $this->installation(false, $oldCommand->memberId, applicationToken: $oldCommand->applicationToken);
+        $setting = $this->setting($installation);
+        $this->em->flush();
+
+        $this->handler->handle($command);
+        $this->handler->handle($command);
+
+        $this->em->clear();
+        self::assertNull($this->em->find(ApplicationInstallation::class, $installation->getId()));
+        self::assertNull($this->em->find(Bitrix24Account::class, $account->getId()));
+        self::assertNotNull($this->em->find(ApplicationSettingsItem::class, $setting->getId()));
+        self::assertCount(2, $this->cleaner->contexts);
+        self::assertFalse($this->cleaner->contexts[1]->clean);
+    }
+
+    public function testCurrentInstallationTakesPriorityOverPendingCleanupWithTheSameToken(): void
+    {
+        [$old, , $oldCommand] = $this->installation(false);
+        $this->cleaner->onClean = static function (): void { throw new \RuntimeException('cleanup failed'); };
         try {
-            $handler->handle($replay);
-            self::fail('Retired application token was installed again');
-        } catch (InactiveInstallationException) {
+            $this->handler->handle($oldCommand);
+            self::fail('Expected cleanup to fail');
+        } catch (UninstallationFailedException) {
         }
 
         $this->reopenAfterFailure();
-        self::assertSame(0, $this->em->getRepository(Bitrix24Account::class)->count(['memberId' => $command->memberId]));
+        $this->cleaner->onClean = null;
+        [$current, $account, $command] = $this->installation(true, $oldCommand->memberId, applicationToken: $oldCommand->applicationToken);
+        $this->handler->handle($command);
+        $this->em->clear();
+        self::assertNull($this->em->find(Bitrix24Account::class, $account->getId()));
+        self::assertNull($this->em->find(ApplicationInstallation::class, $current->getId()));
+        self::assertNotNull($this->em->find(ApplicationInstallation::class, $old->getId()));
+        self::assertTrue($this->cleaner->contexts[1]->clean);
+
+        $this->handler->handle($command);
+        $this->handler->handle($command);
+
+        $this->em->clear();
+        self::assertNull($this->em->find(ApplicationInstallation::class, $old->getId()));
+        self::assertCount(3, $this->cleaner->contexts);
+        self::assertFalse($this->cleaner->contexts[2]->clean);
     }
 
     public function testSettingCannotBeWrittenAfterCompletedCleanup(): void
@@ -526,35 +618,59 @@ class HandlerTest extends TestCase
         self::assertNull($this->em->find(ApplicationSettingsItem::class, $late->getId()));
     }
 
-    public function testRetiredTokenCannotFinishANewPendingInstallation(): void
+    public function testReusedTokenCanFinishAndUninstallANewPendingInstallation(): void
     {
-        [, , $command] = $this->installation(true);
+        [, $oldAccount, $command] = $this->installation(true);
         $this->handler->handle($command);
-        $account = (new Bitrix24AccountBuilder())->withMaster(true)->withMemberId($command->memberId)->build();
-        $applicationInstallation = new ApplicationInstallation(Uuid::v7(), $account->getId(), new ApplicationStatus('F'), PortalLicenseFamily::free, 1, null, null, null, null);
-        $this->em->persist($account);
-        $this->em->persist($applicationInstallation);
-        $this->em->flush();
-
         $recordingAuthorizationVerifier = new RecordingAuthorizationVerifier();
-        $recordingAuthorizationVerifier->userId = $account->getBitrix24UserId();
+        $recordingAuthorizationVerifier->userId = $oldAccount->getBitrix24UserId();
+
+        $installHandler = new InstallHandler(
+            new Bitrix24AccountRepository($this->em), new ApplicationInstallationRepository($this->em),
+            new Flusher($this->em, $this->dispatcher), $this->logger, $recordingAuthorizationVerifier
+        );
+        $installHandler->handle(new InstallCommand(
+            memberId: $command->memberId, domain: $command->domainUrl, authToken: $oldAccount->getAuthToken(),
+            applicationVersion: 1, applicationScope: $oldAccount->getApplicationScope(),
+            bitrix24UserId: $oldAccount->getBitrix24UserId(), isBitrix24UserAdmin: true,
+            applicationStatus: new ApplicationStatus('F'), portalLicenseFamily: PortalLicenseFamily::free, portalUsersCount: 1
+        ));
+        $applicationInstallation = (new ApplicationInstallationRepository($this->em))->findByBitrix24AccountMemberId($command->memberId);
+        self::assertNotNull($applicationInstallation);
+        self::assertSame(ApplicationInstallationStatus::new, $applicationInstallation->getStatus());
+        $account = $this->em->find(Bitrix24Account::class, $applicationInstallation->getBitrix24AccountId());
+        self::assertNotNull($account);
+
+        // An uninstall must not broaden eligible statuses to an unfinished UI setup.
+        $this->handler->handle($command);
+        self::assertCount(1, $this->cleaner->contexts);
+        self::assertSame(ApplicationInstallationStatus::new, $this->em->find(ApplicationInstallation::class, $applicationInstallation->getId())->getStatus());
+        self::assertNotNull($this->em->find(Bitrix24Account::class, $account->getId()));
 
         $handler = new OnAppInstallHandler(
             new Bitrix24AccountRepository($this->em),
             new ApplicationInstallationRepository($this->em),
             new Flusher($this->em, $this->dispatcher), $this->logger, $recordingAuthorizationVerifier
         );
-        try {
-            $handler->handle(new OnAppInstallCommand(
-                $command->memberId, $command->domainUrl, $command->applicationToken, new ApplicationStatus('F'), $account->getAuthToken()
-            ));
-            self::fail('Retired token finished a new generation');
-        } catch (InactiveInstallationException) {
-        }
+        $callback = new OnAppInstallCommand(
+            $command->memberId, $command->domainUrl, $command->applicationToken, new ApplicationStatus('F'), $account->getAuthToken()
+        );
+        $handler->handle($callback);
+        $handler->handle($callback);
 
-        $this->reopenAfterFailure();
-        self::assertSame(ApplicationInstallationStatus::new, $this->em->find(ApplicationInstallation::class, $applicationInstallation->getId())->getStatus());
-        self::assertNotNull($this->em->find(Bitrix24Account::class, $account->getId()));
+        $this->em->clear();
+        self::assertSame(ApplicationInstallationStatus::active, $this->em->find(ApplicationInstallation::class, $applicationInstallation->getId())->getStatus());
+        self::assertSame(1, $this->em->getRepository(ApplicationInstallation::class)->count(['bitrix24AccountId' => $account->getId()]));
+        self::assertSame(1, $this->em->getRepository(Bitrix24Account::class)->count(['memberId' => $command->memberId]));
+
+        $this->handler->handle($command);
+        $this->handler->handle($command);
+
+        $this->em->clear();
+        self::assertNull($this->em->find(ApplicationInstallation::class, $applicationInstallation->getId()));
+        self::assertNull($this->em->find(Bitrix24Account::class, $account->getId()));
+        self::assertCount(2, $this->cleaner->contexts);
+        self::assertSame(2, $this->em->getRepository(Uninstallation::class)->count(['tokenHash' => hash('sha256', $command->applicationToken)]));
     }
 
     public function testStaleInstallationCannotPersistANewContactAfterCleanup(): void
@@ -586,9 +702,9 @@ class HandlerTest extends TestCase
     }
 
     /** @return array{ApplicationInstallation, Bitrix24Account, Command} */
-    private function installation(bool $clean, ?string $memberId = null, ?Uuid $contactId = null): array
+    private function installation(bool $clean, ?string $memberId = null, ?Uuid $contactId = null, ?string $applicationToken = null): array
     {
-        $token = Uuid::v7()->toRfc4122();
+        $token = $applicationToken ?? Uuid::v7()->toRfc4122();
         $builder = (new Bitrix24AccountBuilder())->withStatus(Bitrix24AccountStatus::new)
             ->withInstalled()->withMaster(true)->withApplicationToken($token)->withSetToken();
         if ($memberId !== null) { $builder->withMemberId($memberId); }

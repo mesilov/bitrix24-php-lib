@@ -6,6 +6,7 @@ namespace Bitrix24\Lib\ApplicationInstallations\UseCase\Uninstall;
 
 use Bitrix24\Lib\ApplicationInstallations\Events\ApplicationUninstallationCompletedEvent;
 use Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\ApplicationDataCleanerInterface;
+use Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\UninstallationContext;
 use Bitrix24\Lib\ApplicationInstallations\Services\Uninstall\UninstallationStoreInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -23,7 +24,7 @@ readonly class Handler
     {
         // Never log the request, its application token, or upstream exception text.
         $context = $this->store->begin($command);
-        if (null === $context) {
+        if (!$context instanceof UninstallationContext) {
             $this->logger->info('ApplicationInstallations.Uninstall.ignored');
 
             return;
