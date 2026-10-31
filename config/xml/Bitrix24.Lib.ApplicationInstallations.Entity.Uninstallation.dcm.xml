@@ -1,15 +1,13 @@
 <doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping">
     <entity name="Bitrix24\Lib\ApplicationInstallations\Entity\Uninstallation" table="b24lib_uninstallations">
-        <id name="tokenHash" type="string" column="application_token_hash" length="64"/>
-        <field name="installationId" type="uuid" column="installation_id"/>
+        <field name="tokenHash" type="string" column="application_token_hash" length="64"/>
+        <id name="installationId" type="uuid" column="installation_id"/>
         <field name="memberHash" type="string" column="member_id_hash" length="64"/>
         <field name="clean" type="boolean" column="clean"/>
         <field name="requestedAt" type="carbon_immutable" column="requested_at_utc"/>
         <field name="completedAt" type="carbon_immutable" column="completed_at_utc" nullable="true"/>
-        <unique-constraints>
-            <unique-constraint name="b24lib_uninstallations_unique_installation" columns="installation_id"/>
-        </unique-constraints>
         <indexes>
+            <index name="b24lib_uninstallations_idx_token_member" columns="application_token_hash,member_id_hash"/>
             <index name="b24lib_uninstallations_idx_completed" columns="completed_at_utc"/>
         </indexes>
     </entity>

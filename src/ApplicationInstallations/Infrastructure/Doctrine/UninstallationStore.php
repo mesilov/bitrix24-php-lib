@@ -32,11 +32,6 @@ final readonly class UninstallationStore implements UninstallationStoreInterface
 
         try {
             return $this->transaction(function () use ($command): ?UninstallationContext {
-                $receipt = $this->em->find(Uninstallation::class, hash('sha256', $command->applicationToken), LockMode::PESSIMISTIC_WRITE);
-                if ($receipt instanceof Uninstallation) {
-                    return null === $receipt->getCompletedAt() ? $receipt->contextFor($command->memberId) : null;
-                }
-
                 $installation = $this->em->createQueryBuilder()
                     ->select('i')
                     ->from(ApplicationInstallation::class, 'i')
@@ -48,7 +43,24 @@ final readonly class UninstallationStore implements UninstallationStoreInterface
                     ->getOneOrNullResult()
                 ;
                 if (!$installation instanceof ApplicationInstallation) {
-                    return null;
+                    // Only unfinished cleanup can be resumed; historical receipts do not identify a new uninstall.
+                    $receipt = $this->em->createQueryBuilder()
+                        ->select('r')
+                        ->from(Uninstallation::class, 'r')
+                        ->where('r.tokenHash = :token')
+                        ->andWhere('r.memberHash = :member')
+                        ->andWhere('r.completedAt IS NULL')
+                        ->setParameter('token', hash('sha256', $command->applicationToken))
+                        ->setParameter('member', hash('sha256', $command->memberId))
+                        ->orderBy('r.requestedAt', 'ASC')
+                        ->addOrderBy('r.installationId', 'ASC')
+                        ->setMaxResults(1)
+                        ->getQuery()
+                        ->setLockMode(LockMode::PESSIMISTIC_WRITE)
+                        ->getOneOrNullResult()
+                    ;
+
+                    return $receipt instanceof Uninstallation ? $receipt->contextFor($command->memberId) : null;
                 }
 
                 $installationId = $installation->getId();
